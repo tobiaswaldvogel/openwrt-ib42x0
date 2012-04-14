@@ -1,0 +1,13 @@
+--- a/config.mk
++++ b/config.mk
+@@ -368,8 +368,8 @@ CONFIG_B43_BCMA_EXTRA=y
+ 
+ CONFIG_P54_PCI=m
+ 
+-CONFIG_B44=m
+-CONFIG_B44_PCI=y
++# CONFIG_B44=m
++# CONFIG_B44_PCI=y
+ 
+ CONFIG_RTL8180=m
+ 

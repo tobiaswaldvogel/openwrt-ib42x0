@@ -1,0 +1,77 @@
+--- a/nl80211.h
++++ b/nl80211.h
+@@ -1475,6 +1475,7 @@ enum nl80211_attrs {
+ #define NL80211_ATTR_FEATURE_FLAGS NL80211_ATTR_FEATURE_FLAGS
+ 
+ #define NL80211_MAX_SUPP_RATES			32
++#define NL80211_MAX_SUPP_HT_RATES		77
+ #define NL80211_MAX_SUPP_REG_RULES		32
+ #define NL80211_TKIP_DATA_OFFSET_ENCR_KEY	0
+ #define NL80211_TKIP_DATA_OFFSET_TX_MIC_KEY	16
+@@ -1536,7 +1537,11 @@ enum nl80211_iftype {
+  * @NL80211_STA_FLAG_WME: station is WME/QoS capable
+  * @NL80211_STA_FLAG_MFP: station uses management frame protection
+  * @NL80211_STA_FLAG_AUTHENTICATED: station is authenticated
+- * @NL80211_STA_FLAG_TDLS_PEER: station is a TDLS peer
++ * @NL80211_STA_FLAG_TDLS_PEER: station is a TDLS peer -- this flag should
++ *	only be used in managed mode (even in the flags mask). Note that the
++ *	flag can't be changed, it is only valid while adding a station, and
++ *	attempts to change it will silently be ignored (rather than rejected
++ *	as errors.)
+  * @NL80211_STA_FLAG_MAX: highest station flag number currently defined
+  * @__NL80211_STA_FLAG_AFTER_LAST: internal use
+  */
+@@ -1651,6 +1656,9 @@ enum nl80211_sta_bss_param {
+  *     containing info as possible, see &enum nl80211_sta_bss_param
+  * @NL80211_STA_INFO_CONNECTED_TIME: time since the station is last connected
+  * @NL80211_STA_INFO_STA_FLAGS: Contains a struct nl80211_sta_flag_update.
++ * @NL80211_STA_INFO_BEACON_LOSS: count of times beacon loss was detected (u32)
++ * @NL80211_STA_INFO_CHAIN_SIGNAL: per-chain signal strength of last PPDU
++ * @NL80211_STA_INFO_CHAIN_SIGNAL_AVG: per-chain signal strength average
+  * @__NL80211_STA_INFO_AFTER_LAST: internal
+  * @NL80211_STA_INFO_MAX: highest possible station info attribute
+  */
+@@ -1673,6 +1681,9 @@ enum nl80211_sta_info {
+ 	NL80211_STA_INFO_BSS_PARAM,
+ 	NL80211_STA_INFO_CONNECTED_TIME,
+ 	NL80211_STA_INFO_STA_FLAGS,
++	NL80211_STA_INFO_BEACON_LOSS,
++	NL80211_STA_INFO_CHAIN_SIGNAL,
++	NL80211_STA_INFO_CHAIN_SIGNAL_AVG,
+ 
+ 	/* keep last */
+ 	__NL80211_STA_INFO_AFTER_LAST,
+@@ -2098,6 +2109,9 @@ enum nl80211_mntr_flags {
+  * TUs) during which a mesh STA can send only one Action frame containing a
+  * PERR element.
+  *
++ * @NL80211_MESHCONF_FORWARDING: set Mesh STA as forwarding or non-forwarding
++ * or forwarding entity (default is TRUE - forwarding entity)
++ *
+  * @NL80211_MESHCONF_ATTR_MAX: highest possible mesh configuration attribute
+  *
+  * @__NL80211_MESHCONF_ATTR_AFTER_LAST: internal use
+@@ -2122,6 +2136,7 @@ enum nl80211_meshconf_params {
+ 	NL80211_MESHCONF_HWMP_RANN_INTERVAL,
+ 	NL80211_MESHCONF_GATE_ANNOUNCEMENTS,
+ 	NL80211_MESHCONF_HWMP_PERR_MIN_INTERVAL,
++	NL80211_MESHCONF_FORWARDING,
+ 
+ 	/* keep last */
+ 	__NL80211_MESHCONF_ATTR_AFTER_LAST,
+@@ -2395,12 +2410,15 @@ enum nl80211_key_attributes {
+  *	in an array of rates as defined in IEEE 802.11 7.3.2.2 (u8 values with
+  *	1 = 500 kbps) but without the IE length restriction (at most
+  *	%NL80211_MAX_SUPP_RATES in a single array).
++ * @NL80211_TXRATE_MCS: HT (MCS) rates allowed for TX rate selection
++ *	in an array of MCS numbers.
+  * @__NL80211_TXRATE_AFTER_LAST: internal
+  * @NL80211_TXRATE_MAX: highest TX rate attribute
+  */
+ enum nl80211_tx_rate_attributes {
+ 	__NL80211_TXRATE_INVALID,
+ 	NL80211_TXRATE_LEGACY,
++	NL80211_TXRATE_MCS,
+ 
+ 	/* keep last */
+ 	__NL80211_TXRATE_AFTER_LAST,
