@@ -1,0 +1,182 @@
+10
+
+dir
+0
+svn://svn.openwrt.org/openwrt/trunk/target/linux/ib4220/patches-3.3
+svn://svn.openwrt.org/openwrt
+add
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3c298f89-4303-0410-b956-a3cf2f4a3e73
+
+901-ib4210-makefile.patch
+file
+
+
+
+add
+
+902-ib4210-kconfig.patch
+file
+
+
+
+add
+
+040-enable-ide-led-trigger.patch
+file
+
+
+
+add
+
+120-gemini-pata.patch
+file
+
+
+
+add
+
+700-usb-fot2gxx.patch
+file
+
+
+
+add
+
+020-global_reg.patch
+file
+
+
+
+add
+
+900-ib4210-mach-type.patch
+file
+
+
+
+add
+
+910-ib4210-board.patch
+file
+
+
+
+add
+
+701-gemini-fotg2xx.c.patch
+file
+
+
+
+add
+
+110-gemini-power-device.patch
+file
+
+
+
+add
+
+100-led-default-on.patch
+file
+
+
+
+add
+
+090-gemini-gpio-fix.patch
+file
+
+
+
+add
+
+702-usb-fot2gxx.patch
+file
+
+
+
+add
+
+130-gemini-rtc.patch
+file
+
+
+
+add
+
+150-gemini-hw-rnd.patch
+file
+
+
+
+add
+
+140-gemini-watchdog.patch
+file
+
+
+
+add
+
+920-ib4220-memory-fixup.patch
+file
+
+
+
+add
+
+010-mtd-partitions.patch
+file
+
+
+
+add
+
+121-gemini-pata.c.patch
+file
+
+
+
+add
+
+621-gemini.patch
+file
+
+
+
+add
+
+600-gemini-gmac.patch
+file
+
+
+
+add
+
+601-gemini-gmac-sl351x_c.patch
+file
+
+
+
+add
+

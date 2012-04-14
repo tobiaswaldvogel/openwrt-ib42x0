@@ -1,0 +1,3 @@
+#!/bin/sh
+sed -i -e "s/nas4220b:orange:hdd/nas42x0b:orange:hdd/g"  /etc/config/system
+sed -i -e "s/nas4220b:green:os/nas42x0b:green:os/g"      /etc/config/system

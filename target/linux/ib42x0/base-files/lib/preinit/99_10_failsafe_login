@@ -1,0 +1,29 @@
+#!/bin/sh
+# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2010 Vertical Communications
+
+failsafe_restore_passwd() {
+    ramoverlay
+    find_mount_jffs2
+
+    if [ -f /tmp/overlay/etc/passwd ]; then
+        cp /tmp/overlay/etc/passwd /etc/passwd
+    fi
+    if [ -f /tmp/overlay/etc/shadow ]; then
+        cp /tmp/overlay/etc/shadow /etc/shadow
+    fi
+}
+
+failsafe_netlogin () {
+    telnetd -l /bin/login.sh >/dev/null 2>&1
+}
+
+failsafe_shell() {
+    lock /tmp/.failsafe
+    getty 19200 ttyS0 xterm
+    echo "Please reboot system when done with failsafe network logins"
+}
+
+boot_hook_add failsafe failsafe_restore_passwd
+boot_hook_add failsafe failsafe_netlogin
+boot_hook_add failsafe failsafe_shell

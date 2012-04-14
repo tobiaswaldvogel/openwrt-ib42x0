@@ -1,0 +1,16 @@
+config system
+	option hostname	OpenWrt
+	option timezone	UTC
+
+config rdate
+	option interface	wan
+
+config 'led'
+	option 'sysfs' 'nas42x0b:green:os'
+	option 'name' 'os'
+	option 'trigger' 'heartbeat'
+
+config 'led'
+	option 'name' 'disk'
+	option 'sysfs' 'nas42x0b:orange:hdd'
+	option 'trigger' 'ide-disk'

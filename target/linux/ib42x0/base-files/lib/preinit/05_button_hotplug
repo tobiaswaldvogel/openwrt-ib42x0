@@ -1,0 +1,8 @@
+#!/bin/sh
+
+enable_button_hotplug() {
+	insmod button-hotplug
+}
+
+boot_hook_add preinit_main enable_button_hotplug
+

@@ -1,0 +1,8 @@
+
+config 'mount'
+	option 'enabled' '1'
+	option 'device' '/dev/md0'
+	option 'target' '/mnt/md0'
+	option 'fstype' 'ext4'
+	option 'options' 'data=writeback,commit=120'
+

@@ -1,0 +1,257 @@
+--- linux/drivers/mtd/mtdpart.c.orig	2011-12-19 20:46:50.216319584 +0100
++++ linux/drivers/mtd/mtdpart.c		2011-12-19 20:35:32.922380340 +0100
+@@ -814,6 +814,100 @@
+ 	return 0;
+ }
+ 
++struct fis_image_hdr {
++        unsigned char name[16];
++        uint32_t flash_base;
++        uint32_t mem_base;
++        uint32_t size;
++        uint32_t entry_point;
++        uint32_t data_length;
++} __attribute__((packed));
++
++struct fis_image_crc {
++        uint32_t desc;
++        uint32_t file;
++} __attribute__((packed));
++
++struct fis_image_desc {
++        struct fis_image_hdr hdr;
++        char _pad[256 - sizeof(struct fis_image_hdr) - sizeof(struct fis_image_crc)];
++        struct fis_image_crc crc;
++} __attribute__((packed));
++
++static int fis_get_info(const char* name, int *offset, int *size)
++{
++	struct mtd_info *master;
++	struct mtd_part *slave;
++	struct fis_image_desc fis;
++	int ret, len, pos;
++	
++	mutex_lock(&mtd_partitions_mutex);
++	list_for_each_entry(slave, &mtd_partitions, list)
++		if (!strcmp(slave->mtd.name, "FIS directory"))
++			break;
++	mutex_unlock(&mtd_partitions_mutex);
++
++	if (&slave->list == &mtd_partitions)
++		return -EINVAL;
++
++	master = slave->master;
++	pos = 0;
++
++	while (pos < slave->mtd.size) {
++		ret = master->read(master, slave->offset + pos, sizeof(fis), &len, (void *) &fis);
++		if (ret || (len != sizeof(fis))) {
++			printk(KERN_ALERT "fist_get_info: error occured while reading "
++				"from \"%s\"\n", master->name);
++			return -EINVAL;
++
++		}
++
++		if (fis.hdr.name[0] == 0x00 || fis.hdr.name[0] == 0xff)
++			return -EINVAL;
++			
++                if (!strcmp((char*)fis.hdr.name, name)) {
++			*offset = fis.hdr.flash_base;
++			*size   = fis.hdr.data_length;
++			return 0;
++		}
++		pos += len;
++        }
++
++	return -EINVAL;
++}
++
++static int refresh_kernel_split(struct mtd_info *mtd, int mode)
++{
++	struct mtd_part *kern_part, *split_part;
++	int flash_base,offset, size, diff;
++
++	if (!mtd->split) {
++		printk(KERN_INFO "mtd: partition %s was not split. No action required", mtd->name);
++		return 0;
++	}
++
++	fis_get_info(mtd->name, &offset, &size);
++	kern_part = PART(mtd);
++	flash_base = offset - kern_part->offset;
++	
++	if (mode) {
++		offset += size;
++		offset +=  (mtd->erasesize - 1);
++		offset &= ~(mtd->erasesize - 1);
++	} else
++		fis_get_info("Ramdisk", &offset, &size);
++
++	offset -= flash_base;
++		
++	split_part = PART(mtd->split);
++	diff = split_part->offset - offset;
++	split_part->offset = offset;
++	split_part->mtd.size += diff;
++	printk(KERN_INFO "mtd: partition %s updated. ofs=%llX, len=%llX \n",
++			split_part->mtd.name, split_part->offset, split_part->mtd.size);
++	return 0;
++}
++
+ static int refresh_rootfs_split(struct mtd_info *mtd)
+ {
+ 	struct mtd_partition tpart;
+@@ -865,6 +959,59 @@
+ 
+ 	return 0;
+ }
++
++static int merge_rootfs(struct mtd_info *master, struct mtd_part **slave, const struct mtd_partition *parts)
++{
++	struct mtd_partition rootfs;
++	char* rootfs_name = "rootfs";
++	struct mtd_part *rootfs_part;
++	struct squashfs_super_block sb;
++	int len, ret;
++
++	rootfs = parts[1];
++	
++	while (rootfs.offset >  parts->offset) {
++		ret = master->read(master, rootfs.offset, sizeof(sb), &len, (void *) &sb);
++		if (ret || (len != sizeof(sb))) {
++			printk(KERN_ALERT "mtd: error occured while reading "
++				"from \"%s\"\n", master->name);
++			return -EINVAL;
++		}
++		
++		if (SQUASHFS_MAGIC == le32_to_cpu(sb.s_magic))
++			break;
++
++		rootfs.offset -= master->erasesize;
++	}
++
++	if (rootfs.offset <= parts->offset) {
++		printk(KERN_NOTICE "mtd: no SQUASHFS found, "
++			"not merging \"Ramdisk\" and \"Application\""
++			" to \"rootfs\"\n");
++		return -EINVAL;
++	}
++			
++	rootfs.name = rootfs_name;
++	rootfs.size = parts[3].offset - rootfs.offset;
++	printk(KERN_NOTICE "mtd: merging \"Ramdisk\" and \"Application\""
++		" to \"rootfs, ofs=%llX, len=%llX \n",
++		rootfs.offset, rootfs.size);
++
++	rootfs_part = allocate_partition(master, &rootfs, 0, rootfs.offset);
++			
++	if (IS_ERR(rootfs_part))
++		return PTR_ERR(rootfs_part);
++
++	mutex_lock(&mtd_partitions_mutex);
++	list_add(&rootfs_part->list, &mtd_partitions);
++	mutex_unlock(&mtd_partitions_mutex);
++
++	add_mtd_device(&rootfs_part->mtd);
++	(*slave)->mtd.split = &rootfs_part->mtd;
++	*slave = rootfs_part;
++	return 0;
++}
++
+ #endif /* CONFIG_MTD_ROOTFS_SPLIT */
+ 
+ /*
+@@ -886,11 +1033,22 @@
+ #ifdef CONFIG_MTD_ROOTFS_SPLIT
+ 	int ret;
+ #endif
+-
++	const struct mtd_partition *part;
++	struct mtd_partition mpart;
++	
+ 	printk(KERN_NOTICE "Creating %d MTD partitions on \"%s\":\n", nbparts, master->name);
+ 
+ 	for (i = 0; i < nbparts; i++) {
+-		slave = allocate_partition(master, parts + i, i, cur_offset);
++		part = parts + i;
++
++		if (!strcmp(parts[i].name, "Kern") && i + 1 < nbparts) {
++			mpart = parts[i];
++			mpart.size = parts[i+1].offset - parts[i].offset;
++			part = &mpart;
++		}
++
++		slave = allocate_partition(master, part, i, cur_offset);
++			
+ 		if (IS_ERR(slave))
+ 			return PTR_ERR(slave);
+ 
+@@ -900,7 +1058,17 @@
+ 
+ 		add_mtd_device(&slave->mtd);
+ 
+-		if (!strcmp(parts[i].name, "rootfs")) {
++		if (i + 3 < nbparts &&
++		    !strcmp(parts[i].name, "Kern") &&
++		    !strcmp(parts[i+1].name, "Ramdisk") &&
++		    !strcmp(parts[i+2].name, "Application")) {
++
++			ret = merge_rootfs(master, &slave, parts + i);
++			if (!ret)
++				i += 2;
++		}
++		
++		if (!strcmp(slave->mtd.name, "rootfs")) {
+ #ifdef CONFIG_MTD_ROOTFS_ROOT_DEV
+ 			if (ROOT_DEV == 0) {
+ 				printk(KERN_NOTICE "mtd: partition \"rootfs\" "
+@@ -909,7 +1077,7 @@
+ 			}
+ #endif
+ #ifdef CONFIG_MTD_ROOTFS_SPLIT
+-			ret = split_rootfs_data(master, &slave->mtd, &parts[i]);
++			ret = split_rootfs_data(master, &slave->mtd, part);
+ 			/* if (ret == 0)
+ 			 * 	j++; */
+ #endif
+@@ -921,7 +1091,7 @@
+ 	return 0;
+ }
+ 
+-int mtd_device_refresh(struct mtd_info *mtd)
++int mtd_device_refresh(struct mtd_info *mtd, int mode)
+ {
+ 	int ret = 0;
+ 
+@@ -939,6 +1107,9 @@
+ 		ret = mtd->refresh_device(mtd);
+ 
+ #ifdef CONFIG_MTD_ROOTFS_SPLIT
++	if (!ret && IS_PART(mtd) && !strcmp(mtd->name, "Kern"))
++		refresh_kernel_split(mtd, mode);
++
+ 	if (!ret && IS_PART(mtd) && !strcmp(mtd->name, "rootfs"))
+ 		refresh_rootfs_split(mtd);
+ #endif
+--- linux/drivers/mtd/mtdchar.c.orig	2011-12-19 20:46:50.163319588 +0100
++++ linux/drivers/mtd/mtdchar.c		2011-12-19 20:35:21.105381069 +0100
+@@ -1007,7 +1007,7 @@
+ 
+ 	case MTDREFRESH:
+ 	{
+-		ret = mtd_device_refresh(mtd);
++		ret = mtd_device_refresh(mtd, arg);
+ 		break;
+ 	}
+ 
+--- linux/include/linux/mtd/mtd.h.orig	2011-12-19 20:46:50.217319584 +0100
++++ linux/include/linux/mtd/mtd.h	2011-12-19 20:36:38.407374166 +0100
+@@ -510,7 +510,7 @@
+ 			      int defnr_parts);
+ #define mtd_device_register(master, parts, nr_parts)	\
+ 	mtd_device_parse_register(master, NULL, NULL, parts, nr_parts)
+-extern int mtd_device_refresh(struct mtd_info *master);
++extern int mtd_device_refresh(struct mtd_info *master, int mode);
+ extern int mtd_device_unregister(struct mtd_info *master);
+ extern struct mtd_info *get_mtd_device(struct mtd_info *mtd, int num);
+ extern int __get_mtd_device(struct mtd_info *mtd);

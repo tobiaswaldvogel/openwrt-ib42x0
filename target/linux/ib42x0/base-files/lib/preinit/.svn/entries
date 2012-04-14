@@ -1,0 +1,70 @@
+10
+
+dir
+0
+svn://svn.openwrt.org/openwrt/trunk/target/linux/ib4220/base-files/lib/preinit
+svn://svn.openwrt.org/openwrt
+add
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3c298f89-4303-0410-b956-a3cf2f4a3e73
+
+05_button_hotplug
+file
+
+
+
+add
+
+99_10_failsafe_login
+file
+
+
+
+add
+
+50_indicate_regular_preinit_led
+file
+
+
+
+add
+
+05_init_interfaces
+file
+
+
+
+add
+
+05_set_ether_mac_gemini
+file
+
+
+
+add
+
+10_indicate_preinit_led
+file
+
+
+
+add
+

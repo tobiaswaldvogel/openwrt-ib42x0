@@ -1,0 +1,9 @@
+$include /etc/hotplug2-common.rules
+
+SUBSYSTEM == button, BUTTON == setup, ACTION == released {
+	exec kill -USR1 1
+}
+
+SUBSYSTEM == button, BUTTON == reset, ACTION == released {
+	exec mtd -r erase rootfs_data
+}

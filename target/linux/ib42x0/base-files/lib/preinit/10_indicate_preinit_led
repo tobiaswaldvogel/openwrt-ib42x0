@@ -1,0 +1,10 @@
+#!/bin/sh
+# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2011 Tobias Waldvogel
+
+indicate_preinit_led() {
+	echo default-on >/sys/devices/platform/leds-gpio/leds/nas42x0b:orange:hdd/trigger
+}
+
+boot_hook_add preinit_main indicate_preinit_led
+

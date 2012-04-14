@@ -1,0 +1,62 @@
+--- linux/drivers/net/ethernet/Kconfig.orig	2012-01-25 22:19:43.633736456 +0100
++++ linux/drivers/net/ethernet/Kconfig		2012-01-25 22:20:28.582730742 +0100
+@@ -51,6 +51,7 @@
+ source "drivers/net/ethernet/faraday/Kconfig"
+ source "drivers/net/ethernet/freescale/Kconfig"
+ source "drivers/net/ethernet/fujitsu/Kconfig"
++source "drivers/net/ethernet/gemini/Kconfig"
+ source "drivers/net/ethernet/hp/Kconfig"
+ source "drivers/net/ethernet/ibm/Kconfig"
+ source "drivers/net/ethernet/intel/Kconfig"
+--- linux/drivers/net/ethernet/Makefile.orig	2012-01-27 01:37:10.839114389 +0100
++++ linux/drivers/net/ethernet/Makefile		2012-01-27 01:39:06.102105027 +0100
+@@ -26,6 +26,7 @@
+ obj-$(CONFIG_NET_VENDOR_FARADAY) += faraday/
+ obj-$(CONFIG_NET_VENDOR_FREESCALE) += freescale/
+ obj-$(CONFIG_NET_VENDOR_FUJITSU) += fujitsu/
++obj-$(CONFIG_NET_VENDOR_GEMINI) += gemini/
+ obj-$(CONFIG_NET_VENDOR_HP) += hp/
+ obj-$(CONFIG_NET_VENDOR_IBM) += ibm/
+ obj-$(CONFIG_NET_VENDOR_INTEL) += intel/
+--- /dev/null	2012-01-23 21:36:48.249769447 +0100
++++ linux/drivers/net/ethernet/gemini/Kconfig	2012-01-25 22:16:44.285740226 +0100
+@@ -0,0 +1,31 @@
++#
++# Gemini device configuration
++#
++
++config NET_VENDOR_GEMINI
++	bool "Cortina Gemini devices"
++	default y
++	depends on ARCH_GEMINI
++	---help---
++	  If you have a network (Ethernet) card belonging to this class, say Y
++	  and read the Ethernet-HOWTO, available from
++	  <http://www.tldp.org/docs.html#howto>.
++
++	  Note that the answer to this question doesn't directly affect the
++	  kernel: saying N will just cause the configurator to skip all
++	  the questions about D-Link devices. If you say Y, you will be asked for
++	  your specific card in the following questions.
++
++if NET_VENDOR_GEMINI
++
++config GEMINI_SL351X
++	tristate "StorLink SL351x Gigabit Ethernet support"
++	depends on ARCH_GEMINI
++	select PHYLIB
++	select MDIO_BITBANG
++	select MDIO_GPIO
++	select CRC32
++	---help---
++	  This driver supports StorLink SL351x (Gemini) dual Gigabit Ethernet.
++
++endif # NET_VENDOR_GEMINI
+--- /dev/null	2012-01-23 21:36:48.249769447 +0100
++++ linux/drivers/net/ethernet/gemini/Makefile	2012-01-25 22:17:29.698741496 +0100
+@@ -0,0 +1,5 @@
++#
++# Makefile for the Cortina Gemini network device drivers.
++#
++
++obj-$(CONFIG_GEMINI_SL351X) += sl351x.o
