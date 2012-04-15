@@ -8,13 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ncurses
-PKG_VERSION:=5.7
-PKG_RELEASE:=5
+PKG_VERSION:=5.9
+PKG_RELEASE:=6
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/ncurses
-PKG_MD5SUM:=cce05daf61a64501ef6cd8da1f727ec6
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -26,8 +25,7 @@ define Package/libncurses
   CATEGORY:=Libraries
   TITLE:=Terminal handling library
   URL:=http://www.gnu.org/software/ncurses/
-  DEPENDS:= +terminfo
-  VARIANT:=libncurses
+  DEPENDS:= +terminfo libncursesw
 endef
 
 define Package/terminfo
@@ -35,7 +33,6 @@ define Package/terminfo
   CATEGORY:=Libraries
   TITLE:=Terminal Info Database (ncurses)
   URL:=http://www.gnu.org/software/ncurses/
-  VARIANT:=libncurses
 endef
 
 define Package/libncursesw
@@ -43,8 +40,7 @@ define Package/libncursesw
   CATEGORY:=Libraries
   TITLE:=Terminal handling library (Unicode)
   URL:=http://www.gnu.org/software/ncurses/
-  DEPENDS:=libncurses
-  VARIANT:=libncursesw
+  DEPENDS:= +terminfo
 endef
 
 TARGET_CFLAGS += $(FPIC)
@@ -63,17 +59,13 @@ CONFIGURE_ARGS += \
 	--with-normal \
 	--with-shared \
 	--with-terminfo-dirs=/usr/share/terminfo \
-	--with-default-terminfo-dir=/usr/share/terminfo
+	--with-default-terminfo-dir=/usr/share/terminfo \
+	--enable-widec \
+	--with-build-cppflags=-D_GNU_SOURCE
 
 ifeq ($(HOST_OS),FreeBSD)
 	CONFIGURE_ARGS +=
 		--with-terminfo=/usr/share/terminfo.db 
-endif
-
-ifeq ($(BUILD_VARIANT),libncursesw)
-	CONFIGURE_ARGS += \
-		--enable-widec \
-		--with-build-cppflags=-D_GNU_SOURCE
 endif
 
 MAKE_FLAGS += \
@@ -109,7 +101,12 @@ endef
 
 define Package/libncurses/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{curses,ncurses,panel,menu,form}.so* $(1)/usr/lib/
+	( \
+		cd $(1)/usr/lib; \
+		ls  $(PKG_INSTALL_DIR)/usr/lib/lib{ncurses,panel,menu,form}w.so* | \
+			awk '{f = $$$$1; sub(/^.*\//, "", f); l = f; sub(/w\./,".",l); c="ln -s " f " " l; system(c)}'; \
+		ln -s libncurses.so libcurses.so \
+	)
 endef
 
 define Package/libncursesw/install
@@ -117,35 +114,27 @@ define Package/libncursesw/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{ncurses,panel,menu,form}w.so* $(1)/usr/lib/
 endef
 
-ifeq ($(BUILD_VARIANT),libncursesw)
 define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/include/ncursesw/
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/ncursesw/
 
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{ncurses,panel,menu,form}w.{a,so*} $(1)/usr/lib/
+	( \
+		cd $(1)/usr/lib; \
+		ls *.{a,so*} | \
+			awk '{l = $$$$1; sub(/w\./,".",l); c="ln -s " $$$$1 " " l; system(c)}' \
+	)
 
 	$(INSTALL_DIR) $(1)/usr/bin $(2)/bin
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/ncursesw5-config $(2)/bin/
 	$(SED) 's,^\(prefix\|exec_prefix\)=.*,\1=$(STAGING_DIR)/usr,g' -e 's/$$$$INCS //g' \
 		$(2)/bin/ncursesw5-config
 	ln -sf $(STAGING_DIR)/host/bin/ncursesw5-config $(1)/usr/bin/ncursesw5-config
+	ln -sf $(STAGING_DIR)/host/bin/ncursesw5-config $(1)/usr/bin/ncurses5-config
 endef
-else
-define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
-
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{curses,ncurses,panel,menu,form}.{a,so*} $(1)/usr/lib/
-
-	$(INSTALL_DIR) $(1)/usr/bin $(2)/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/bin/ncurses5-config $(2)/bin/
-	$(SED) 's,^\(prefix\|exec_prefix\)=.*,\1=$(STAGING_DIR)/usr,g' \
-		$(2)/bin/ncurses5-config
-	ln -sf $(STAGING_DIR)/host/bin/ncurses5-config $(1)/usr/bin/ncurses5-config
-endef
-endif
 
 $(eval $(call BuildPackage,terminfo))
 $(eval $(call BuildPackage,libncurses))
