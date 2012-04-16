@@ -451,8 +451,8 @@ define Package/base-files/install
 	)
 # Form valid /etc/shadow entries, by copying the user:pw pairs
 # from /etc/passwd, and adding on pw change data
-	cut -d ':' -f 1-2 $(1)/etc/passwd > $(1)/etc/shadow; \
-	$(SED) 's/$$$$/:0:0:99999:7:::/' $(1)/etc/shadow
+#	cut -d ':' -f 1-2 $(1)/etc/passwd > $(1)/etc/shadow; \
+#	$(SED) 's/$$$$/:0:0:99999:7:::/' $(1)/etc/shadow
 
 	$(VERSION_SED) \
 		$(1)/etc/banner \
@@ -532,7 +532,15 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 			fi; \
 		done; \
 	done
-  endef
+	if [ -e "$(TOOLCHAIN_DIR)/bin/getent" ]; then \
+		$(INSTALL_DIR) $(1)/bin; \
+		$(INSTALL_BIN) $(TOOLCHAIN_DIR)/bin/getent $(1)/bin; \
+	fi 
+	if [ -e "$(TOOLCHAIN_DIR)/bin/locale" ]; then \
+		$(INSTALL_DIR) $(1)/bin; \
+		$(INSTALL_BIN) $(TOOLCHAIN_DIR)/bin/locale $(1)/bin; \
+	fi
+ endef
 
   define Package/eglibc/install
     $(call Package/glibc/install,$1)

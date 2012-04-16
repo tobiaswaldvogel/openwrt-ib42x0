@@ -24,6 +24,9 @@ install_bin() { # <file> [ <symlink> ... ]
 	[ -e /lib/ld-linux.so.3 ] && {
 		install_file /lib/ld-linux.so.3
 	}
+	[ -e /lib/ld.so.1 ] && {
+		install_file /lib/ld.so.1
+	}
 	shift
 	for link in "$@"; do {
 		dest="$RAM_ROOT/$link"
@@ -52,7 +55,8 @@ run_ramfs() { # <command> [...]
 		/sbin/pivot_root /usr/bin/wget /sbin/reboot /bin/sync /bin/dd   \
 		/bin/grep /bin/cp /bin/mv /bin/tar /usr/bin/md5sum "/usr/bin/[" \
 		/bin/vi /bin/ls /bin/cat /usr/bin/awk /usr/bin/hexdump          \
-		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc
+		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc \
+		/bin/mkdir /bin/rm
 
 	install_bin /sbin/mtd
 	for file in $RAMFS_COPY_BIN; do

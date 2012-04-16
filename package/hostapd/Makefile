@@ -224,7 +224,7 @@ TARGET_CPPFLAGS := \
 	$(if $(CONFIG_WPA_MSG_MIN_PRIORITY),-DCONFIG_MSG_MIN_PRIORITY=$(CONFIG_WPA_MSG_MIN_PRIORITY))
 
 TARGET_CFLAGS += -ffunction-sections -fdata-sections
-TARGET_LDFLAGS += -Wl,--gc-sections
+TARGET_LDFLAGS += --gc-sections
 
 ifdef CONFIG_PACKAGE_kmod-mac80211
   TARGET_LDFLAGS += -lm -lnl-tiny
@@ -260,7 +260,7 @@ define Build/Compile/wpad
 		./files/multicall.c \
 		$(PKG_BUILD_DIR)/hostapd/hostapd_multi.a \
 		$(PKG_BUILD_DIR)/wpa_supplicant/wpa_supplicant_multi.a \
-		$(TARGET_LDFLAGS)
+		`echo $(TARGET_LDFLAGS) | sed -e 's!--gc-sections!-Wl,--gc-sections!g'`
 endef
 
 define Build/Compile/hostapd
