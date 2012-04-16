@@ -18,7 +18,7 @@ PKG_SOURCE_URL:=http://www.busybox.net/downloads \
 PKG_MD5SUM:=9c0cae5a0379228e7b55e5b29528df8e
 
 PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBRPC:librpc
-PKG_BUILD_DEPENDS:=CONFIG_BUSYBOX_USE_LIBTIRPC:libtirpc
+PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBTIRPC:libtirpc
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -39,7 +39,7 @@ define Package/busybox
   TITLE:=Core utilities for embedded Linux
   URL:=http://busybox.net/
   DEPENDS:=+BUSYBOX_USE_LIBRPC:librpc
-  DEPENDS:=+CONFIG_BUSYBOX_USE_LIBTIRPC:libtirpc
+  DEPENDS:=+BUSYBOX_USE_LIBTIRPC:libtirpc
   MENU:=1
 endef
 
