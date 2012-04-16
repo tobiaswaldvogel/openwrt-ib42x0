@@ -1,6 +1,6 @@
-src-svn packages svn://svn.openwrt.org/openwrt/packages
+src-git packages git@github.com:tobiaswaldvogel/openwrt-packages.git
 src-svn xwrt http://x-wrt.googlecode.com/svn/trunk/package
-src-svn luci http://svn.luci.subsignal.org/luci/trunk/contrib/package
+src-git luci git@github.com:tobiaswaldvogel/luci.git
 #src-svn phone svn://svn.openwrt.org/openwrt/feeds/phone
 #src-svn efl svn://svn.openwrt.org/openwrt/feeds/efl
 #src-svn xorg svn://svn.openwrt.org/openwrt/feeds/xorg
@@ -8,4 +8,4 @@ src-svn luci http://svn.luci.subsignal.org/luci/trunk/contrib/package
 #src-svn xfce svn://svn.openwrt.org/openwrt/feeds/xfce
 #src-svn lxde svn://svn.openwrt.org/openwrt/feeds/lxde
 #src-link custom /usr/src/openwrt/custom-feed
-src-git addpack git@github.com:tobiaswaldvogel/openwrt-packages.git
+src-git addpack git@github.com:tobiaswaldvogel/openwrt-addpack.git

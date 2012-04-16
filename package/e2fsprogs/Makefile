@@ -87,7 +87,7 @@ $(call Package/e2fsprogs)
 endef
 
 define Package/lsattr
-(call Package/e2fsprogs)
+$(call Package/e2fsprogs)
   TITLE:=Ext2 Filesystem lsattr utility
   DEPENDS:= +e2fsprogs
 endef
