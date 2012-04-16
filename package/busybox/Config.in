@@ -24,6 +24,11 @@ config BUSYBOX_USE_LIBRPC
 	depends USE_UCLIBC
 	default y if BUSYBOX_CONFIG_FEATURE_HAVE_RPC
 
+config BUSYBOX_USE_LIBTIRPC
+	bool
+	depends USE_EGLIBC
+	default y if BUSYBOX_CONFIG_FEATURE_HAVE_RPC
+
 source "package/busybox/config/Config.in"
 
 endif

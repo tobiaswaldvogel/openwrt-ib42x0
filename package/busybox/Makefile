@@ -18,6 +18,7 @@ PKG_SOURCE_URL:=http://www.busybox.net/downloads \
 PKG_MD5SUM:=9c0cae5a0379228e7b55e5b29528df8e
 
 PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBRPC:librpc
+PKG_BUILD_DEPENDS:=CONFIG_BUSYBOX_USE_LIBTIRPC:libtirpc
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -38,6 +39,7 @@ define Package/busybox
   TITLE:=Core utilities for embedded Linux
   URL:=http://busybox.net/
   DEPENDS:=+BUSYBOX_USE_LIBRPC:librpc
+  DEPENDS:=+CONFIG_BUSYBOX_USE_LIBTIRPC:libtirpc
   MENU:=1
 endef
 
@@ -70,6 +72,16 @@ ifdef CONFIG_BUSYBOX_USE_LIBRPC
   TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
   export LDFLAGS=$(TARGET_LDFLAGS)
   LDLIBS += rpc
+endif
+ifdef CONFIG_BUSYBOX_USE_LIBTIRPC
+  TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include/tirpc
+  export LDFLAGS=$(TARGET_LDFLAGS)
+  LDLIBS += tirpc
+endif
+ifdef CONFIG_BUSYBOX_CONFIG_PAM
+  TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+  export LDFLAGS=$(TARGET_LDFLAGS)
+  LDLIBS += pam pam_misc
 endif
 
 define Build/Compile
