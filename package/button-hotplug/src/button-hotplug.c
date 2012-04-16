@@ -83,6 +83,7 @@ static struct bh_map button_map[] = {
 	BH_MAP(BTN_7,		"BTN_7"),
 	BH_MAP(BTN_8,		"BTN_8"),
 	BH_MAP(BTN_9,		"BTN_9"),
+	BH_MAP(KEY_SETUP,	"setup"),
 	BH_MAP(KEY_RESTART,	"reset"),
 #ifdef KEY_WPS_BUTTON
 	BH_MAP(KEY_WPS_BUTTON,	"wps"),
