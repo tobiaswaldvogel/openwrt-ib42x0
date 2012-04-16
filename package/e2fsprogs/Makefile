@@ -19,6 +19,8 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
+EXTRA_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib
+
 define Package/e2fsprogs/Default
   URL:=http://e2fsprogs.sourceforge.net/
   SUBMENU:=Filesystem
@@ -36,42 +38,6 @@ define Package/e2fsprogs/description
  This package contains essential ext2 filesystem utilities which consists of 
  e2fsck, mke2fs, debugfs, dumpe2fs, tune2fs, and most of the other core ext2 
  filesystem utilities.
-endef
-
-define Package/libuuid
-$(call Package/e2fsprogs/Default)
-  SECTION:=libs
-  CATEGORY:=Libraries
-  TITLE:=DCE compatible Universally Unique Identifier library
-endef
-
-define Package/libuuid/description
- Library for generating DCE compatible Universally Unique Identifiers.
-endef
-
-define Package/uuidgen
-$(call Package/e2fsprogs)
-  DEPENDS:=+libuuid
-  TITLE:=Command line utility to create a new UUID value
-endef
-
-define Package/uuidgen/description
- uuidgen program creates a new universally unique identifier (UUID) 
- using the libuuid library. The new UUID can reasonably be considered 
- unique among all UUIDs created on the local system, and among UUIDs 
- created on other systems in the past and in the future.
-endef
-
-define Package/libblkid
-$(call Package/e2fsprogs/Default)
-  SECTION:=libs
-  CATEGORY:=Libraries
-  TITLE:=Block device id library
-endef
-
-define Package/libblkid/description
- The blkid library which allows system programs like fsck and mount to 
- quickly and easily find block devices by filesystem UUID and LABEL.
 endef
 
 define Package/libext2fs
@@ -114,10 +80,16 @@ $(call Package/e2fsprogs)
   DEPENDS:= +e2fsprogs
 endef
 
-define Package/blkid
+define Package/chattr
 $(call Package/e2fsprogs)
-  TITLE:=Command-line utility to locate/print block device attributes
-  DEPENDS:=+libuuid +libblkid +libext2fs +libcom_err +libpthread
+  TITLE:=Ext2 Filesystem chattr utility
+  DEPENDS:= +e2fsprogs
+endef
+
+define Package/lsattr
+(call Package/e2fsprogs)
+  TITLE:=Ext2 Filesystem lsattr utility
+  DEPENDS:= +e2fsprogs
 endef
 
 TARGET_CFLAGS += $(FPIC)
@@ -126,7 +98,11 @@ CONFIGURE_ARGS += \
 	--enable-elf-shlibs \
 	--disable-tls \
 	--disable-nls \
-	--disable-rpath
+	--disable-rpath \
+	--disable-libuuid \
+	--disable-libblkid \
+	--disable-uuidd \
+	--disable-blkid
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -177,21 +153,6 @@ define Package/libcom_err/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libcom_err.so.* $(1)/usr/lib/
 endef
 
-define Package/libuuid/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libuuid.so.* $(1)/usr/lib/
-endef
-
-define Package/uuidgen/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/uuidgen $(1)/usr/bin/
-endef
-
-define Package/libblkid/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libblkid.so.* $(1)/usr/lib/
-endef
-
 define Package/libext2fs/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libext2fs.so.* $(1)/usr/lib/
@@ -212,18 +173,21 @@ define Package/badblocks/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/badblocks $(1)/usr/sbin/
 endef
 
-define Package/blkid/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/blkid $(1)/usr/sbin/
+define Package/chattr/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/chattr $(1)/usr/bin/
+endef
+
+define Package/lsattr/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsattr $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,e2fsprogs))
-$(eval $(call BuildPackage,libuuid))
-$(eval $(call BuildPackage,uuidgen))
-$(eval $(call BuildPackage,libblkid))
 $(eval $(call BuildPackage,libext2fs))
 $(eval $(call BuildPackage,libcom_err))
 $(eval $(call BuildPackage,tune2fs))
 $(eval $(call BuildPackage,resize2fs))
 $(eval $(call BuildPackage,badblocks))
-$(eval $(call BuildPackage,blkid))
+$(eval $(call BuildPackage,chattr))
+$(eval $(call BuildPackage,lsattr))
