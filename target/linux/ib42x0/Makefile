@@ -12,6 +12,8 @@ BOARDNAME:=IB4220 and IB4210 (CS351x)
 FEATURES:=squashfs
 CFLAGS:=-Os -pipe -march=armv4 -mtune=fa526 -fno-caller-saves
 MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>
+DEFAULT_PACKAGES += kmod-pata-gemini
+DEPENDS:= +kmod-pata-gemini
 
 LINUX_VERSION=3.2.14
 
