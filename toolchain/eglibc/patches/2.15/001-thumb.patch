@@ -1,0 +1,16 @@
+--- eglibc-2.14-r14284/ports/sysdeps/unix/sysv/linux/arm/eabi/libc-do-syscall.S.orig	2011-10-04 23:04:16.375175733 +0200
++++ eglibc-2.14-r14284/ports/sysdeps/unix/sysv/linux/arm/eabi/libc-do-syscall.S	2011-10-04 23:07:02.781382758 +0200
+@@ -24,7 +24,7 @@
+    unwind information - and while there is a reserved prefix in the
+    ARM unwind tables for register to register moves, the actual opcodes
+    are not defined.  */
+-
++#if defined(__thumb__)
+ 	.thumb
+ 	.syntax unified
+ 	.hidden __libc_do_syscall
+@@ -44,3 +44,4 @@
+ 	pop	{r7, pc}
+ 	.fnend
+ END (__libc_do_syscall)
++#endif /* __thumb__ */
