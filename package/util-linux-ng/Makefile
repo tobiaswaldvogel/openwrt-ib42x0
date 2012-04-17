@@ -17,9 +17,6 @@ PKG_INSTALL:=1
 PKG_SOURCE:=$(PKG_NAME)$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v$(PKG_MAJOR_VERSION)
 
-
-PKG_BUILD_DEPENDS=libncurses
-
 include $(INCLUDE_DIR)/package.mk
 
 CONFIGURE_ARGS += --disable-use-tty-group --libdir=/usr/lib
@@ -173,7 +170,7 @@ endef
 define Package/blkid
 $(call Package/util-linux)
   TITLE:=Command-line utility to locate/print block device attributes
-  DEPENDS:=+libuuid +libblkid +libext2fs +libcom_err +libpthread
+  DEPENDS:=+libuuid +libblkid +libpthread
 endef
 
 define Package/fdisk/install
