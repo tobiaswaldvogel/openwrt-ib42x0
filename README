@@ -7,7 +7,7 @@ cd openwrt-ib42x0
 scripts/feeds update
 scripts/feeds install
 
-If you want to get the latest changes from OpenWRT and my patches at any time then just run
+If you want to update afterwards at any time then just run
 
 git pull
 scripts/feeds update
