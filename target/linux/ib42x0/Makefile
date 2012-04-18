@@ -28,7 +28,7 @@ DEFAULT_PACKAGES += \
   acl libacl attr libattr nss_ldap nano chattr lsattr tune2fs fdisk gptfdisk \
   hd-idle2 hdparm sfdisk \
   zoneinfo-core zoneinfo-europe zoneinfo-northamerica zoneinfo-simple \
-  coreutils-su file ldd mdadm parted quota screen smartd smartmontools \
+  file ldd mdadm parted quota screen smartd smartmontools \
   usbutils xfs-mkfs xfs-fsck blkid uuidgen lualdap luaspcdns \
   sambafull sambafull-server ca-cert-godaddy wget
 
