@@ -64,7 +64,7 @@ define Build/Configure
 endef
 
 MAKE_FLAGS += \
-	EXTRA_CCOPTS="$(TARGET_CFLAGS) -I../include -I$(STAGING_DIR)/usr/include/libnl-tiny" \
+	EXTRA_CCOPTS="$(TARGET_CFLAGS) -I../include -I$(STAGING_DIR)/usr/include/libnl-tiny -DHAVE_SETNS" \
 	KERNEL_INCLUDE="$(LINUX_DIR)/include" \
 	FPIC="$(FPIC)"
 
