@@ -30,7 +30,7 @@ DEFAULT_PACKAGES += \
   zoneinfo-core zoneinfo-europe zoneinfo-northamerica zoneinfo-simple \
   coreutils-su file ldd mdadm parted quota screen smartd smartmontools \
   usbutils xfs-mkfs xfs-fsck blkid uuidgen lualdap luaspcdns \
-  sambafull sambafull-server
+  sambafull sambafull-server ca-cert-godaddy wget
 
 LINUX_VERSION=3.2.14
 
