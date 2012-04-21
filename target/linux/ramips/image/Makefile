@@ -188,6 +188,10 @@ define BuildFirmware/FONERA20N
 	$(call BuildFirmware/Edimax,$(1),fonera20n,RSDK,NL1T,0x50000,0xc0000)
 endef
 
+define BuildFirmware/FONERA20N/initramfs
+	$(call BuildFirmware/GENERIC_8M/initramfs,$(1),fonera20n,FONERA20N,ttyS1,57600,phys)
+endef
+
 mtdlayout_nw718=192k(u-boot)ro,128k(config)ro,64k(factory)ro,896k(kernel),2816k(rootfs),3712k@0x60000(firmware)
 kernel_size_nw718=917504
 rootfs_size_nw718=2883584
@@ -371,6 +375,10 @@ define Image/Build/Profile/V22RW2X2
 	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,v22rw-2x2,V22RW-2X2,ttyS1,57600,phys)
 endef
 
+define Image/Build/Profile/W306R_V20
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,w306r-v20,W306R_V20,ttyS1,57600,phys)
+endef
+
 define Image/Build/Profile/W502U
 	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_8M,w502u,W502U,ttyS1,115200,phys)
 endef
@@ -428,6 +436,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/RTG32B1,$(1))
 	$(call Image/Build/Profile/SLR7205,$(1))
 	$(call Image/Build/Profile/V22RW2X2,$(1))
+	$(call Image/Build/Profile/W306R_V20,$(1))
 	$(call Image/Build/Profile/W502U,$(1))
 	$(call Image/Build/Profile/WCR150GN,$(1))
 	$(call Image/Build/Profile/WHRG300N,$(1))
@@ -437,6 +446,19 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/WR5123GN,$(1))
 	$(call Image/Build/Profile/WR6202,$(1))
 	$(call Image/Build/Profile/XDXRN502J,$(1))
+endef
+endif
+
+#
+# RT3662/RT3883 Profiles
+#
+define Image/Build/Profile/RTN56U
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_8M,rt-n56u,RT-N56U,ttyS1,57600,phys)
+endef
+
+ifeq ($(CONFIG_RALINK_RT3883),y)
+define Image/Build/Profile/Default
+	$(call Image/Build/Profile/RTN56U,$(1))
 endef
 endif
 
