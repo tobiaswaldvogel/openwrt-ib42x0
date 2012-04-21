@@ -35,9 +35,9 @@ endef
 
 define KernelPackage/pata-gemini/install
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/pata_gemini.config $(1)/etc/config/pata_gemini
+	$(INSTALL_DATA) $(PLATFORM_DIR)/files/pata_gemini.config $(1)/etc/config/pata_gemini
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/pata_gemini.init $(1)/etc/init.d/pata_gemini
+	$(INSTALL_BIN) $(PLATFORM_DIR)/files/pata_gemini.init $(1)/etc/init.d/pata_gemini
 endef
 
 $(eval $(call KernelPackage,pata-gemini))
