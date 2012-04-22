@@ -12,6 +12,7 @@
 /logs
 /feeds
 /feeds.conf
+/feeds.conf.default
 /files
 /package/feeds
 /package/openwrt-packages
