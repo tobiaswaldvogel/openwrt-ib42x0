@@ -4,6 +4,7 @@ To build your OpenWRT just type:
 
 git clone git@github.com:tobiaswaldvogel/openwrt-ib42x0.git
 cd openwrt-ib42x0
+cp default-config .config
 scripts/feeds update
 scripts/feeds install
 
