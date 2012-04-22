@@ -143,7 +143,7 @@ define Package/libuuid/description
 endef
 
 define Package/uuidgen
-$(call Package/util-linux)
+$(call Package/util-linux/Default)
   DEPENDS:=+libuuid
   TITLE:=Command line utility to create a new UUID value
 endef
@@ -168,7 +168,7 @@ define Package/libblkid/description
 endef
 
 define Package/blkid
-$(call Package/util-linux)
+$(call Package/util-linux/Default)
   TITLE:=Command-line utility to locate/print block device attributes
   DEPENDS:=+libuuid +libblkid +libpthread
 endef

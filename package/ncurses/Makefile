@@ -40,7 +40,7 @@ define Package/libncursesw
   CATEGORY:=Libraries
   TITLE:=Terminal handling library (Unicode)
   URL:=http://www.gnu.org/software/ncurses/
-  DEPENDS:= +terminfo
+  DEPENDS:= +terminfo +USE_EGLIBC:eglibc-locale-en-utf8
 endef
 
 TARGET_CFLAGS += $(FPIC)
