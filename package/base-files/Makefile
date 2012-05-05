@@ -11,7 +11,7 @@ include $(INCLUDE_DIR)/kernel.mk
 include $(INCLUDE_DIR)/version.mk
 
 PKG_NAME:=base-files
-PKG_RELEASE:=106
+PKG_RELEASE:=107
 
 PKG_FILE_DEPENDS:=$(PLATFORM_DIR)/ $(GENERIC_PLATFORM_DIR)/base-files/
 PKG_BUILD_DEPENDS:=opkg/host
@@ -512,12 +512,12 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 	$(CP) $(TOOLCHAIN_DIR)/lib/libstdc++.so.* $(1)/usr/lib/
   endef
 
-  use_libutil=$(if $(CONFIG_USE_GLIBC)$(CONFIG_EGLIBC_OPTION_EGLIBC_UTMP),libutil)
-  use_libnsl=$(if $(CONFIG_USE_GLIBC)$(CONFIG_EGLIBC_OPTION_EGLIBC_NIS),libnsl)
-  use_nsswitch=$(if $(CONFIG_USE_GLIBC)$(CONFIG_EGLIBC_OPTION_EGLIBC_NSSWITCH),libnss_dns libnss_files)
+  use_libutil=$(if $(CONFIG_EGLIBC_OPTION_EGLIBC_UTMP),libutil)
+  use_libnsl=$(if $(CONFIG_EGLIBC_OPTION_EGLIBC_NIS),libnsl)
+  use_nsswitch=$(if $(CONFIG_EGLIBC_OPTION_EGLIBC_NSSWITCH),libnss_dns libnss_files)
 
-  define Package/glibc/install
-	$(CP) ./glibc-files/* $(1)/
+  define Package/eglibc/install
+	$(CP) ./eglibc-files/* $(1)/
 	rm -f $(1)/etc/localtime
 	ln -sf /tmp/localtime $(1)/etc/localtime
 	$(INSTALL_DIR) $(1)/lib
@@ -541,10 +541,6 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 		$(INSTALL_BIN) $(TOOLCHAIN_DIR)/bin/locale $(1)/bin; \
 	fi
  endef
-
-  define Package/eglibc/install
-    $(call Package/glibc/install,$1)
-  endef
 
   define Package/uClibc/install
 	$(INSTALL_DIR) $(1)/lib

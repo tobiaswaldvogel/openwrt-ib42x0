@@ -83,6 +83,7 @@
 #define AR7240_MIB_AT_HALF_EN		BIT(16)
 #define AR7240_MIB_BUSY			BIT(17)
 #define AR7240_MIB_FUNC_S		24
+#define AR7240_MIB_FUNC_M		BITM(3)
 #define AR7240_MIB_FUNC_NO_OP		0x0
 #define AR7240_MIB_FUNC_FLUSH		0x1
 #define AR7240_MIB_FUNC_CAPTURE		0x3
@@ -217,6 +218,8 @@
 #define   AR934X_AT_CTRL_AGE_TIME	BITS(0, 15)
 #define   AR934X_AT_CTRL_AGE_EN		BIT(17)
 #define   AR934X_AT_CTRL_LEARN_CHANGE	BIT(18)
+
+#define AR934X_MIB_ENABLE		BIT(30)
 
 #define AR934X_REG_PORT_BASE(_port)	(0x100 + (_port) * 0x100)
 
@@ -517,8 +520,9 @@ static int ar7240sw_capture_stats(struct ar7240sw *as)
 	write_lock(&as->stats_lock);
 
 	/* Capture the hardware statistics for all ports */
-	ar7240sw_reg_write(mii, AR7240_REG_MIB_FUNCTION0,
-			   (AR7240_MIB_FUNC_CAPTURE << AR7240_MIB_FUNC_S));
+	ar7240sw_reg_rmw(mii, AR7240_REG_MIB_FUNCTION0,
+			 (AR7240_MIB_FUNC_M << AR7240_MIB_FUNC_S),
+			 (AR7240_MIB_FUNC_CAPTURE << AR7240_MIB_FUNC_S));
 
 	/* Wait for the capturing to complete. */
 	ret = ar7240sw_reg_wait(mii, AR7240_REG_MIB_FUNCTION0,
@@ -579,6 +583,11 @@ static void ar7240sw_setup(struct ar7240sw *as)
 		/* Enable Broadcast frames transmitted to the CPU */
 		ar7240sw_reg_set(mii, AR934X_REG_FLOOD_MASK,
 				 AR934X_FLOOD_MASK_BC_DP(0));
+
+		/* Enable MIB counters */
+		ar7240sw_reg_set(mii, AR7240_REG_MIB_FUNCTION0,
+				 AR934X_MIB_ENABLE);
+
 	} else {
 		/* Enable ARP frame acknowledge, aging, MAC replacing */
 		ar7240sw_reg_write(mii, AR7240_REG_AT_CTRL,
@@ -1106,19 +1115,26 @@ static void link_function(struct work_struct *work) {
 	struct ag71xx *ag = container_of(work, struct ag71xx, link_work.work);
 	struct ar7240sw *as = ag->phy_priv;
 	unsigned long flags;
+	u8 mask;
 	int i;
 	int status = 0;
 
-	for (i = 0; i < as->swdev.ports; i++) {
-		int link = ar7240sw_phy_read(ag->mii_bus, i, MII_BMSR);
-		if(link & BMSR_LSTATUS) {
+	mask = ~as->swdata->phy_poll_mask;
+	for (i = 0; i < AR7240_NUM_PHYS; i++) {
+		int link;
+
+		if (!(mask & BIT(i)))
+			continue;
+
+		link = ar7240sw_phy_read(ag->mii_bus, i, MII_BMSR);
+		if (link & BMSR_LSTATUS) {
 			status = 1;
 			break;
 		}
 	}
 
 	spin_lock_irqsave(&ag->lock, flags);
-	if(status != ag->link) {
+	if (status != ag->link) {
 		ag->link = status;
 		ag71xx_link_adjust(ag);
 	}

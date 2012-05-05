@@ -9,7 +9,8 @@ KERNEL_MAKEOPTS := -C $(LINUX_DIR) \
 	CROSS_COMPILE="$(KERNEL_CROSS)" \
 	ARCH="$(LINUX_KARCH)" \
 	KBUILD_HAVE_NLS=no \
-	CONFIG_SHELL="$(BASH)"
+	CONFIG_SHELL="$(BASH)" \
+	$(if $(findstring c,$(OPENWRT_VERBOSE)),V=1,V='')
 
 ifdef CONFIG_STRIP_KERNEL_EXPORTS
   KERNEL_MAKEOPTS += \
@@ -105,6 +106,7 @@ define Kernel/Configure/Default
 	$(call Kernel/SetInitramfs)
 	-$(_SINGLE)$(MAKE) $(KERNEL_MAKEOPTS) oldconfig prepare scripts
 	rm -rf $(KERNEL_BUILD_DIR)/modules
+	$(MAKE) $(KERNEL_MAKEOPTS) INSTALL_HDR_PATH=$(LINUX_DIR)/user_headers headers_install
 	$(SH_FUNC) grep '=[ym]' $(LINUX_DIR)/.config | LC_ALL=C sort | md5s > $(LINUX_DIR)/.vermagic
 endef
 

@@ -30,6 +30,7 @@ enum ramips_mach_type {
 	RAMIPS_MACH_RT_N10_PLUS,	/* Asus RT-N10+ */
 	RAMIPS_MACH_NW718,		/* Netcore NW718 */
 	RAMIPS_MACH_WL_330N,		/* Asus WL-330N */
+	RAMIPS_MACH_WL_330N3G,		/* Asus WL-330N3G */
 
 	/* RT3052 based machines */
 	RAMIPS_MACH_ARGUS_ATP52B,	/* Argus ATP-52B */
@@ -54,6 +55,7 @@ enum ramips_mach_type {
 	RAMIPS_MACH_WR512_3GN,		/* SH-WR512NU/WS-WR512N1-like 3GN*/
 	RAMIPS_MACH_WR6202,		/* Accton WR6202 */
 	RAMIPS_MACH_XDXRN502J,          /* unknown XDX-RN502J */
+	RAMIPS_MACH_UR_336UN,		/* UPVEL ROUTER */
 
 	/* RT3662 based machines */
 	RAMIPS_MACH_RT_N56U,		/* Asus RT-N56U */

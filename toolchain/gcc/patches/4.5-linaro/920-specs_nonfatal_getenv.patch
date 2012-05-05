@@ -6,7 +6,7 @@
    if (!value)
 -    fatal ("environment variable \"%s\" not defined", argv[0]);
 +  {
-+    warning (0, "environment variable \"%s\" not defined", argv[0]);
++    error ("warning: environment variable \"%s\" not defined", argv[0]);
 +    value = "";
 +  }
  

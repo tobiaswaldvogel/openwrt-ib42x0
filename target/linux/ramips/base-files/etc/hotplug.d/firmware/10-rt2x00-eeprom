@@ -70,10 +70,12 @@ case "$FIRMWARE" in
 	wcr-150gn | \
 	whr-g300n | \
 	wl-330n | \
+	wl-330n3g | \
 	wl-351 | \
 	wli-tx4-ag300n | \
 	wr512-3gn | \
 	wr6202 | \
+	ur-336un | \
 	xdxrn502j)
 		rt2x00_eeprom_extract "factory" 0 272
 		;;

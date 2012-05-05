@@ -27,8 +27,8 @@ unbridge() {
 
 ubus_call() {
 	json_init
-	local _data="$(ubus call "$1" "$2")"
-	[ $? -ne 0 ] && return "$?"
+	local _data="$(ubus -S call "$1" "$2")"
+	[ -z "$_data" ] && return 1
 	json_load "$_data"
 	return 0
 }
@@ -36,14 +36,14 @@ ubus_call() {
 
 fixup_interface() {
 	local config="$1"
-	local ifname
+	local ifname type
 
 	config_get type "$config" type
 	config_get ifname "$config" ifname
 	config_get device "$config" device "$ifname"
 	[ "bridge" = "$type" ] && ifname="br-$config"
 	config_set "$config" device "$ifname"
-	ubus_call "network.interface.$config" status
+	ubus_call "network.interface.$config" status || return 0
 	json_get_var l3dev l3_device
 	[ -n "$l3dev" ] && ifname="$l3dev"
 	json_init

@@ -76,6 +76,7 @@ struct rtl8366_vlan_4k {
 
 struct rtl8366_smi_ops {
 	int	(*detect)(struct rtl8366_smi *smi);
+	int	(*reset_chip)(struct rtl8366_smi *smi);
 	int	(*setup)(struct rtl8366_smi *smi);
 
 	int	(*mii_read)(struct mii_bus *bus, int addr, int reg);
@@ -120,6 +121,7 @@ static inline struct rtl8366_smi *sw_to_rtl8366_smi(struct switch_dev *sw)
 	return container_of(sw, struct rtl8366_smi, sw_dev);
 }
 
+int rtl8366_sw_reset_switch(struct switch_dev *dev);
 int rtl8366_sw_get_port_pvid(struct switch_dev *dev, int port, int *val);
 int rtl8366_sw_set_port_pvid(struct switch_dev *dev, int port, int val);
 int rtl8366_sw_get_port_mib(struct switch_dev *dev,

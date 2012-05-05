@@ -8,13 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=e2fsprogs
-PKG_VERSION:=1.42
-PKG_MD5SUM:=a3c4ffd7352310ab5e9412965d575610
-PKG_RELEASE:=2
+PKG_VERSION:=1.42.2
+PKG_MD5SUM:=04f4561a54ad0419248316a00c016baa
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/e2fsprogs
 
+PKG_BUILD_DEPENDS:=util-linux
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -48,7 +49,7 @@ $(call Package/e2fsprogs/Default)
 endef
 
 define Package/libext2fs/description
-libext2fs is a library which can access ext2, ext3 and ext4 filesystems.
+ libext2fs is a library which can access ext2, ext3 and ext4 filesystems.
 endef
 
 define Package/libcom_err
@@ -59,7 +60,7 @@ $(call Package/e2fsprogs/Default)
 endef
 
 define Package/libcom_err/description
-libcom_err is a library providing common error descriptions
+ libcom_err is a library providing common error descriptions
 endef
 
 define Package/tune2fs
@@ -80,6 +81,7 @@ $(call Package/e2fsprogs)
   DEPENDS:= +e2fsprogs
 endef
 
+<<<<<<< HEAD
 define Package/chattr
 $(call Package/e2fsprogs)
   TITLE:=Ext2 Filesystem chattr utility
@@ -103,6 +105,15 @@ CONFIGURE_ARGS += \
 	--disable-libblkid \
 	--disable-uuidd \
 	--disable-blkid
+=======
+TARGET_CFLAGS += $(FPIC)
+
+CONFIGURE_ARGS += \
+	--enable-elf-shlibs	\
+	--disable-tls		\
+	--disable-nls		\
+	--disable-rpath
+>>>>>>> openwrt/master
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -173,6 +184,7 @@ define Package/badblocks/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/badblocks $(1)/usr/sbin/
 endef
 
+<<<<<<< HEAD
 define Package/chattr/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/chattr $(1)/usr/bin/
@@ -183,11 +195,16 @@ define Package/lsattr/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsattr $(1)/usr/bin/
 endef
 
+=======
+>>>>>>> openwrt/master
 $(eval $(call BuildPackage,e2fsprogs))
 $(eval $(call BuildPackage,libext2fs))
 $(eval $(call BuildPackage,libcom_err))
 $(eval $(call BuildPackage,tune2fs))
 $(eval $(call BuildPackage,resize2fs))
 $(eval $(call BuildPackage,badblocks))
+<<<<<<< HEAD
 $(eval $(call BuildPackage,chattr))
 $(eval $(call BuildPackage,lsattr))
+=======
+>>>>>>> openwrt/master

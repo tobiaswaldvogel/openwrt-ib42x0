@@ -720,6 +720,22 @@ endef
 $(eval $(call KernelPackage,wdt-ath79))
 
 
+define KernelPackage/booke-wdt
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=PowerPC Book-E Watchdog Timer
+  DEPENDS:=@(TARGET_mpc85xx||TARGET_ppc40x||TARGET_ppc44x)
+  KCONFIG:=CONFIG_BOOKE_WDT
+  FILES:=$(LINUX_DIR)/drivers/$(WATCHDOG_DIR)/booke_wdt.ko
+  AUTOLOAD:=$(call AutoLoad,50,booke_wdt)
+endef
+
+define KernelPackage/booke-wdt/description
+  Kernel module for PowerPC Book-E Watchdog Timer.
+endef
+
+$(eval $(call KernelPackage,booke-wdt))
+
+
 define KernelPackage/pwm
   SUBMENU:=$(OTHER_MENU)
   TITLE:=PWM generic API
@@ -810,6 +826,20 @@ endef
 
 $(eval $(call KernelPackage,rtc-pcf2123))
 
+define KernelPackage/rtc-pt7c4338
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Pericom PT7C4338 RTC support
+  $(call AddDepends/rtc,+kmod-i2c-core)
+  KCONFIG:=CONFIG_RTC_DRV_PT7C4338
+  FILES:=$(LINUX_DIR)/drivers/rtc/rtc-pt7c4338.ko
+  AUTOLOAD:=$(call AutoLoad,60,rtc-pt7c4338)
+endef
+
+define KernelPackage/rtc-pt7c4338/description
+ Kernel module for Pericom PT7C4338 i2c RTC chip.
+endef
+
+$(eval $(call KernelPackage,rtc-pt7c4338))
 
 define KernelPackage/n810bm
   SUBMENU:=$(OTHER_MENU)
@@ -896,7 +926,15 @@ define KernelPackage/serial-8250
 	CONFIG_SERIAL_8250_SHARE_IRQ=y \
 	CONFIG_SERIAL_8250_DETECT_IRQ=n \
 	CONFIG_SERIAL_8250_RSA=n
+ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.3)),1)
+  FILES:=$(LINUX_DIR)/drivers/tty/serial/8250/8250.ko
+else
+ ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.38)),1)
   FILES:=$(LINUX_DIR)/drivers/tty/serial/8250.ko
+ else
+  FILES:=$(LINUX_DIR)/drivers/serial/8250.ko
+ endif
+endif
 endef
 
 define KernelPackage/serial-8250/description

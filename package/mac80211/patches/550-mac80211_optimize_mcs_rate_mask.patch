@@ -11,7 +11,7 @@
  	union {
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -1914,9 +1914,20 @@ static int ieee80211_set_bitrate_mask(st
+@@ -1933,9 +1933,20 @@ static int ieee80211_set_bitrate_mask(st
  	}
  
  	for (i = 0; i < IEEE80211_NUM_BANDS; i++) {
@@ -69,7 +69,7 @@
  	txrc.bss = (tx->sdata->vif.type == NL80211_IFTYPE_AP ||
  		    tx->sdata->vif.type == NL80211_IFTYPE_MESH_POINT ||
  		    tx->sdata->vif.type == NL80211_IFTYPE_ADHOC);
-@@ -2479,8 +2481,6 @@ struct sk_buff *ieee80211_beacon_get_tim
+@@ -2480,8 +2482,6 @@ struct sk_buff *ieee80211_beacon_get_tim
  		txrc.max_rate_idx = -1;
  	else
  		txrc.max_rate_idx = fls(txrc.rate_idx_mask) - 1;

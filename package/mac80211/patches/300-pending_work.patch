@@ -227,6 +227,24 @@
  	REG_RMW_FIELD(ah, AR_PHY_PAPRD_CTRL0_B0,
 --- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
 +++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -373,7 +373,7 @@ static void ar9003_hw_spur_ofdm_work(str
+ 			else
+ 				spur_subchannel_sd = 0;
+ 
+-			spur_freq_sd = (freq_offset << 9) / 11;
++			spur_freq_sd = ((freq_offset + 10) << 9) / 11;
+ 
+ 		} else {
+ 			if (REG_READ_FIELD(ah, AR_PHY_GEN_CTRL,
+@@ -382,7 +382,7 @@ static void ar9003_hw_spur_ofdm_work(str
+ 			else
+ 				spur_subchannel_sd = 1;
+ 
+-			spur_freq_sd = (freq_offset << 9) / 11;
++			spur_freq_sd = ((freq_offset - 10) << 9) / 11;
+ 
+ 		}
+ 
 @@ -526,22 +526,10 @@ static void ar9003_hw_init_bb(struct ath
  	 * Value is in 100ns increments.
  	 */
@@ -802,3 +820,144 @@
  
  #include "dev.h"
  #include "decl.h"
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -812,6 +812,7 @@ static bool ath9k_rx_accept(struct ath_c
+ 	is_valid_tkip = rx_stats->rs_keyix != ATH9K_RXKEYIX_INVALID &&
+ 		test_bit(rx_stats->rs_keyix, common->tkip_keymap);
+ 	strip_mic = is_valid_tkip && ieee80211_is_data(fc) &&
++		ieee80211_has_protected(fc) &&
+ 		!(rx_stats->rs_status &
+ 		(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_CRC | ATH9K_RXERR_MIC |
+ 		 ATH9K_RXERR_KEYMISS));
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -1005,6 +1005,9 @@ static int ieee80211_change_station(stru
+ 	}
+ 
+ 	if (params->vlan && params->vlan != sta->sdata->dev) {
++		bool prev_4addr = false;
++		bool new_4addr = false;
++
+ 		vlansdata = IEEE80211_DEV_TO_SUB_IF(params->vlan);
+ 
+ 		if (vlansdata->vif.type != NL80211_IFTYPE_AP_VLAN &&
+@@ -1020,9 +1023,25 @@ static int ieee80211_change_station(stru
+ 			}
+ 
+ 			rcu_assign_pointer(vlansdata->u.vlan.sta, sta);
++			new_4addr = true;
++		}
++
++		if (sta->sdata->vif.type == NL80211_IFTYPE_AP_VLAN &&
++		    sta->sdata->u.vlan.sta) {
++			rcu_assign_pointer(sta->sdata->u.vlan.sta, NULL);
++			prev_4addr = true;
+ 		}
+ 
+ 		sta->sdata = vlansdata;
++
++		if (sta->sta_state == IEEE80211_STA_AUTHORIZED &&
++		    prev_4addr != new_4addr) {
++			if (new_4addr)
++				atomic_dec(&sta->sdata->bss->num_mcast_sta);
++			else
++				atomic_inc(&sta->sdata->bss->num_mcast_sta);
++		}
++
+ 		ieee80211_send_layer2_update(sta);
+ 	}
+ 
+--- a/net/mac80211/debugfs_netdev.c
++++ b/net/mac80211/debugfs_netdev.c
+@@ -394,7 +394,7 @@ static ssize_t ieee80211_if_parse_uapsd_
+ __IEEE80211_IF_FILE_W(uapsd_max_sp_len);
+ 
+ /* AP attributes */
+-IEEE80211_IF_FILE(num_sta_authorized, u.ap.num_sta_authorized, ATOMIC);
++IEEE80211_IF_FILE(num_mcast_sta, u.ap.num_mcast_sta, ATOMIC);
+ IEEE80211_IF_FILE(num_sta_ps, u.ap.num_sta_ps, ATOMIC);
+ IEEE80211_IF_FILE(dtim_count, u.ap.dtim_count, DEC);
+ 
+@@ -540,7 +540,7 @@ static void add_sta_files(struct ieee802
+ 
+ static void add_ap_files(struct ieee80211_sub_if_data *sdata)
+ {
+-	DEBUGFS_ADD(num_sta_authorized);
++	DEBUGFS_ADD(num_mcast_sta);
+ 	DEBUGFS_ADD(num_sta_ps);
+ 	DEBUGFS_ADD(dtim_count);
+ 	DEBUGFS_ADD(num_buffered_multicast);
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -282,7 +282,7 @@ struct ieee80211_if_ap {
+ 	u8 tim[sizeof(unsigned long) * BITS_TO_LONGS(IEEE80211_MAX_AID + 1)];
+ 	struct sk_buff_head ps_bc_buf;
+ 	atomic_t num_sta_ps; /* number of stations in PS mode */
+-	atomic_t num_sta_authorized; /* number of authorized stations */
++	atomic_t num_mcast_sta; /* number of stations receiving multicast */
+ 	int dtim_count;
+ 	bool dtim_bc_mc;
+ };
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -1417,15 +1417,19 @@ int sta_info_move_state(struct sta_info 
+ 		if (sta->sta_state == IEEE80211_STA_AUTH) {
+ 			set_bit(WLAN_STA_ASSOC, &sta->_flags);
+ 		} else if (sta->sta_state == IEEE80211_STA_AUTHORIZED) {
+-			if (sta->sdata->vif.type == NL80211_IFTYPE_AP)
+-				atomic_dec(&sta->sdata->u.ap.num_sta_authorized);
++			if (sta->sdata->vif.type == NL80211_IFTYPE_AP ||
++			    (sta->sdata->vif.type == NL80211_IFTYPE_AP_VLAN &&
++			     !sta->sdata->u.vlan.sta))
++				atomic_dec(&sta->sdata->bss->num_mcast_sta);
+ 			clear_bit(WLAN_STA_AUTHORIZED, &sta->_flags);
+ 		}
+ 		break;
+ 	case IEEE80211_STA_AUTHORIZED:
+ 		if (sta->sta_state == IEEE80211_STA_ASSOC) {
+-			if (sta->sdata->vif.type == NL80211_IFTYPE_AP)
+-				atomic_inc(&sta->sdata->u.ap.num_sta_authorized);
++			if (sta->sdata->vif.type == NL80211_IFTYPE_AP ||
++			    (sta->sdata->vif.type == NL80211_IFTYPE_AP_VLAN &&
++			     !sta->sdata->u.vlan.sta))
++				atomic_inc(&sta->sdata->bss->num_mcast_sta);
+ 			set_bit(WLAN_STA_AUTHORIZED, &sta->_flags);
+ 		}
+ 		break;
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -306,7 +306,7 @@ ieee80211_tx_h_check_assoc(struct ieee80
+ 		}
+ 	} else if (unlikely(tx->sdata->vif.type == NL80211_IFTYPE_AP &&
+ 			    ieee80211_is_data(hdr->frame_control) &&
+-			    !atomic_read(&tx->sdata->u.ap.num_sta_authorized))) {
++			    !atomic_read(&tx->sdata->u.ap.num_mcast_sta))) {
+ 		/*
+ 		 * No associated STAs - no need to send multicast
+ 		 * frames.
+@@ -1159,7 +1159,8 @@ ieee80211_tx_prepare(struct ieee80211_su
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
+ 		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
+ 			return TX_DROP;
+-	} else if (info->flags & IEEE80211_TX_CTL_INJECTED) {
++	} else if (info->flags & IEEE80211_TX_CTL_INJECTED ||
++		   tx->sdata->control_port_protocol == tx->skb->protocol) {
+ 		tx->sta = sta_info_get_bss(sdata, hdr->addr1);
+ 	}
+ 	if (!tx->sta)
+--- a/net/wireless/scan.c
++++ b/net/wireless/scan.c
+@@ -378,7 +378,11 @@ static int cmp_bss_core(struct cfg80211_
+ 			       b->len_information_elements);
+ 	}
+ 
+-	return compare_ether_addr(a->bssid, b->bssid);
++	/*
++	 * we can't use compare_ether_addr here since we need a < > operator.
++	 * The binary return value of compare_ether_addr isn't enough
++	 */
++	return memcmp(a->bssid, b->bssid, sizeof(a->bssid));
+ }
+ 
+ static int cmp_bss(struct cfg80211_bss *a,
