@@ -49,6 +49,28 @@ define AddDepends/video
 endef
 
 
+define KernelPackage/video-videobuf2
+  TITLE:=videobuf2 lib
+  DEPENDS:= @!(LINUX_2_6_37||LINUX_2_6_38)
+  KCONFIG:= \
+	CONFIG_VIDEOBUF2_CORE \
+	CONFIG_VIDEOBUF2_MEMOPS \
+	CONFIG_VIDEOBUF2_VMALLOC
+  FILES:= \
+	$(LINUX_DIR)/drivers/media/video/videobuf2-core.ko \
+	$(LINUX_DIR)/drivers/media/video/videobuf2-memops.ko \
+	$(LINUX_DIR)/drivers/media/video/videobuf2-vmalloc.ko
+  AUTOLOAD:=$(call AutoLoad,65,videobuf2-core videobuf2-memops videobuf2-vmalloc)
+  $(call AddDepends/video)
+endef
+
+define KernelPackage/video-videobuf2/description
+ Kernel modules for supporting CPIA2 USB based cameras.
+endef
+
+$(eval $(call KernelPackage,video-videobuf2))
+
+
 define KernelPackage/video-cpia2
   TITLE:=CPIA2 video driver
   DEPENDS:=@USB_SUPPORT +kmod-usb-core
@@ -63,58 +85,6 @@ define KernelPackage/video-cpia2/description
 endef
 
 $(eval $(call KernelPackage,video-cpia2))
-
-
-define KernelPackage/video-konica
-  TITLE:=Konica USB webcam support
-  DEPENDS:=@USB_SUPPORT +kmod-usb-core
-  KCONFIG:=CONFIG_USB_KONICAWC
-  FILES:=$(LINUX_DIR)/drivers/media/video/usbvideo/konicawc.ko
-  AUTOLOAD:=$(call AutoLoad,70,konicawc)
-  $(call AddDepends/video)
-endef
-
-define KernelPackage/video-konica/description
- Kernel support for webcams based on a Konica chipset. This is known to 
- work with the Intel YC76 webcam.
-endef
-
-$(eval $(call KernelPackage,video-konica))
-
-
-define KernelPackage/video-ov511
-  TITLE:=OV511 USB webcam support
-  DEPENDS:=@USB_SUPPORT +kmod-usb-core
-  KCONFIG:=CONFIG_USB_OV511
-  FILES:=$(LINUX_DIR)/drivers/media/video/ov511.ko
-  AUTOLOAD:=$(call AutoLoad,70,ov511)
-  $(call AddDepends/video)
-endef
-
-
-define KernelPackage/video-ov511/description
- Kernel modules for supporting OmniVision OV511 USB webcams.
-endef
-
-$(eval $(call KernelPackage,video-ov511))
-
-
-define KernelPackage/video-ovcamchip
-  TITLE:=OV6xxx/OV7xxx Camera Chip support
-  DEPENDS:=@USB_SUPPORT +kmod-usb-core
-  KCONFIG:=CONFIG_VIDEO_OVCAMCHIP
-  FILES:=$(LINUX_DIR)/drivers/media/video/ovcamchip/ovcamchip.ko
-  AUTOLOAD:=$(call AutoLoad,70,ovcamchip)
-  $(call AddDepends/video)
-endef
-
-
-define KernelPackage/video-ovcamchip/description
- Kernel modules for supporting OmniVision OV6xxx and OV7xxx series of 
- camera chips.
-endef
-
-$(eval $(call KernelPackage,video-ovcamchip))
 
 
 define KernelPackage/video-sn9c102
@@ -137,7 +107,7 @@ $(eval $(call KernelPackage,video-sn9c102))
 
 define KernelPackage/video-pwc
   TITLE:=Philips USB webcam support
-  DEPENDS:=@USB_SUPPORT +kmod-usb-core
+  DEPENDS:=@USB_SUPPORT +kmod-usb-core +!(LINUX_2_6_37||LINUX_2_6_38||LINUX_2_6_39||LINUX_3_0):kmod-video-videobuf2
   KCONFIG:= \
 	CONFIG_USB_PWC \
 	CONFIG_USB_PWC_DEBUG=n
@@ -155,7 +125,7 @@ $(eval $(call KernelPackage,video-pwc))
 
 define KernelPackage/video-uvc
   TITLE:=USB Video Class (UVC) support
-  DEPENDS:=@USB_SUPPORT +kmod-usb-core
+  DEPENDS:=@USB_SUPPORT +kmod-usb-core +!(LINUX_2_6_37||LINUX_2_6_38||LINUX_2_6_39||LINUX_3_0||LINUX_3_1||LINUX_3_2):kmod-video-videobuf2
   KCONFIG:= CONFIG_USB_VIDEO_CLASS
   FILES:=$(LINUX_DIR)/drivers/media/video/uvc/uvcvideo.ko
   AUTOLOAD:=$(call AutoLoad,90,uvcvideo)
@@ -632,7 +602,6 @@ $(eval $(call KernelPackage,video-gspca-stv06xx))
 
 define KernelPackage/video-gspca-gl860
   TITLE:=gl860 webcam support
-  DEPENDS:=@LINUX_2_6_32
   KCONFIG:=CONFIG_USB_GL860
   FILES:=$(LINUX_DIR)/drivers/media/video/gspca/gl860/gspca_gl860.ko
   AUTOLOAD:=$(call AutoLoad,75,gspca_gl860)
@@ -648,7 +617,6 @@ $(eval $(call KernelPackage,video-gspca-gl860))
 
 define KernelPackage/video-gspca-jeilinj
   TITLE:=jeilinj webcam support
-  DEPENDS:=@LINUX_2_6_32
   KCONFIG:=CONFIG_USB_GSPCA_JEILINJ
   FILES:=$(LINUX_DIR)/drivers/media/video/gspca/gspca_jeilinj.ko
   AUTOLOAD:=$(call AutoLoad,75,gspca_jeilinj)
@@ -660,3 +628,18 @@ define KernelPackage/video-gspca-jeilinj/description
 endef
 
 $(eval $(call KernelPackage,video-gspca-jeilinj))
+
+
+define KernelPackage/video-gspca-konica
+  TITLE:=konica webcam support
+  KCONFIG:=CONFIG_USB_GSPCA_KONICA
+  FILES:=$(LINUX_DIR)/drivers/media/video/gspca/gspca_konica.ko
+  AUTOLOAD:=$(call AutoLoad,75,gspca_konica)
+  $(call AddDepends/video-gspca)
+endef
+
+define KernelPackage/video-gspca-konica/description
+ The Konica USB Camera Driver (konica) kernel module.
+endef
+
+$(eval $(call KernelPackage,video-gspca-konica))
