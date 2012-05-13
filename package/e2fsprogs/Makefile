@@ -81,7 +81,6 @@ $(call Package/e2fsprogs)
   DEPENDS:= +e2fsprogs
 endef
 
-<<<<<<< HEAD
 define Package/chattr
 $(call Package/e2fsprogs)
   TITLE:=Ext2 Filesystem chattr utility
@@ -105,15 +104,6 @@ CONFIGURE_ARGS += \
 	--disable-libblkid \
 	--disable-uuidd \
 	--disable-blkid
-=======
-TARGET_CFLAGS += $(FPIC)
-
-CONFIGURE_ARGS += \
-	--enable-elf-shlibs	\
-	--disable-tls		\
-	--disable-nls		\
-	--disable-rpath
->>>>>>> openwrt/master
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -184,7 +174,6 @@ define Package/badblocks/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/badblocks $(1)/usr/sbin/
 endef
 
-<<<<<<< HEAD
 define Package/chattr/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/chattr $(1)/usr/bin/
@@ -195,16 +184,11 @@ define Package/lsattr/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsattr $(1)/usr/bin/
 endef
 
-=======
->>>>>>> openwrt/master
 $(eval $(call BuildPackage,e2fsprogs))
 $(eval $(call BuildPackage,libext2fs))
 $(eval $(call BuildPackage,libcom_err))
 $(eval $(call BuildPackage,tune2fs))
 $(eval $(call BuildPackage,resize2fs))
 $(eval $(call BuildPackage,badblocks))
-<<<<<<< HEAD
 $(eval $(call BuildPackage,chattr))
 $(eval $(call BuildPackage,lsattr))
-=======
->>>>>>> openwrt/master

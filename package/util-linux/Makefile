@@ -8,16 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-PKG_VERSION:=2.21.1
+PKG_MAJOR_VERSION:=2.21
+PKG_MINOR_VERSION=.1
+PKG_VERSION:=$(PKG_MAJOR_VERSION)$(PKG_MINOR_VERSION)
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v2.21
+PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v$(PKG_MAJOR_VERSION)
 PKG_MD5SUM:=ad602dcd528f340b1329cfa6200d8f80
 
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=libncurses
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -34,7 +37,9 @@ CONFIGURE_ARGS += \
 	--enable-new-mount	\
 	--with-ncurses		\
 	--disable-nls 		\
-	--disable-tls
+	--disable-tls		\
+	--disable-makeinstall-chown	\
+	--disable-makeinstall-setuid
 
 define Package/libblkid
 $(call Package/util-linux/Default)
@@ -528,6 +533,17 @@ endef
 define Package/wipefs/install
 	$(INSTALL_DIR) $(1)/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/misc-utils/.libs/wipefs $(1)/sbin/
+endef
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{blkid,uuid}.{a,so*} $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/blkid.pc
+	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/uuid.pc
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/{blkid,uuid}.pc $(1)/usr/lib/pkgconfig/
 endef
 
 $(eval $(call BuildPackage,libblkid))
