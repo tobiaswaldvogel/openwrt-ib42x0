@@ -3,7 +3,7 @@
 # Copyright (c) 2010-2012 OpenWrt.org
 
 [ -n "$INCLUDE_ONLY" ] || {
-	. /etc/functions.sh
+	. /lib/functions.sh
 	. ../netifd-proto.sh
 	init_proto "$@"
 }
@@ -179,6 +179,7 @@ proto_6to4_setup() {
 
 		uci_revert_state radvd
 		config_load radvd
+		config_load network
 
 		adv_subnet=$((0x${adv_subnet:-1}))
 

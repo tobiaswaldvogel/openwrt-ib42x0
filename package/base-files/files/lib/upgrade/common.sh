@@ -62,7 +62,7 @@ run_ramfs() { # <command> [...]
 	for file in $RAMFS_COPY_BIN; do
 		install_bin $file
 	done
-	install_file /etc/resolv.conf /etc/functions.sh /lib/upgrade/*.sh $RAMFS_COPY_DATA
+	install_file /etc/resolv.conf /lib/functions.sh /lib/functions.sh /lib/upgrade/*.sh $RAMFS_COPY_DATA
 
 	pivot $RAM_ROOT /mnt || {
 		echo "Failed to switch over to ramfs. Please reboot."
@@ -99,7 +99,7 @@ kill_remaining() { # [ <signal> ]
 
 		case "$name" in
 			# Skip essential services
-			*ash*|*init*|*watchdog*|*ssh*|*dropbear*|*telnet*|*login*|*ubusd*|*netifd*|*hostapd*|*wpa_supplicant*|*udhcpc*) : ;;
+			*ash*|*init*|*watchdog*|*ssh*|*dropbear*|*telnet*|*login*|*hostapd*|*wpa_supplicant*) : ;;
 
 			# Killable process
 			*)

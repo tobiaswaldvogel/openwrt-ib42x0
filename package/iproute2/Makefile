@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=iproute2
-PKG_VERSION:=3.2.0
-PKG_RELEASE:=2
+PKG_VERSION:=3.3.0
+PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://kernel.org/pub/linux/utils/net/iproute2/
-PKG_MD5SUM:=d58f388b670e0c1b2cd81eb65d5ac626
+PKG_MD5SUM:=308e7145218dd552c2766fe527e239e1
 PKG_BUILD_PARALLEL:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/iproute2-$(PKG_VERSION)
@@ -40,7 +40,7 @@ endef
 define Package/tc
 $(call Package/iproute2/Default)
   TITLE:=Traffic control utility
-  DEPENDS:=+kmod-sched
+  DEPENDS:=+kmod-sched-core
 endef
 
 define Package/genl
@@ -63,20 +63,19 @@ define Build/Configure
 		> $(PKG_BUILD_DIR)/include/SNAPSHOT.h
 endef
 
+ifdef CONFIG_USE_EGLIBC
+  ifndef CONFIG_EGLIBC_VERSION_2_13
+    TARGET_CFLAGS += -DHAVE_SETNS
+  endif
+endif
+
 MAKE_FLAGS += \
 	EXTRA_CCOPTS="$(TARGET_CFLAGS) -I../include -I$(STAGING_DIR)/usr/include/libnl-tiny -DHAVE_SETNS" \
 	KERNEL_INCLUDE="$(LINUX_DIR)/include" \
 	FPIC="$(FPIC)"
 
 define Build/Compile
-	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/netem \
-		HOSTCC="$(HOSTCC)"  EXTRA_CCOPTS="$(TARGET_CFLAGS)" \
-		CFLAGS="-D_GNU_SOURCE -O2 -Wstrict-prototypes -Wall \
-		-I../include -DRESOLVE_HOSTNAMES"
-	$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS) all
-	$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/tc $(MAKE_FLAGS) tc
-	$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/ip $(MAKE_FLAGS) ip
-	$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/misc $(MAKE_FLAGS) ss
+	$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS) 
 endef
 
 define Build/InstallDev

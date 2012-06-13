@@ -64,7 +64,7 @@ $(eval $(call KernelPackage,crypto-manager))
 
 define KernelPackage/crypto-user
   TITLE:=CryptoAPI userspace interface
-  DEPENDS:=+kmod-crypto-hash +kmod-crypto-manager @!LINUX_2_6_37
+  DEPENDS:=+kmod-crypto-hash +kmod-crypto-manager
   KCONFIG:= \
 	CONFIG_CRYPTO_USER_API \
 	CONFIG_CRYPTO_USER_API_HASH \
@@ -374,24 +374,12 @@ define KernelPackage/crypto-misc
 	$(LINUX_DIR)/crypto/tea.ko \
 	$(LINUX_DIR)/crypto/tgr192.ko \
 	$(LINUX_DIR)/crypto/twofish_common.ko \
-	$(LINUX_DIR)/crypto/wp512.ko
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),le,2.6.35)),1)
-    FILES += $(LINUX_DIR)/crypto/twofish.ko
-  else
-    FILES += $(LINUX_DIR)/crypto/twofish_generic.ko
-  endif
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),le,3.1)),1)
-    FILES += $(LINUX_DIR)/crypto/blowfish.ko
-  else
-    FILES += \
+	$(LINUX_DIR)/crypto/wp512.ko \
+    $(LINUX_DIR)/crypto/twofish_generic.ko
+  FILES += \
 	$(LINUX_DIR)/crypto/blowfish_common.ko \
-	$(LINUX_DIR)/crypto/blowfish_generic.ko
-  endif
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),le,3.2)),1)
-    FILES += $(LINUX_DIR)/crypto/serpent.ko
-  else
-    FILES += $(LINUX_DIR)/crypto/serpent_generic.ko
-  endif
+	$(LINUX_DIR)/crypto/blowfish_generic.ko \
+    $(LINUX_DIR)/crypto/serpent_generic.ko
   $(call AddDepends/crypto)
 endef
 

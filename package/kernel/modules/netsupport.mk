@@ -152,12 +152,7 @@ define KernelPackage/capi
   FILES:= \
 	$(LINUX_DIR)/drivers/isdn/capi/kernelcapi.ko \
 	$(LINUX_DIR)/drivers/isdn/capi/capi.ko
- ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.0)),1)
   AUTOLOAD:=$(call AutoLoad,30,kernelcapi capi)
- else
-  FILES+= $(LINUX_DIR)/drivers/isdn/capi/capifs.ko
-  AUTOLOAD:=$(call AutoLoad,30,kernelcapi capifs capi)
- endif
 endef
 
 define KernelPackage/capi/description
@@ -438,13 +433,8 @@ define KernelPackage/gre
   TITLE:=GRE support
   DEPENDS:=+PACKAGE_kmod-ipv6:kmod-ipv6
   KCONFIG:=CONFIG_NET_IPGRE CONFIG_NET_IPGRE_DEMUX
- ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.37)),1)
   FILES:=$(LINUX_DIR)/net/ipv4/ip_gre.ko $(LINUX_DIR)/net/ipv4/gre.ko
   AUTOLOAD:=$(call AutoLoad,39,gre ip_gre)
- else
-  FILES:=$(LINUX_DIR)/net/ipv4/ip_gre.ko
-  AUTOLOAD:=$(call AutoLoad,39,ip_gre)
- endif
 endef
 
 define KernelPackage/gre/description
@@ -477,17 +467,10 @@ define KernelPackage/ppp
 	CONFIG_PPP \
 	CONFIG_PPP_ASYNC \
 	CONFIG_SLHC
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:= \
+  FILES:= \
 	$(LINUX_DIR)/drivers/net/ppp/ppp_async.ko \
 	$(LINUX_DIR)/drivers/net/ppp/ppp_generic.ko \
 	$(LINUX_DIR)/drivers/net/slip/slhc.ko
-  else
-    FILES:= \
-	$(LINUX_DIR)/drivers/net/ppp_async.ko \
-	$(LINUX_DIR)/drivers/net/ppp_generic.ko \
-	$(LINUX_DIR)/drivers/net/slhc.ko
-  endif
   AUTOLOAD:=$(call AutoLoad,30,slhc ppp_generic ppp_async)
 endef
 
@@ -503,11 +486,7 @@ define KernelPackage/ppp-synctty
   TITLE:=PPP sync tty support
   DEPENDS:=kmod-ppp
   KCONFIG:=CONFIG_PPP_SYNC_TTY
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ppp/ppp_synctty.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/ppp_synctty.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ppp/ppp_synctty.ko
   AUTOLOAD:=$(call AutoLoad,40,ppp_synctty)
 endef
 
@@ -523,15 +502,9 @@ define KernelPackage/pppoe
   TITLE:=PPPoE support
   DEPENDS:=kmod-ppp
   KCONFIG:=CONFIG_PPPOE
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:= \
+  FILES:= \
 	$(LINUX_DIR)/drivers/net/ppp/pppoe.ko \
 	$(LINUX_DIR)/drivers/net/ppp/pppox.ko
-  else
-    FILES:= \
-	$(LINUX_DIR)/drivers/net/pppoe.ko \
-	$(LINUX_DIR)/drivers/net/pppox.ko
-  endif
   AUTOLOAD:=$(call AutoLoad,40,pppox pppoe)
 endef
 
@@ -563,29 +536,20 @@ define KernelPackage/pptp
   TITLE:=PPtP support
   DEPENDS:=kmod-ppp +kmod-gre
   KCONFIG:=CONFIG_PPTP
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ppp/pptp.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/pptp.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ppp/pptp.ko
   AUTOLOAD:=$(call AutoLoad,41,pptp)
 endef
 
 $(eval $(call KernelPackage,pptp))
-	
+
 
 define KernelPackage/pppol2tp
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=PPPoL2TP support
   DEPENDS:=kmod-ppp +kmod-pppoe +kmod-l2tp
   KCONFIG:=CONFIG_PPPOL2TP
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.35)),1)
-    FILES:=$(LINUX_DIR)/net/l2tp/l2tp_ppp.ko
-    AUTOLOAD:=$(call AutoLoad,40,l2tp_ppp)
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/pppol2tp.ko
-    AUTOLOAD:=$(call AutoLoad,40,pppol2tp)
-  endif
+  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_ppp.ko
+  AUTOLOAD:=$(call AutoLoad,40,l2tp_ppp)
 endef
 
 define KernelPackage/pppol2tp/description
@@ -618,11 +582,7 @@ define KernelPackage/mppe
   KCONFIG:= \
 	CONFIG_PPP_MPPE_MPPC \
 	CONFIG_PPP_MPPE
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ppp/ppp_mppe.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/ppp_mppe.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ppp/ppp_mppe.ko
   AUTOLOAD:=$(call AutoLoad,31,ppp_mppe)
 endef
 
@@ -633,48 +593,89 @@ endef
 $(eval $(call KernelPackage,mppe))
 
 
-define KernelPackage/sched
+SCHED_MODULES = $(patsubst $(LINUX_DIR)/net/sched/%.ko,%,$(wildcard $(LINUX_DIR)/net/sched/*.ko))
+SCHED_MODULES_CORE = sch_ingress sch_codel sch_fq_codel sch_hfsc cls_fw cls_route cls_flow cls_tcindex cls_u32 em_u32 act_mirred act_skbedit
+SCHED_MODULES_FILTER = $(SCHED_MODULES_CORE) act_connmark sch_esfq
+SCHED_MODULES_EXTRA = $(filter-out $(SCHED_MODULES_FILTER),$(SCHED_MODULES))
+SCHED_FILES = $(patsubst %,$(LINUX_DIR)/net/sched/%.ko,$(filter $(SCHED_MODULES_CORE),$(SCHED_MODULES)))
+SCHED_FILES_EXTRA = $(patsubst %,$(LINUX_DIR)/net/sched/%.ko,$(SCHED_MODULES_EXTRA))
+
+define KernelPackage/sched-core
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=Traffic schedulers
   KCONFIG:= \
 	CONFIG_NET_SCHED=y \
-	CONFIG_NET_SCH_DSMARK \
-	CONFIG_NET_SCH_ESFQ \
-	CONFIG_NET_SCH_ESFQ_NFCT=y \
-	CONFIG_NET_SCH_FIFO \
-	CONFIG_NET_SCH_GRED \
 	CONFIG_NET_SCH_HFSC \
-	CONFIG_NET_SCH_HTB \
 	CONFIG_NET_SCH_INGRESS \
-	CONFIG_NET_SCH_PRIO \
-	CONFIG_NET_SCH_RED \
-	CONFIG_NET_SCH_TBF \
-	CONFIG_NET_SCH_SFQ \
-	CONFIG_NET_SCH_TEQL \
+	CONFIG_NET_SCH_CODEL \
+	CONFIG_NET_SCH_FQ_CODEL \
 	CONFIG_NET_CLS=y \
 	CONFIG_NET_CLS_ACT=y \
-	CONFIG_NET_CLS_BASIC \
 	CONFIG_NET_CLS_FLOW \
 	CONFIG_NET_CLS_FW \
 	CONFIG_NET_CLS_ROUTE4 \
 	CONFIG_NET_CLS_TCINDEX \
 	CONFIG_NET_CLS_U32 \
 	CONFIG_NET_ACT_MIRRED \
-	CONFIG_NET_ACT_IPT \
-	CONFIG_NET_ACT_POLICE \
-	CONFIG_NET_ACT_CONNMARK \
 	CONFIG_NET_ACT_SKBEDIT \
 	CONFIG_NET_EMATCH=y \
+	CONFIG_NET_EMATCH_U32
+  FILES:=$(SCHED_FILES)
+endef
+
+define KernelPackage/sched-core/description
+ Core kernel scheduler support for IP traffic
+endef
+
+$(eval $(call KernelPackage,sched-core))
+
+
+define KernelPackage/sched-connmark
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=Traffic shaper conntrack mark support
+  DEPENDS:=+kmod-sched-core +kmod-ipt-core +kmod-ipt-conntrack-extra
+  KCONFIG:=CONFIG_NET_ACT_CONNMARK
+  FILES:=$(LINUX_DIR)/net/sched/act_connmark.ko
+endef
+$(eval $(call KernelPackage,sched-connmark))
+
+define KernelPackage/sched-esfq
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=Traffic shaper ESFQ support
+  DEPENDS:=+kmod-sched-core +kmod-ipt-core
+  KCONFIG:= \
+	CONFIG_NET_SCH_ESFQ \
+	CONFIG_NET_SCH_ESFQ_NFCT=y
+  FILES:=$(LINUX_DIR)/net/sched/sch_esfq.ko
+endef
+$(eval $(call KernelPackage,sched-esfq))
+
+define KernelPackage/sched
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=Extra traffic schedulers
+  DEPENDS:=+kmod-sched-core
+  KCONFIG:= \
+	CONFIG_NET_SCH_DSMARK \
+	CONFIG_NET_SCH_HTB \
+	CONFIG_NET_SCH_FIFO \
+	CONFIG_NET_SCH_GRED \
+	CONFIG_NET_SCH_PRIO \
+	CONFIG_NET_SCH_RED \
+	CONFIG_NET_SCH_TBF \
+	CONFIG_NET_SCH_SFQ \
+	CONFIG_NET_SCH_TEQL \
+	CONFIG_NET_CLS_BASIC \
+	CONFIG_NET_ACT_POLICE \
+	CONFIG_NET_ACT_IPT \
 	CONFIG_NET_EMATCH_CMP \
 	CONFIG_NET_EMATCH_NBYTE \
-	CONFIG_NET_EMATCH_U32 \
 	CONFIG_NET_EMATCH_META \
 	CONFIG_NET_EMATCH_TEXT
-  FILES:=$(LINUX_DIR)/net/sched/*.ko
+  FILES:=$(SCHED_FILES_EXTRA)
 endef
 
 define KernelPackage/sched/description
- Kernel schedulers for IP traffic
+ Extra kernel schedulers modules for IP traffic
 endef
 
 $(eval $(call KernelPackage,sched))
@@ -837,13 +838,8 @@ define KernelPackage/slip
        CONFIG_SLIP_SMART=y \
        CONFIG_SLIP_MODE_SLIP6=y
 
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:= \
+  FILES:= \
        $(LINUX_DIR)/drivers/net/slip/slip.ko
-  else
-    FILES:= \
-       $(LINUX_DIR)/drivers/net/slip.ko
-  endif
   AUTOLOAD:=$(call AutoLoad,30,slip)
 endef
 

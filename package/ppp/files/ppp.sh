@@ -3,7 +3,7 @@
 [ -x /usr/sbin/pppd ] || exit 0
 
 [ -n "$INCLUDE_ONLY" ] || {
-	. /etc/functions.sh
+	. /lib/functions.sh
 	. ../netifd-proto.sh
 	init_proto "$@"
 }
@@ -25,20 +25,14 @@ ppp_generic_init_config() {
 ppp_generic_setup() {
 	local config="$1"; shift
 
-	json_get_var ipv6 ipv6
+	json_get_vars ipv6 peerdns defaultroute demand keepalive username password pppd_options
 	[ "$ipv6" = 1 ] || ipv6=""
-
-	json_get_var peerdns peerdns
 	[ "$peerdns" = 0 ] && peerdns="" || peerdns="1"
-
-	json_get_var defaultroute defaultroute
 	if [ "$defaultroute" = 1 ]; then
 		defaultroute="defaultroute replacedefaultroute";
 	else
 		defaultroute="nodefaultroute"
 	fi
-
-	json_get_var demand demand
 	if [ "${demand:-0}" -gt 0 ]; then
 		demand="precompiled-active-filter /etc/ppp/filter demand idle $demand"
 	else
@@ -47,16 +41,10 @@ ppp_generic_setup() {
 
 	[ -n "$mtu" ] || json_get_var mtu mtu
 
-	json_get_var keepalive keepalive
 	local interval="${keepalive##*[, ]}"
 	[ "$interval" != "$keepalive" ] || interval=5
-
-	json_get_var username username
-	json_get_var password password
-
 	[ -n "$connect" ] || json_get_var connect connect
 	[ -n "$disconnect" ] || json_get_var disconnect disconnect
-	json_get_var pppd_options pppd_options
 
 	proto_run_command "$config" /usr/sbin/pppd \
 		nodetach ipparam "$config" \
@@ -82,6 +70,10 @@ ppp_generic_teardown() {
 	case "$ERROR" in
 		11|19)
 			proto_notify_error "$interface" AUTH_FAILED
+			proto_block_restart "$interface"
+		;;
+		2)
+			proto_notify_error "$interface" INVALID_OPTIONS
 			proto_block_restart "$interface"
 		;;
 	esac
@@ -145,6 +137,8 @@ proto_pppoa_init_config() {
 	proto_config_add_int "vci"
 	proto_config_add_int "vpi"
 	proto_config_add_string "encaps"
+	no_device=1
+	available=1
 }
 
 proto_pppoa_setup() {
@@ -155,11 +149,8 @@ proto_pppoa_setup() {
 		/sbin/insmod $module 2>&- >&-
 	done
 
-	json_get_var atmdev atmdev
-	json_get_var vci vci
-	json_get_var vpi vpi
+	json_get_vars atmdev vci vpi encaps
 
-	json_get_var encaps encaps
 	case "$encaps" in
 		1|vc) encaps="vc-encaps" ;;
 		*) encaps="llc-encaps" ;;
@@ -175,9 +166,58 @@ proto_pppoa_teardown() {
 	ppp_generic_teardown "$@"
 }
 
+proto_pptp_init_config() {
+	ppp_generic_init_config
+	proto_config_add_string "server"
+	proto_config_add_boolean "buffering"
+	available=1
+	no_device=1
+}
+
+proto_pptp_setup() {
+	local config="$1"
+	local iface="$2"
+
+	local ip serv_addr server
+	json_get_var server server && {
+		for ip in $(resolveip -t 5 "$server"); do
+			( proto_add_host_dependency "$config" "$ip" )
+			serv_addr=1
+		done
+	}
+	[ -n "$serv_addr" ] || {
+		echo "Could not resolve server address"
+		sleep 5
+		proto_setup_failed "$config"
+		exit 1
+	}
+
+	local buffering
+	json_get_var buffering buffering
+	[ "${buffering:-1}" == 0 ] && buffering="--nobuffer" || buffering=
+
+	local load
+	for module in slhc ppp_generic ppp_async ppp_mppe ip_gre gre pptp; do
+		grep -q "$module" /proc/modules && continue
+		/sbin/insmod $module 2>&- >&-
+		load=1
+	done
+	[ "$load" = "1" ] && sleep 1
+
+	ppp_generic_setup "$config" \
+		plugin pptp.so \
+		pptp_server $server \
+		file /etc/ppp/options.pptp
+}
+
+proto_pptp_teardown() {
+	ppp_generic_teardown "$@"
+}
+
 [ -n "$INCLUDE_ONLY" ] || {
 	add_protocol ppp
 	[ -f /usr/lib/pppd/*/rp-pppoe.so ] && add_protocol pppoe
 	[ -f /usr/lib/pppd/*/pppoatm.so ] && add_protocol pppoa
+	[ -f /usr/lib/pppd/*/pptp.so ] && add_protocol pptp
 }
 

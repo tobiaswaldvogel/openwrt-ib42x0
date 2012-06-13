@@ -93,7 +93,7 @@ define Image/Build/SPW303V
 		--output $(BIN_DIR)/openwrt-$(4)-$(1)-cfe.bin.tmp \
 		--boardid $(2) --chipid $(3) --entry $(KERNEL_ENTRY) \
 		--load-addr $(LOADADDR) --rsa-signature "$(5)" \
-		$(6) $(7) $(8) $(9)
+		--pad 4 $(6) $(7) $(8) $(9)
 	# Fix up header
 	$(STAGING_DIR_HOST)/bin/spw303v -i $(BIN_DIR)/openwrt-$(4)-$(1)-cfe.bin.tmp \
 		-o $(BIN_DIR)/openwrt-$(4)-$(1)-cfe-sysupgrade.bin
@@ -145,6 +145,12 @@ endef
 define Image/Build
 	dd if=$(KDIR)/root.$(1) of=$(BIN_DIR)/$(IMG_PREFIX)-root.$(1) bs=128k conv=sync
 	# Various routers
+	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-4M-flash-generic,,--pad 2)
+	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-8M-flash-generic,,--pad 4)
+	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-16M-flash-generic,,--pad 8)
+	$(call Image/Build/CFE,$(1),963281TAN,6328,963481TAN-4M-flash-generic,,--pad 2)
+	$(call Image/Build/CFE,$(1),963281TAN,6328,963481TAN-8M-flash-generic,,--pad 4)
+	$(call Image/Build/CFE,$(1),963281TAN,6328,963481TAN-16M-flash-generic,,--pad 8)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,96345GW2-generic)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,96348GW2-bc221,,--layoutver 5)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,92345GW2-rev,OpenWRT-$(REVISION))
@@ -157,7 +163,6 @@ define Image/Build
 	$(call Image/Build/CFE,$(1),96348GW-10,6348,96348GW-10-generic)
 	$(call Image/Build/CFE,$(1),96358VW,6358,96358VW-generic)
 	$(call Image/Build/CFE,$(1),96358VW2,6358,96358VW2-generic)
-
 	$(call Image/Build/CFE,$(1),96368MVNgr,6368,96368MVNgr-generic)
 	$(call Image/Build/CFE,$(1),96368MVWG,6368,96368MVWG-generic)
 
@@ -203,6 +208,9 @@ define Image/Build
 	$(call Image/Build/CFEFIXUP,$(1),96358GW,AW4139,6358,DSL274XB-C2)
 	# D-Link DSL-2740B/DSL-2741B, rev C3
 	$(call Image/Build/CFE,$(1),AW4139,6358,DSL274XB-C3)
+	# D-Link DSL-2740B/DSL-2741B, rev F1
+	$(call Image/Build/CFE,$(1),AW4339U,6328,DSL274XB-F1-EU,,--signature2="4.06.01.EUF1" --pad 4)
+	$(call Image/Build/CFE,$(1),AW4339U,6328,DSL274XB-F1-AU,,--signature2="4.06.01.AUF1" --pad 4)
 	# D-Link DVA-G3810BN/TL
 	$(call Image/Build/CFE,$(1),96358GW,6358,DVAG3810BN)
 

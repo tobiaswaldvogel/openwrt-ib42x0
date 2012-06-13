@@ -3,7 +3,7 @@
 # Copyright (c) 2010 OpenWrt.org
 
 [ -n "$INCLUDE_ONLY" ] || {
-	. /etc/functions.sh
+	. /lib/functions.sh
 	. ../netifd-proto.sh
 	init_proto "$@"
 }
@@ -17,19 +17,6 @@ find_6in4_wanip() {
 	local ip=$(ip -4 a s dev "$1"); ip="${ip#*inet }"
 	echo "${ip%%[^0-9.]*}"
 }
-
-# Hook into scan_interfaces() to synthesize a .device option
-# This is needed for /sbin/ifup to properly dispatch control
-# to setup_interface_6in4() even if no .ifname is set in
-# the configuration.
-scan_6in4() {
-	config_set "$1" device "6in4-$1"
-}
-
-coldplug_interface_6in4() {
-	setup_interface_6in4 "6in4-$1" "$1"
-}
-
 
 tun_error() {
 	local cfg="$1"; shift;

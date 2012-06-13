@@ -1,6 +1,6 @@
 --- a/arch/mips/bcm63xx/boards/board_bcm963xx.c
 +++ b/arch/mips/bcm63xx/boards/board_bcm963xx.c
-@@ -689,6 +689,49 @@ static struct board_info __initdata boar
+@@ -451,6 +451,49 @@ static struct board_info __initdata boar
  };
  
  
@@ -24,12 +24,12 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl-fail",
++			.name		= "CT536_CT5621:green:adsl-fail",
 +			.gpio		= 2,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "power",
++			.name		= "CT536_CT5621:green:power",
 +			.gpio		= 0,
 +			.active_low	= 1,
 +			.default_trigger = "default-on",
@@ -50,7 +50,7 @@
  static struct board_info __initdata board_96348gw = {
  	.name				= "96348GW",
  	.expected_cpu_id		= 0x6348,
-@@ -1902,6 +1945,7 @@ static const struct board_info __initdat
+@@ -1897,6 +1940,7 @@ static const struct board_info __initdat
  	&board_96348sv,
  	&board_V2500V_BB,
  	&board_V2110,

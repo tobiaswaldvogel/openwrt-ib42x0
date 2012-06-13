@@ -1,4 +1,3 @@
-LINUX_VERSION:=3.2.16
 BOARDNAME:=PCEngines alix2
 FEATURES:=squashfs jffs2 ext4 pci usb gpio
 DEFAULT_PACKAGES += \

@@ -199,17 +199,25 @@ void __init ath79_register_mdio(unsigned int id, u32 phy_mask)
 
 	switch (ath79_soc) {
 	case ATH79_SOC_AR7240:
-	case ATH79_SOC_AR7241:
-	case ATH79_SOC_AR9330:
-	case ATH79_SOC_AR9331:
 		mdio_data->is_ar7240 = 1;
+		/* fall through */
+	case ATH79_SOC_AR7241:
+		mdio_data->builtin_switch = 1;
+		break;
+
+	case ATH79_SOC_AR9330:
+		mdio_data->is_ar9330 = 1;
+		/* fall through */
+	case ATH79_SOC_AR9331:
+		mdio_data->builtin_switch = 1;
 		break;
 
 	case ATH79_SOC_AR9341:
 	case ATH79_SOC_AR9342:
 	case ATH79_SOC_AR9344:
 		if (id == 1)
-			mdio_data->is_ar7240 = 1;
+			mdio_data->builtin_switch = 1;
+		mdio_data->is_ar934x = 1;
 		break;
 
 	default:
@@ -624,6 +632,24 @@ static int __init ath79_setup_phy_if_mode(unsigned int id,
 	}
 
 	return 0;
+}
+
+void __init ath79_setup_ar933x_phy4_switch(bool mac, bool mdio)
+{
+	void __iomem *base;
+	u32 t;
+
+	base = ioremap(AR933X_GMAC_BASE, AR933X_GMAC_SIZE);
+
+	t = __raw_readl(base + AR933X_GMAC_REG_ETH_CFG);
+	t &= ~(AR933X_ETH_CFG_SW_PHY_SWAP | AR933X_ETH_CFG_SW_PHY_ADDR_SWAP);
+	if (mac)
+		t |= AR933X_ETH_CFG_SW_PHY_SWAP;
+	if (mdio)
+		t |= AR933X_ETH_CFG_SW_PHY_ADDR_SWAP;
+	__raw_writel(t, base + AR933X_GMAC_REG_ETH_CFG);
+
+	iounmap(base);
 }
 
 static int ath79_eth_instance __initdata;

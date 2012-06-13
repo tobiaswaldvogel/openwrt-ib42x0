@@ -12,11 +12,7 @@ define KernelPackage/sis190
   TITLE:=SiS 190 Fast/Gigabit Ethernet support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_SIS190
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/sis/sis190.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/sis190.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/sis/sis190.ko
   AUTOLOAD:=$(call AutoLoad,50,sis190)
 endef
  
@@ -29,11 +25,7 @@ define KernelPackage/skge
   KCONFIG:=CONFIG_SKGE \
 	CONFIG_SKGE_DEBUG=n \
 	CONFIG_SKGE_GENESIS=n
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/marvell/skge.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/skge.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/marvell/skge.ko
   AUTOLOAD:=$(call AutoLoad,50,skge)
 endef
 
@@ -42,13 +34,9 @@ $(eval $(call KernelPackage,skge))
 define KernelPackage/atl2
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Atheros L2 Fast Ethernet support
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_ATL2
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atlx/atl2.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/atlx/atl2.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atlx/atl2.ko
   AUTOLOAD:=$(call AutoLoad,50,atl2)
 endef
 
@@ -57,13 +45,9 @@ $(eval $(call KernelPackage,atl2))
 define KernelPackage/atl1
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Atheros L1 Gigabit Ethernet support
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_ATL1
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atlx/atl1.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/atlx/atl1.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atlx/atl1.ko
   AUTOLOAD:=$(call AutoLoad,50,atl1)
 endef
 
@@ -72,13 +56,9 @@ $(eval $(call KernelPackage,atl1))
 define KernelPackage/atl1c
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Atheros L1C
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_ATL1C
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atl1c/atl1c.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/atl1c/atl1c.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atl1c/atl1c.ko
   AUTOLOAD:=$(call AutoLoad,50,atl1c)
 endef
 
@@ -87,13 +67,9 @@ $(eval $(call KernelPackage,atl1c))
 define KernelPackage/atl1e
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Atheros L1E
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_ATL1E
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atl1e/atl1e.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/atl1e/atl1e.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/atheros/atl1e/atl1e.ko
   AUTOLOAD:=$(call AutoLoad,50,atl1e)
 endef
 
@@ -112,6 +88,24 @@ define KernelPackage/libphy/description
 endef
 
 $(eval $(call KernelPackage,libphy))
+
+define KernelPackage/et131x
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Agere ET131x Gigabit Ethernet driver
+  URL:=http://sourceforge.net/projects/et131x
+  FILES:=$(LINUX_DIR)/drivers/staging/et131x/et131x.$(LINUX_KMOD_SUFFIX)
+  KCONFIG:= \
+	CONFIG_ET131X \
+	CONFIG_ET131X_DEBUG=n
+  DEPENDS:=@PCI_SUPPORT
+  AUTOLOAD:=$(call AutoLoad,70,et131x)
+endef
+
+define KernelPackage/et131x/description
+  This package contains the et131x kernel module.
+endef
+
+$(eval $(call KernelPackage,et131x))
 
 define KernelPackage/swconfig
   SUBMENU:=$(NETWORK_DEVICES_MENU)
@@ -193,11 +187,7 @@ define KernelPackage/natsemi
   TITLE:=National Semiconductor DP8381x series
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_NATSEMI
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/natsemi/natsemi.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/natsemi.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/natsemi/natsemi.ko
   AUTOLOAD:=$(call AutoLoad,20,natsemi)
 endef
 
@@ -215,11 +205,7 @@ define KernelPackage/r6040
   DEPENDS:=@TARGET_rdc +kmod-libphy
   KCONFIG:=CONFIG_R6040 \
 		CONFIG_R6040_NAPI=y
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/rdc/r6040.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/r6040.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/rdc/r6040.ko
   AUTOLOAD:=$(call AutoLoad,99,r6040)
 endef
 
@@ -235,11 +221,7 @@ define KernelPackage/sis900
   TITLE:=SiS 900 Ethernet support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_SIS900
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/sis/sis900.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/sis900.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/sis/sis900.ko
   AUTOLOAD:=$(call AutoLoad,50,sis900)
 endef
 
@@ -253,12 +235,9 @@ $(eval $(call KernelPackage,sis900))
 define KernelPackage/sky2
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=SysKonnect Yukon2 support
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_SKY2
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/marvell/sky2.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/sky2.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/marvell/sky2.ko
   AUTOLOAD:=$(call AutoLoad,50,sky2)
 endef
 
@@ -281,11 +260,7 @@ define KernelPackage/via-rhine
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_VIA_RHINE \
     CONFIG_VIA_RHINE_MMIO=y
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/via/via-rhine.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/via-rhine.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/via/via-rhine.ko
   AUTOLOAD:=$(call AutoLoad,50,via-rhine)
 endef
 
@@ -301,11 +276,7 @@ define KernelPackage/via-velocity
   TITLE:=VIA Velocity Gigabit Ethernet Adapter kernel support
   DEPENDS:=@TARGET_ixp4xx||TARGET_mpc83xx||TARGET_x86 +kmod-lib-crc-ccitt
   KCONFIG:=CONFIG_VIA_VELOCITY
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/via/via-velocity.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/via-velocity.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/via/via-velocity.ko
   AUTOLOAD:=$(call AutoLoad,50,via-velocity)
 endef
 
@@ -320,11 +291,7 @@ define KernelPackage/ixp4xx-eth
   TITLE:=IXP4xxt Ethernet Adapter kernel support
   DEPENDS:=@TARGET_ixp4xx
   KCONFIG:=CONFIG_IXP4XX_ETH
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/xscale/ixp4xx_eth.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/arm/ixp4xx_eth.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/xscale/ixp4xx_eth.ko
   AUTOLOAD:=$(call AutoLoad,50,ixp4xx_eth)
 endef
 
@@ -343,11 +310,7 @@ define KernelPackage/8139too
     CONFIG_8139TOO_TUNE_TWISTER=n \
     CONFIG_8139TOO_8129=n \
     CONFIG_8139_OLD_RX_RESET=n
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/8139too.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/8139too.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/8139too.ko
   AUTOLOAD:=$(call AutoLoad,50,8139too)
 endef
 
@@ -363,11 +326,7 @@ define KernelPackage/8139cp
   TITLE:=RealTek RTL-8139C+ PCI Fast Ethernet Adapter kernel support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_8139CP
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/8139cp.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/8139cp.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/8139cp.ko
   AUTOLOAD:=$(call AutoLoad,50,8139cp)
 endef
 
@@ -385,11 +344,7 @@ define KernelPackage/r8169
   KCONFIG:=CONFIG_R8169 \
     CONFIG_R8169_NAPI=y \
     CONFIG_R8169_VLAN=n
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/r8169.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/r8169.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/realtek/r8169.ko
   AUTOLOAD:=$(call AutoLoad,50,r8169)
 endef
 
@@ -405,15 +360,9 @@ define KernelPackage/ne2k-pci
   TITLE:=ne2k-pci Ethernet Adapter kernel support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_NE2K_PCI
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:= \
+  FILES:= \
 	$(LINUX_DIR)/drivers/net/ethernet/8390/ne2k-pci.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/8390/8390.ko
-  else
-    FILES:= \
-	$(LINUX_DIR)/drivers/net/ne2k-pci.ko \
-	$(LINUX_DIR)/drivers/net/8390.ko
-  endif
   AUTOLOAD:=$(call AutoLoad,50,8390 ne2k-pci)
 endef
 
@@ -429,11 +378,7 @@ define KernelPackage/e100
   TITLE:=Intel(R) PRO/100+ cards kernel support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_E100
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e100.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/e100.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e100.ko
   AUTOLOAD:=$(call AutoLoad,50,e100)
 endef
 
@@ -458,11 +403,7 @@ define KernelPackage/e1000
   KCONFIG:=CONFIG_E1000 \
     CONFIG_E1000_DISABLE_PACKET_SPLIT=n \
     CONFIG_E1000_NAPI=y
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e1000/e1000.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/e1000/e1000.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e1000/e1000.ko
   AUTOLOAD:=$(call AutoLoad,35,e1000)
 endef
 
@@ -478,11 +419,7 @@ define KernelPackage/e1000e
   TITLE:=Intel(R) PRO/1000 PCIe cards kernel support
   DEPENDS:=@PCIE_SUPPORT
   KCONFIG:=CONFIG_E1000E
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e1000e/e1000e.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/e1000e/e1000e.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/intel/e1000e/e1000e.ko
   AUTOLOAD:=$(call AutoLoad,50,e1000e)
 endef
 
@@ -498,11 +435,7 @@ define KernelPackage/b44
   KCONFIG:=CONFIG_B44
   DEPENDS:=@TARGET_x86 +kmod-ssb
   SUBMENU:=$(NETWORK_DEVICES_MENU)
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/broadcom/b44.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/b44.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/broadcom/b44.ko
   AUTOLOAD:=$(call AutoLoad,50,b44)
 endef
 
@@ -518,11 +451,7 @@ define KernelPackage/3c59x
   TITLE:=3Com 3c590/3c900 series (592/595/597) Vortex/Boomerang
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_VORTEX
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/3com/3c59x.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/3c59x.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/3com/3c59x.ko
   AUTOLOAD:=$(call AutoLoad,50,3c59x)
 endef
 
@@ -544,11 +473,7 @@ define KernelPackage/pcnet32
   TITLE:=AMD PCnet32 PCI support
   DEPENDS:=@(TARGET_x86||TARGET_malta)
   KCONFIG:=CONFIG_PCNET32
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/amd/pcnet32.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/pcnet32.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/amd/pcnet32.ko
   AUTOLOAD:=$(call AutoLoad,50,pcnet32)
 endef
 
@@ -564,11 +489,7 @@ define KernelPackage/tg3
   KCONFIG:=CONFIG_TIGON3
   DEPENDS:=+!TARGET_brcm47xx:kmod-libphy @!TARGET_ubicom32
   SUBMENU:=$(NETWORK_DEVICES_MENU)
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/broadcom/tg3.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/tg3.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/broadcom/tg3.ko
   AUTOLOAD:=$(call AutoLoad,50,tg3)
 endef
 
@@ -674,6 +595,7 @@ $(eval $(call KernelPackage,macvlan))
 
 define KernelPackage/tulip
   TITLE:=Tulip family network device support
+  DEPENDS:=@TARGET_x86
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   KCONFIG:= \
     CONFIG_NET_TULIP=y \
@@ -688,23 +610,13 @@ define KernelPackage/tulip
     CONFIG_WINBOND_840 \
     CONFIG_DM9102 \
     CONFIG_ULI526X 
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:= \
+  FILES:= \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/tulip.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/de2104x.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/de4x5.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/dmfe.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/uli526x.ko \
 	$(LINUX_DIR)/drivers/net/ethernet/dec/tulip/winbond-840.ko
-  else
-    FILES:= \
-	$(LINUX_DIR)/drivers/net/tulip/tulip.ko \
-	$(LINUX_DIR)/drivers/net/tulip/de2104x.ko \
-	$(LINUX_DIR)/drivers/net/tulip/de4x5.ko \
-	$(LINUX_DIR)/drivers/net/tulip/dmfe.ko \
-	$(LINUX_DIR)/drivers/net/tulip/uli526x.ko \
-	$(LINUX_DIR)/drivers/net/tulip/winbond-840.ko
-  endif
   AUTOLOAD:=$(call AutoLoad,50,tulip)
 endef
 
@@ -766,14 +678,11 @@ $(eval $(call KernelPackage,ifb))
 define KernelPackage/dm9000
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Davicom 9000 Ethernet support
+  DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_DM9000 \
     CONFIG_DM9000_DEBUGLEVEL=4 \
     CONFIG_DM9000_FORCE_SIMPLE_PHY_POLL=y
-  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.2)),1)
-    FILES:=$(LINUX_DIR)/drivers/net/ethernet/davicom/dm9000.ko
-  else
-    FILES:=$(LINUX_DIR)/drivers/net/dm9000.ko
-  endif
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/davicom/dm9000.ko
   AUTOLOAD:=$(call AutoLoad,34,dm9000)
 endef
 

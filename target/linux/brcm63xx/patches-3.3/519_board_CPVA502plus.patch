@@ -1,9 +1,10 @@
 --- a/arch/mips/bcm63xx/boards/board_bcm963xx.c
 +++ b/arch/mips/bcm63xx/boards/board_bcm963xx.c
-@@ -439,6 +439,42 @@ static struct board_info __initdata boar
+@@ -1049,6 +1049,44 @@ static struct board_info __initdata boar
+ 		},
  	},
  };
- 
++
 +static struct board_info __initdata board_CPVA502plus = {
 +	.name				= "CPVA502+",
 +	.expected_cpu_id		= 0x6348,
@@ -24,26 +25,27 @@
 +
 +	.leds = {
 +		{
-+			.name		= "phone",
++			.name		= "CPVA502+:green:phone",
 +			.gpio		= 0,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "link",
++			.name		= "CPVA502+:green:link",
 +			.gpio		= 5,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "feth1", /* FIXME:does gpio4 enable eth1 phy? */
++			.name		= "CPVA502+:green:feth1", /* FIXME:does gpio4 enable eth1 phy? */
 +			.gpio		= 4,
 +			.active_low	= 1,
 +		},
 +	},
 +};
++
  #endif
  
  /*
-@@ -2012,6 +2048,7 @@ static const struct board_info __initdat
+@@ -2007,6 +2045,7 @@ static const struct board_info __initdat
  	&board_V2110,
  	&board_ct536_ct5621,
  	&board_96348A_122,

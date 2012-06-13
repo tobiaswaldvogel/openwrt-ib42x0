@@ -1,16 +1,15 @@
 --- a/arch/mips/bcm63xx/boards/board_bcm963xx.c
 +++ b/arch/mips/bcm63xx/boards/board_bcm963xx.c
-@@ -17,6 +17,9 @@
- #include <linux/ssb/ssb.h>
+@@ -15,6 +15,8 @@
  #include <linux/gpio_keys.h>
  #include <linux/input.h>
-+#include <linux/spi/spi.h>
+ #include <linux/spi/spi.h>
 +#include <linux/spi/spi_gpio.h>
 +#include <linux/spi/74x164.h>
  #include <asm/addrspace.h>
  #include <bcm63xx_board.h>
  #include <bcm63xx_cpu.h>
-@@ -41,6 +44,12 @@
+@@ -43,6 +45,12 @@
  #define CFE_OFFSET_64K		0x10000
  #define CFE_OFFSET_128K		0x20000
  
@@ -20,10 +19,10 @@
 +#define NB4_SPI_GPIO_CLK	6
 +#define NB4_74HC64_GPIO(X)	(NB4_74X164_GPIO_BASE + (X))
 +
- static struct bcm963xx_nvram nvram;
- static unsigned int mac_addr_used;
  static struct board_info board;
-@@ -667,6 +676,496 @@ static struct board_info __initdata boar
+ 
+ /*
+@@ -666,6 +674,496 @@ static struct board_info __initdata boar
  
  	.has_ohci0			= 1,
  };
@@ -89,47 +88,47 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl",
++			.name		= "NB4-SER-r0:white:adsl",
 +			.gpio		= NB4_74HC64_GPIO(4),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "traffic",
++			.name		= "NB4-SER-r0:white:traffic",
 +			.gpio		= 2,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tel",
++			.name		= "NB4-SER-r0:white:tel",
 +			.gpio		= NB4_74HC64_GPIO(3),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tv",
++			.name		= "NB4-SER-r0:white:tv",
 +			.gpio		= NB4_74HC64_GPIO(2),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "wifi",
++			.name		= "NB4-SER-r0:white:wifi",
 +			.gpio		= 15,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "alarm",
++			.name		= "NB4-SER-r0:white:alarm",
 +			.gpio		= NB4_74HC64_GPIO(0),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:red",
++			.name		= "NB4-SER-r0:red:service",
 +			.gpio		= 29,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:green",
++			.name		= "NB4-SER-r0:green:service",
 +			.gpio		= 30,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:blue",
++			.name		= "NB4-SER-r0:blue:service",
 +			.gpio		= 4,
 +			.active_low	= 1,
 +		},
@@ -182,47 +181,47 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl",
++			.name		= "NB4-SER-r1:white:adsl",
 +			.gpio		= NB4_74HC64_GPIO(4),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "traffic",
++			.name		= "NB4-SER-r1:white:traffic",
 +			.gpio		= 2,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tel",
++			.name		= "NB4-SER-r1:white:tel",
 +			.gpio		= NB4_74HC64_GPIO(3),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tv",
++			.name		= "NB4-SER-r1:white:tv",
 +			.gpio		= NB4_74HC64_GPIO(2),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "wifi",
++			.name		= "NB4-SER-r1:white:wifi",
 +			.gpio		= 15,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "alarm",
++			.name		= "NB4-SER-r1:white:alarm",
 +			.gpio		= NB4_74HC64_GPIO(0),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:red",
++			.name		= "NB4-SER-r1:red:service",
 +			.gpio		= 29,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:green",
++			.name		= "NB4-SER-r1:green:service",
 +			.gpio		= 30,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:blue",
++			.name		= "NB4-SER-r1:blue:service",
 +			.gpio		= 4,
 +			.active_low	= 1,
 +		},
@@ -275,47 +274,47 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl",
++			.name		= "NB4-SER-r2:white:adsl",
 +			.gpio		= NB4_74HC64_GPIO(4),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "traffic",
++			.name		= "NB4-SER-r2:white:traffic",
 +			.gpio		= 2,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tel",
++			.name		= "NB4-SER-r2:white:tel",
 +			.gpio		= NB4_74HC64_GPIO(3),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tv",
++			.name		= "NB4-SER-r2:white:tv",
 +			.gpio		= NB4_74HC64_GPIO(2),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "wifi",
++			.name		= "NB4-SER-r2:white:wifi",
 +			.gpio		= 15,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "alarm",
++			.name		= "NB4-SER-r2:white:alarm",
 +			.gpio		= NB4_74HC64_GPIO(0),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:red",
++			.name		= "NB4-SER-r2:red:service",
 +			.gpio		= 29,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:green",
++			.name		= "NB4-SER-r2:green:service",
 +			.gpio		= 30,
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:blue",
++			.name		= "NB4-SER-r2:blue:service",
 +			.gpio		= 4,
 +			.active_low	= 1,
 +		},
@@ -368,43 +367,43 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl",
++			.name		= "NB4-FXC-r1:white:adsl",
 +			.gpio		= NB4_74HC64_GPIO(4),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "traffic",
++			.name		= "NB4-FXC-r1:white:traffic",
 +			.gpio		= 2,
 +		},
 +		{
-+			.name		= "tel",
++			.name		= "NB4-FXC-r1:white:tel",
 +			.gpio		= NB4_74HC64_GPIO(3),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tv",
++			.name		= "NB4-FXC-r1:white:tv",
 +			.gpio		= NB4_74HC64_GPIO(2),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "wifi",
++			.name		= "NB4-FXC-r1:white:wifi",
 +			.gpio		= 15,
 +		},
 +		{
-+			.name		= "alarm",
++			.name		= "NB4-FXC-r1:white:alarm",
 +			.gpio		= NB4_74HC64_GPIO(0),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:red",
++			.name		= "NB4-FXC-r1:red:service",
 +			.gpio		= 29,
 +		},
 +		{
-+			.name		= "service:green",
++			.name		= "NB4-FXC-r1:green:service",
 +			.gpio		= 30,
 +		},
 +		{
-+			.name		= "service:blue",
++			.name		= "NB4-FXC-r1:blue:service",
 +			.gpio		= 4,
 +		},
 +	},
@@ -456,43 +455,43 @@
 +
 +	.leds = {
 +		{
-+			.name		= "adsl",
++			.name		= "NB4-FXC-r2:white:adsl",
 +			.gpio		= NB4_74HC64_GPIO(4),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "traffic",
++			.name		= "NB4-FXC-r2:white:traffic",
 +			.gpio		= 2,
 +		},
 +		{
-+			.name		= "tel",
++			.name		= "NB4-FXC-r2:white:tel",
 +			.gpio		= NB4_74HC64_GPIO(3),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "tv",
++			.name		= "NB4-FXC-r2:white:tv",
 +			.gpio		= NB4_74HC64_GPIO(2),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "wifi",
++			.name		= "NB4-FXC-r2:white:wifi",
 +			.gpio		= 15,
 +		},
 +		{
-+			.name		= "alarm",
++			.name		= "NB4-FXC-r2:white:alarm",
 +			.gpio		= NB4_74HC64_GPIO(0),
 +			.active_low	= 1,
 +		},
 +		{
-+			.name		= "service:red",
++			.name		= "NB4-FXC-r2:red:service",
 +			.gpio		= 29,
 +		},
 +		{
-+			.name		= "service:green",
++			.name		= "NB4-FXC-r2:green:service",
 +			.gpio		= 30,
 +		},
 +		{
-+			.name		= "service:blue",
++			.name		= "NB4-FXC-r2:blue:service",
 +			.gpio		= 4,
 +		},
 +	},
@@ -520,7 +519,7 @@
  #endif
  
  /*
-@@ -697,9 +1196,30 @@ static const struct board_info __initdat
+@@ -696,9 +1194,31 @@ static const struct board_info __initdat
  	&board_96358vw2,
  	&board_AGPFS0,
  	&board_DWVS0,
@@ -536,28 +535,29 @@
 +{
 +	u8 *boot_addr, *p;
 +	u32 val;
++	char *board_name = (char *)bcm63xx_nvram_get_name();
 +
-+	if (BCMCPU_IS_6358() && (!strcmp(nvram.name, "96358VW"))) {
++	if (BCMCPU_IS_6358() && (!strcmp(board_name, "96358VW"))) {
 +		val = bcm_mpi_readl(MPI_CSBASE_REG(0));
 +		val &= MPI_CSBASE_BASE_MASK;
 +		boot_addr = (u8 *)KSEG1ADDR(val);
 +		/* Extract nb4 PID */
 +		p = boot_addr + NB4_PID_OFFSET;
 +		if (!memcmp(p, "NB4-", 4))
-+			memcpy(nvram.name, p, sizeof("NB4-XXX-rX"));
++			memcpy(board_name, p, sizeof("NB4-XXX-rX"));
 +	}
 +}
 +
  /*
   * Register a sane SPROMv2 to make the on-board
   * bcm4318 WLAN work
-@@ -850,6 +1370,9 @@ void __init board_prom_init(void)
+@@ -807,6 +1327,9 @@ void __init board_prom_init(void)
  		boardid_fixup(boot_addr);
  	}
  
 +	/* Fixup broken nb4 board name */
 +	nb4_nvram_fixup();
 +
+ 	board_name = bcm63xx_nvram_get_name();
  	/* find board by name */
  	for (i = 0; i < ARRAY_SIZE(bcm963xx_boards); i++) {
- 		if (strncmp(nvram.name, bcm963xx_boards[i]->name,
