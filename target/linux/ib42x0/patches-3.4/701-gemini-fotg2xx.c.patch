@@ -1,0 +1,285 @@
+--- /dev/null	2012-01-23 21:36:48.249769447 +0100
++++ linux-3.2/drivers/usb/host/ehci-fotg2xx.c	2012-01-26 03:53:18.820201415 +0100
+@@ -0,0 +1,282 @@
++/*
++ *  EHCI Host Controller driver
++ *
++ *  Copyright (C) 2006 Sony Computer Entertainment Inc.
++ *  Copyright 2006 Sony Corp.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ */
++
++#include <linux/platform_device.h>
++#include <mach/hardware.h>
++#include <mach/global_reg.h>
++
++#define DRV_NAME	"ehci-fotg2xx"
++
++#define HCD_MISC			0x40
++
++#define OTGC_SCR			0x80
++#define OTGC_INT_STS			0x84
++#define OTGC_INT_EN			0x88
++
++#define GLOBAL_ISR			0xC0
++#define GLOBAL_ICR			0xC4
++
++#define GLOBAL_INT_POLARITY		(1 << 3)
++#define GLOBAL_INT_MASK_HC		(1 << 2)
++#define GLOBAL_INT_MASK_OTG		(1 << 1)
++#define GLOBAL_INT_MASK_DEV		(1 << 0)
++
++#define OTGC_SCR_ID			(1 << 21)
++#define OTGC_SCR_CROLE			(1 << 20)
++#define OTGC_SCR_VBUS_VLD		(1 << 19)
++#define OTGC_SCR_A_SRP_RESP_TYPE	(1 << 8)
++#define OTGC_SCR_A_SRP_DET_EN		(1 << 7)
++#define OTGC_SCR_A_SET_B_HNP_EN		(1 << 6)
++#define OTGC_SCR_A_BUS_DROP		(1 << 5)
++#define OTGC_SCR_A_BUS_REQ		(1 << 4)
++
++#define OTGC_INT_APLGRMV		(1 << 12)
++#define OTGC_INT_BPLGRMV		(1 << 11)
++#define OTGC_INT_OVC			(1 << 10)
++#define OTGC_INT_IDCHG			(1 << 9)
++#define OTGC_INT_RLCHG			(1 << 8)
++#define OTGC_INT_AVBUSERR		(1 << 5)
++#define OTGC_INT_ASRPDET		(1 << 4)
++#define OTGC_INT_BSRPDN			(1 << 0)
++
++#define OTGC_INT_A_TYPE		(OTGC_INT_ASRPDET|OTGC_INT_AVBUSERR|OTGC_INT_OVC|OTGC_INT_RLCHG|OTGC_INT_IDCHG|OTGC_INT_APLGRMV)
++#define OTGC_INT_B_TYPE		(OTGC_INT_AVBUSERR|OTGC_INT_OVC|OTGC_INT_RLCHG|OTGC_INT_IDCHG)
++
++static void fotg2xx_otgc_init(struct usb_hcd *hcd)
++{
++	unsigned int val;
++
++	val = readl(hcd->regs + OTGC_SCR);
++	val &= ~(OTGC_SCR_A_SRP_RESP_TYPE | OTGC_SCR_A_SRP_DET_EN);
++	val &= ~(OTGC_SCR_A_BUS_DROP | OTGC_SCR_A_SET_B_HNP_EN);
++	val |= OTGC_SCR_A_BUS_REQ;
++	writel(val, hcd->regs + OTGC_SCR);
++
++	val = readl(hcd->regs + OTGC_INT_EN);
++	val &= ~OTGC_INT_B_TYPE;
++	val |= OTGC_INT_A_TYPE;
++	writel(val, hcd->regs + OTGC_INT_EN);
++
++	val = readl(hcd->regs + GLOBAL_ICR);
++	val &= ~(GLOBAL_INT_MASK_OTG | GLOBAL_INT_MASK_HC);
++	writel(val, hcd->regs + GLOBAL_ICR);
++
++	/* setup MISC register, fixes timing problems */
++	val = readl(hcd->regs + HCD_MISC);
++	val |= 0xD;
++	writel(val, hcd->regs + HCD_MISC);
++}
++
++static int fotg2xx_ehci_run(struct usb_hcd *hcd)
++{
++	int retval;
++	u32 val;
++
++	retval = ehci_run(hcd);
++
++	val = readl(hcd->regs + GLOBAL_ICR);
++	val |= GLOBAL_INT_MASK_HC;
++	writel(val, hcd->regs + GLOBAL_ICR);
++
++	val = readl(hcd->regs + 0x18);
++	val &= 0x0000003F;
++	writel(val, hcd->regs + 0x14);
++
++	fotg2xx_otgc_init(hcd);
++	return retval;
++}
++
++static int fotg2xx_ehci_hc_reset(struct usb_hcd *hcd)
++{
++	struct ehci_hcd *ehci = hcd_to_ehci (hcd);
++	int result;
++
++	result = ehci_halt(ehci);
++	if (result)
++		return result;
++
++	result = ehci_init(hcd);
++	if (result)
++		return result;
++
++	ehci_port_power(ehci, 0);
++	return result;
++}
++
++static const struct hc_driver fotg2xx_ehci_hc_driver = {
++	.description		= hcd_name,
++	.product_desc		= "Faraday OTG 2XX EHCI Host Controller",
++	.hcd_priv_size		= sizeof(struct ehci_hcd),
++	.irq			= ehci_irq,
++	.flags			= HCD_MEMORY | HCD_USB2,
++	.reset			= fotg2xx_ehci_hc_reset,
++	.start			= fotg2xx_ehci_run,
++	.stop			= ehci_stop,
++	.shutdown		= ehci_shutdown,
++	.urb_enqueue		= ehci_urb_enqueue,
++	.urb_dequeue		= ehci_urb_dequeue,
++	.endpoint_disable	= ehci_endpoint_disable,
++	.endpoint_reset		= ehci_endpoint_reset,
++	.get_frame_number	= ehci_get_frame,
++	.hub_status_data	= ehci_hub_status_data,
++	.hub_control		= ehci_hub_control,
++#if defined(CONFIG_PM)
++	.bus_suspend		= ehci_bus_suspend,
++	.bus_resume		= ehci_bus_resume,
++#endif
++	.relinquish_port	= ehci_relinquish_port,
++	.port_handed_over	= ehci_port_handed_over,
++	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
++};
++
++static irqreturn_t fotg2xx_ehci_irq(int irq, void *devid)
++{
++	struct usb_hcd *hcd = devid;
++	struct ehci_hcd *ehci = hcd_to_ehci (hcd);
++	u32 val;
++	unsigned long flags;
++
++	spin_lock_irqsave(&ehci->lock, flags);
++
++	val = readl(hcd->regs + OTGC_INT_STS);
++	if (unlikely(val)) {
++		writel(val, hcd->regs + OTGC_INT_STS);
++		spin_unlock_irqrestore(&ehci->lock, flags);
++		return IRQ_HANDLED;
++	}
++
++	if (unlikely(readl(hcd->regs + OTGC_SCR) & OTGC_SCR_CROLE)) {
++		printk(KERN_WARNING
++			"received irq for peripheral - don't know what to do!\n");
++		spin_unlock_irqrestore(&ehci->lock, flags);
++		return IRQ_HANDLED;
++	}
++
++	if (unlikely(!(readl(hcd->regs + GLOBAL_ISR) & GLOBAL_INT_MASK_HC))) {
++		spin_unlock_irqrestore(&ehci->lock, flags);
++		return IRQ_HANDLED;
++	}
++
++	/* leave this for ehci irq handler */
++	spin_unlock_irqrestore(&ehci->lock, flags);
++	return IRQ_NONE;
++}
++
++static const u32 FOTG_ID[] = { 0x1000010, 1, 6 };
++
++static int __devinit fotg2xx_ehci_probe(struct platform_device *pdev)
++{
++	const struct hc_driver *driver = &fotg2xx_ehci_hc_driver;
++	struct usb_hcd *hcd;
++	struct ehci_hcd *ehci;
++	struct resource *res;
++	int irq , retval;
++	u32 val;
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "Found HC with no IRQ. Check %s setup!\n",
++			dev_name(&pdev->dev));
++		return -ENODEV;
++	}
++
++	irq = res->start;
++	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
++	if (!hcd) {
++		retval = -ENOMEM;
++		goto err1;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev,
++			"Found HC with no register addr. Check %s setup!\n",
++			dev_name(&pdev->dev));
++		retval = -ENODEV;
++		goto err2;
++	}
++
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = res->end - res->start + 1;
++	hcd->has_tt = 1;
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
++				driver->description)) {
++		dev_dbg(&pdev->dev, "controller already in use\n");
++		retval = -EBUSY;
++		goto err2;
++	}
++
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (hcd->regs == NULL) {
++		dev_dbg(&pdev->dev, "error mapping memory\n");
++		retval = -EFAULT;
++		goto err3;
++	}
++
++	ehci = hcd_to_ehci(hcd);
++	ehci->caps = hcd->regs;
++	ehci->regs = hcd->regs +
++		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
++	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
++	ehci->sbrn = HCD_USB2;
++
++	platform_set_drvdata(pdev, hcd);
++
++	val = readl(hcd->regs + GLOBAL_ICR);
++	val |= GLOBAL_INT_MASK_HC | GLOBAL_INT_POLARITY;
++	writel(val, hcd->regs + GLOBAL_ICR);
++
++	if ((request_irq(irq, &fotg2xx_ehci_irq, IRQF_SHARED,
++		hcd->irq_descr, hcd)) != 0) {
++		retval = -EFAULT;
++		goto err4;
++	}
++
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
++	if (retval)
++		goto err4;
++	
++	return 0;
++
++err4:
++	iounmap(hcd->regs);
++err3:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err2:
++	usb_put_hcd(hcd);
++err1:
++	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev), retval);
++	return retval;
++}
++
++static int __devexit fotg2xx_ehci_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++	usb_put_hcd(hcd);
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++static struct platform_driver fotg2xx_ehci_driver = {
++	.driver = {
++		.name = DRV_NAME,
++	},
++	.probe = fotg2xx_ehci_probe,
++	.remove = __devexit_p(fotg2xx_ehci_remove),
++};
++
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_DESCRIPTION("USB driver for Gemini SoC");

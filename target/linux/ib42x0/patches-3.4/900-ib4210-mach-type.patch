@@ -1,0 +1,7 @@
+--- linux-3.2.2/arch/arm/tools/mach-types.orig	2012-01-30 15:54:16.319801409 +0100
++++ linux-3.2.2/arch/arm/tools/mach-types	2012-01-30 15:53:46.446802426 +0100
+@@ -3497,3 +3497,4 @@
+ pov2			MACH_POV2		POV2			3889
+ ipod_touch_2g		MACH_IPOD_TOUCH_2G	IPOD_TOUCH_2G		3890
+ da850_pqab		MACH_DA850_PQAB		DA850_PQAB		3891
++nas4210b		MACH_NAS4210B		NAS4210B		8191

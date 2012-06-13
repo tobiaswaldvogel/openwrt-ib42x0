@@ -1,0 +1,289 @@
+--- linux-2.6.32.24/drivers/misc/Kconfig.orig	2010-10-01 22:51:56.000000000 +0200
++++ linux-2.6.32.24/drivers/misc/Kconfig	2010-11-04 17:06:03.000000000 +0100
+@@ -102,6 +102,17 @@
+ 	  TC can be used for other purposes, such as PWM generation and
+ 	  interval timing.
+ 
++config GEMINI_POWER_CTRL
++	tristate "Gemini Power Control"
++	depends on ARCH_GEMINI
++	help
++	  Say Y here if you want to build a driver for the Gemini Power Control
++	  device. You propably want this, as it's needed to switch off devices
++	  based on the Gemini Platform with the powerbutton.
++
++	  If you choose to build this as module, it's name will be gemini_pwc.
++	  If unsure, say Y here.
++
+ config IBM_ASM
+ 	tristate "Device driver for IBM RSA service processor"
+ 	depends on X86 && PCI && INPUT && EXPERIMENTAL
+--- linux-2.6.32.24/drivers/misc/Makefile.orig	2010-10-01 22:51:56.000000000 +0200
++++ linux-2.6.32.24/drivers/misc/Makefile	2010-11-04 17:07:33.000000000 +0100
+@@ -10,6 +10,7 @@
+ obj-$(CONFIG_ATMEL_PWM)		+= atmel_pwm.o
+ obj-$(CONFIG_ATMEL_SSC)		+= atmel-ssc.o
+ obj-$(CONFIG_ATMEL_TCLIB)	+= atmel_tclib.o
++obj-$(CONFIG_GEMINI_POWER_CTRL)	+= gemini-pwc.o
+ obj-$(CONFIG_BMP085)		+= bmp085.o
+ obj-$(CONFIG_ICS932S401)	+= ics932s401.o
+ obj-$(CONFIG_LKDTM)		+= lkdtm.o
+--- linux-2.6.32.24/drivers/misc/gemini-pwc.c.orig	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6.32.24/drivers/misc/gemini-pwc.c	2010-11-04 17:39:32.000000000 +0100
+@@ -0,0 +1,203 @@
++/*
++ *  Gemini Power Control driver
++ *
++ *  Copyright (C) 2009 Janos Laube <janos....@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/reboot.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++
++#include <mach/hardware.h>
++
++#define	DRV_NAME	"pwc-gemini"
++#define	DRV_VERSION	"0.21"
++
++#define	GEMINI_PWC_ID	0x00010500
++#define	GEMINI_PWC_IDREG	0x00
++#define	GEMINI_PWC_CTRLREG	0x04
++#define	GEMINI_PWC_STATREG	0x08
++#define	GEMINI_POWERBUTTON	0x40
++
++struct gemini_pwc
++{
++	void	__iomem*   pwc_base;
++	int	pwc_irq;
++};
++
++static spinlock_t pwc_lock;
++/* work around bad designed hardware, the IB-4220-B powerbutton seems not
++ * to be debounced very well
++ */
++static int pwc_poweroff_issued = 0;
++
++static void gemini_power_off(void)
++{
++	unsigned int reg;
++	printk("%s %s: power off\n", DRV_NAME, DRV_VERSION);
++	reg = readl(IO_ADDRESS(GEMINI_POWER_CTRL_BASE) + GEMINI_PWC_CTRLREG);
++	writel(reg | BIT(2) | BIT(1),
++		IO_ADDRESS(GEMINI_POWER_CTRL_BASE) + GEMINI_PWC_CTRLREG);
++	reg &= ~BIT(1);
++	reg |= BIT(0);
++	writel(reg | BIT(2),
++		IO_ADDRESS(GEMINI_POWER_CTRL_BASE) + GEMINI_PWC_CTRLREG);
++}
++
++static irqreturn_t gemini_pwc_interrupt(int irq, void* dev)
++{
++	unsigned int reg, src;
++		unsigned long flags;
++
++	spin_lock_irqsave(&pwc_lock, flags);
++	/* clear pwc interrupt */
++	writel(readl(IO_ADDRESS(GEMINI_POWER_CTRL_BASE) + GEMINI_PWC_CTRLREG)
++		| (1 << 2), IO_ADDRESS(GEMINI_POWER_CTRL_BASE) +
++		GEMINI_PWC_CTRLREG);
++	reg = readl(IO_ADDRESS(GEMINI_INTERRUPT_BASE) + 0x08);
++	reg |= (1 << IRQ_PWR);
++	writel(reg, IO_ADDRESS(GEMINI_INTERRUPT_BASE) + 0x08);
++	barrier();
++
++	src = readl(IO_ADDRESS(GEMINI_POWER_CTRL_BASE) +
++		GEMINI_PWC_STATREG) & 0x70;
++	if ((src == GEMINI_POWERBUTTON) && (!pwc_poweroff_issued))
++	{
++		printk("%s %s: shutting down machine\n", DRV_NAME, DRV_VERSION);
++		orderly_poweroff(1);
++		pwc_poweroff_issued = 1;
++	}
++	spin_unlock_irqrestore(&pwc_lock, flags);
++	return IRQ_HANDLED;
++}
++
++static int __devinit gemini_pwc_probe(struct platform_device *pdev)
++{
++	struct gemini_pwc *pwc;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++	int ret;
++	unsigned int reg;
++
++	pwc = kzalloc(sizeof(struct gemini_pwc), GFP_KERNEL);
++	if (unlikely(!pwc))
++		return -ENOMEM;
++	platform_set_drvdata(pdev, pwc);
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res)
++	{
++		ret = -ENODEV;
++		goto err;
++	}
++	pwc->pwc_irq = res->start;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++	{
++		ret = -ENODEV;
++		goto err;
++	}
++	pwc->pwc_base = devm_ioremap(&pdev->dev, res->start,
++		 res->end - res->start + 1);
++
++	reg = readl(pwc->pwc_base + GEMINI_PWC_IDREG);
++	reg = reg & 0xFFFFFF00;
++	if (reg != GEMINI_PWC_ID)
++	{
++		ret = -ENODEV;
++		goto wrongid;
++	}
++
++	pm_power_off = gemini_power_off;
++
++	/* clear pwc interrupt */
++	writel(readl(pwc->pwc_base + GEMINI_PWC_CTRLREG)
++		 | (1 << 2), pwc->pwc_base + GEMINI_PWC_CTRLREG);
++	reg = readl(IO_ADDRESS(GEMINI_INTERRUPT_BASE)+0x08);
++	reg |= (1 << IRQ_PWR);
++	writel(reg, IO_ADDRESS(GEMINI_INTERRUPT_BASE)+0x08);
++	barrier();
++	mdelay(1);
++
++	ret = request_irq(pwc->pwc_irq, gemini_pwc_interrupt, IRQF_DISABLED,
++		pdev->name, dev);
++	if (unlikely(ret))
++		goto err;
++
++	/* enable pwc device */
++	writel(readl(pwc->pwc_base + GEMINI_PWC_CTRLREG)
++			| (1 << 1), pwc->pwc_base + GEMINI_PWC_CTRLREG);
++
++	return 0;
++
++wrongid:
++	printk("%s %s: wrong PWC id\n", DRV_NAME, DRV_VERSION);
++err:
++	kfree(pwc);
++	return ret;
++}
++
++static int __devexit gemini_pwc_remove(struct platform_device *pdev)
++{
++	struct gemini_pwc *pwc = platform_get_drvdata(pdev);
++	struct device *dev = &pdev->dev;
++
++	pm_power_off = 0;
++	free_irq(pwc->pwc_irq, dev);
++	platform_set_drvdata(pdev, NULL);
++	kfree(pwc);
++
++	return 0;
++}
++
++static struct platform_driver gemini_pwc_driver = {
++	.driver	  = {
++		.name   = DRV_NAME,
++		.owner  = THIS_MODULE,
++	},
++	.probe	= gemini_pwc_probe,
++	.remove	= __devexit_p(gemini_pwc_remove),
++};
++
++static int __init gemini_pwc_init(void)
++{
++	int	retval;
++
++	retval = platform_driver_probe(&gemini_pwc_driver, &gemini_pwc_probe);
++	if (retval == 0)
++		pr_info("%s %s: registered successfully\n", DRV_NAME, DRV_VERSION);
++	return retval;
++}
++
++static void __exit gemini_pwc_exit(void)
++{
++	platform_driver_unregister(&gemini_pwc_driver);
++}
++
++module_init(gemini_pwc_init);
++module_exit(gemini_pwc_exit);
++
++MODULE_AUTHOR("Janos Laube <janos....@gmail.com>");
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_DESCRIPTION("Driver for the Gemini Power Control device");
++MODULE_VERSION(DRV_VERSION);
++MODULE_LICENSE("GPL");
+--- linux-2.6.37.4/arch/arm/mach-gemini/devices.c.orig	2011-04-15 12:23:13.229248601 +0200
++++ linux-2.6.37.4/arch/arm/mach-gemini/devices.c	2011-04-19 02:11:30.079146026 +0200
+@@ -116,3 +116,30 @@
+ 	return platform_device_register(&gemini_rtc_device);
+ }
+ 
++static struct resource gemini_pwc_resources[] =
++{
++	[0] =	{
++			.start	= GEMINI_POWER_CTRL_BASE,
++			.end	= GEMINI_POWER_CTRL_BASE + 0x0C,
++			.flags	= IORESOURCE_MEM,
++		},
++	[1] =	{
++			.start	= IRQ_PWR,
++			.end	= IRQ_PWR,
++			.flags	= IORESOURCE_IRQ,
++		},
++};
++
++static struct platform_device gemini_pwc_device =
++{
++	.name		= "pwc-gemini",
++	.id		= 0,
++	.num_resources	= ARRAY_SIZE(gemini_pwc_resources),
++	.resource	= gemini_pwc_resources,
++};
++
++int __init platform_register_pwc(void)
++{
++	return platform_device_register(&gemini_pwc_device);
++}
++
+--- linux-2.6.37.4/arch/arm/mach-gemini/common.h.orig	2011-03-14 22:19:26.000000000 +0100
++++ linux-2.6.37.4/arch/arm/mach-gemini/common.h	2011-04-15 12:16:43.964225731 +0200
+@@ -25,5 +25,6 @@
+ extern int platform_register_pflash(unsigned int size,
+ 				    struct mtd_partition *parts,
+ 				    unsigned int nr_parts);
++extern int platform_register_pwc(void);
+ 
+ #endif /* __GEMINI_COMMON_H__ */
+--- linux-2.6.37.4/arch/arm/mach-gemini/board-nas4220b.c.orig	2011-04-15 12:20:31.458981451 +0200
++++ linux-2.6.37.4/arch/arm/mach-gemini/board-nas4220b.c	2011-04-15 12:21:27.673591406 +0200
+@@ -99,6 +99,7 @@
+ 	platform_device_register(&ib4220b_led_device);
+ 	platform_device_register(&ib4220b_key_device);
+ 	platform_register_rtc();
++	platform_register_pwc();
+ }
+ 
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")

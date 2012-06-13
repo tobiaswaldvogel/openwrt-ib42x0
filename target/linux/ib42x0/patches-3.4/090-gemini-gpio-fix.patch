@@ -1,0 +1,11 @@
+--- linux-2.6.38.3/arch/arm/mach-gemini/gpio.c.orig	2011-04-21 04:11:35.449144951 +0200
++++ linux-2.6.38.3/arch/arm/mach-gemini/gpio.c	2011-04-21 04:12:48.418112804 +0200
+@@ -120,7 +120,7 @@
+ 	__raw_writel(reg_level, base + GPIO_INT_LEVEL);
+ 	__raw_writel(reg_both, base + GPIO_INT_BOTH_EDGE);
+ 
+-	gpio_ack_irq(d->irq);
++	gpio_ack_irq(d);
+ 
+ 	return 0;
+ }

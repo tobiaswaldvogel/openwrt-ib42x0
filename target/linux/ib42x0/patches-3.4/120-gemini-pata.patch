@@ -1,0 +1,159 @@
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -416,6 +416,16 @@ config PATA_EFAR
+ 
+ 	  If unsure, say N.
+ 
++config PATA_GEMINI
++	tristate "Gemini PATA support (Experimental)"
++	depends on EXPERIMENTAL
++	help
++	  This option enables support for the Gemini PATA-Controller.
++	  Note that the Gemini SoC has no native SATA-Controller but an
++	  onboard PATA-SATA bridge.
++
++	  If unsure, say N.
++
+ config PATA_HPT366
+ 	tristate "HPT 366/368 PATA support"
+ 	depends on PCI
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_PATA_CS5535)	+= pata_cs5535.o
+ obj-$(CONFIG_PATA_CS5536)	+= pata_cs5536.o
+ obj-$(CONFIG_PATA_CYPRESS)	+= pata_cypress.o
+ obj-$(CONFIG_PATA_EFAR)		+= pata_efar.o
++obj-$(CONFIG_PATA_GEMINI)	+= pata_gemini.o
+ obj-$(CONFIG_PATA_HPT366)	+= pata_hpt366.o
+ obj-$(CONFIG_PATA_HPT37X)	+= pata_hpt37x.o
+ obj-$(CONFIG_PATA_HPT3X2N)	+= pata_hpt3x2n.o
+--- a/arch/arm/mach-gemini/devices.c.orig	2011-04-19 02:54:10.727072842 +0200
++++ b/arch/arm/mach-gemini/devices.c	2011-04-19 02:58:20.333309105 +0200
+@@ -143,3 +143,68 @@
+ 	return platform_device_register(&gemini_pwc_device);
+ }
+ 
++static u64 gemini_pata_dmamask0 = 0xffffffffUL;
++static u64 gemini_pata_dmamask1 = 0xffffffffUL;
++
++static struct resource gemini_pata_resources0[] =
++{
++	[0] =	{
++			.start	= GEMINI_IDE0_BASE,
++			.end	= GEMINI_IDE0_BASE + 0x40,
++			.flags	= IORESOURCE_MEM,
++		},
++	[1] =	{
++			.start	= IRQ_IDE0,
++			.end	= IRQ_IDE0,
++			.flags  = IORESOURCE_IRQ,
++		},
++};
++
++static struct resource gemini_pata_resources1[] =
++{
++	[0] =	{
++			.start	= GEMINI_IDE1_BASE,
++			.end	= GEMINI_IDE1_BASE + 0x40,
++			.flags	= IORESOURCE_MEM,
++		},
++	[1] =	{
++			.start  = IRQ_IDE1,
++			.end    = IRQ_IDE1,
++			.flags  = IORESOURCE_IRQ,
++		},
++};
++
++static struct platform_device gemini_pata_devices[] =
++{
++	{
++		.name		= "pata-gemini",
++		.id		= 0,
++		.dev		=
++		{
++			.dma_mask		= &gemini_pata_dmamask0,
++			.coherent_dma_mask	= 0xffffffff,
++		},
++		.num_resources	= ARRAY_SIZE(gemini_pata_resources0),
++		.resource	= gemini_pata_resources0,
++	},
++	{
++		.name		= "pata-gemini",
++		.id		= 1,
++		.dev		=
++		{
++			.dma_mask		= &gemini_pata_dmamask1,
++			.coherent_dma_mask	= 0xffffffff,
++		},
++		.num_resources	= ARRAY_SIZE(gemini_pata_resources1),
++		.resource	= gemini_pata_resources1,
++	},
++};
++
++int __init platform_register_pata(unsigned int i)
++{
++	if (i > 1)
++		return -EINVAL;
++
++	return platform_device_register(&gemini_pata_devices[i]);
++}
++
+--- a/arch/arm/mach-gemini/common.h.orig	2011-04-19 03:05:29.446367900 +0200
++++ b/arch/arm/mach-gemini/common.h	2011-04-19 03:07:02.191154293 +0200
+@@ -26,5 +26,6 @@
+ 				    struct mtd_partition *parts,
+ 				    unsigned int nr_parts);
+ extern int platform_register_pwc(void);
++extern int platform_register_pata(unsigned int i);
+ 
+ #endif /* __GEMINI_COMMON_H__ */
+
+--- a/arch/arm/mach-gemini/board-nas4220b.c.orig	2011-09-29 00:47:59.456094790 +0200
++++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-09-29 00:49:58.000000000 +0200
+@@ -91,15 +91,32 @@
+ 	},
+ };
+ 
++static void __init sata_ib4220b_init(void)
++{
++	unsigned val;
++
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	val &= ~(IDE_IOMUX_MASK | PFLASH_PADS_DISABLE);
++	val |= IDE_PADS_ENABLE;
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++
++	/* enabling ports for presence detection */
++	writel(0x00000011, IO_ADDRESS(GEMINI_SATA_BASE) + 0x18);
++	writel(0x00000011, IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c);
++}
++
+ static void __init ib4220b_init(void)
+ {
+ 	gemini_gpio_init();
++	sata_ib4220b_init();
+ 	platform_register_uart();
+ 	platform_register_pflash(SZ_16M, NULL, 0);
+ 	platform_device_register(&ib4220b_led_device);
+ 	platform_device_register(&ib4220b_key_device);
+ 	platform_register_rtc();
+ 	platform_register_pwc();
++	platform_register_pata(0);
++	platform_register_pata(1);
+ }
+ 
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
+--- a/arch/arm/mach-gemini/mm.c.orig	2010-11-04 17:51:55.000000000 +0100
++++ b/arch/arm/mach-gemini/mm.c	2010-11-04 16:56:30.000000000 +0100
+@@ -24,6 +24,11 @@
+ 		.length		= SZ_512K,
+ 		.type 		= MT_DEVICE,
+ 	}, {
++		.virtual	= IO_ADDRESS(GEMINI_SATA_BASE),
++		.pfn		= __phys_to_pfn(GEMINI_SATA_BASE),
++		.length		= SZ_512K,
++		.type		= MT_DEVICE,
++	}, {
+ 		.virtual	= IO_ADDRESS(GEMINI_UART_BASE),
+ 		.pfn		= __phys_to_pfn(GEMINI_UART_BASE),
+ 		.length		= SZ_512K,
