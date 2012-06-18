@@ -119,7 +119,7 @@
  	default y if PLAT_SPEAR
 --- a/drivers/usb/host/ehci-hcd.c
 +++ b/drivers/usb/host/ehci-hcd.c
-@@ -1251,6 +1251,11 @@ MODULE_LICENSE ("GPL");
+@@ -1256,6 +1256,11 @@ MODULE_LICENSE ("GPL");
  #define	PCI_DRIVER		ehci_pci_driver
  #endif
  

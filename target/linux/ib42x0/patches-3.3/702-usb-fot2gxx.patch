@@ -39,19 +39,19 @@ index 502a7e6..e1e0378 100644
  	up_write(&ehci_cf_port_reset_rwsem);
  	ehci->last_periodic_enable = ktime_get_real();
  
-@@ -907,9 +916,10 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
+@@ -914,9 +923,10 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
  		pcd_status = status;
  
  		/* resume root hub? */
 +#ifndef CONFIG_ARCH_GEMINI
- 		if (!(cmd & CMD_RUN))
+ 		if (ehci->rh_state == EHCI_RH_SUSPENDED)
  			usb_hcd_resume_root_hub(hcd);
 -
 +#endif
  		/* get per-port change detect bits */
  		if (ehci->has_ppcd)
  			ppcd = status >> 16;
-@@ -953,7 +1019,9 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
+@@ -958,7 +1024,9 @@ static irqreturn_t ehci_irq (struct usb_hcd *hcd)
  		ehci_halt(ehci);
  dead:
  		ehci_reset(ehci);

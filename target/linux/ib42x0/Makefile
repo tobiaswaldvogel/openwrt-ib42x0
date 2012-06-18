@@ -30,9 +30,9 @@ DEFAULT_PACKAGES += \
   zoneinfo-core zoneinfo-europe zoneinfo-northamerica zoneinfo-simple \
   file ldd mdadm parted quota screen smartd smartmontools \
   usbutils xfs-mkfs xfs-fsck blkid uuidgen lualdap luaspcdns \
-  sambafull sambafull-server ca-cert-digicert wget
+  samba36-server-ads ca-cert-digicert wget
 
-LINUX_VERSION=3.2.14
+LINUX_VERSION=3.3.8
 
 include $(INCLUDE_DIR)/target.mk
 
