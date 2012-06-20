@@ -675,6 +675,12 @@ define Image/Build/Profile/AP121MINI
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ap121-mini,$(ap121_mini_cmdline),$(ap121_mtdlayout_4M),917504,2818048,RKuImage)
 endef
 
+ew-dorin_cmdline=board=EW-DORIN console=ttyATH0,115200
+ew-dorin_mtdlayout_4M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),896k(kernel),2816k(rootfs),64k(art),3712k@0x50000(firmware)
+define Image/Build/Profile/EWDORIN
+	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ew-dorin,$(ew-dorin_cmdline),$(ew-dorin_mtdlayout_4M),917504,2883584,KRuImage)
+endef
+
 ap81_cmdline=board=AP81 console=ttyS0,115200
 define Image/Build/Profile/AP81
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthGzip,ap81,$(ap81_cmdline),,1310720,6619136,KRuImage)
@@ -968,6 +974,11 @@ define Image/Build/Profile/TLWR2543
 	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wr2543n-v1,$(tlwr2543_cmdline),0x25430001,1,8Mlzma)
 endef
 
+tlwdr4300_cmdline=board=TL-WDR4300 console=ttyS0,115200
+define Image/Build/Profile/TLWDR4300
+	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wdr4300-v1,$(tlwdr4300_cmdline),0x43000001,1,8Mlzma)
+endef
+
 wndr3700_cmdline=board=WNDR3700 console=ttyS0,115200
 wndr3700_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,1024k(kernel),6656k(rootfs),64k(art)ro,7680k@0x70000(firmware)
 wndr3700v2_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,1024k(kernel),14848k(rootfs),64k(art)ro,15872k@0x70000(firmware)
@@ -1068,6 +1079,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/DIR615E4,$(1))
 	$(call Image/Build/Profile/DIR825B1,$(1))
 	$(call Image/Build/Profile/EAP7660D,$(1))
+	$(call Image/Build/Profile/EWDORIN,$(1))
 	$(call Image/Build/Profile/FR54RTR,$(1))
 	$(call Image/Build/Profile/HORNETUB,$(1))
 	$(call Image/Build/Profile/JA76PF,$(1))
@@ -1091,6 +1103,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/TLMR3420,$(1))
 	$(call Image/Build/Profile/TLWA701,$(1))
 	$(call Image/Build/Profile/TLWA901,$(1))
+	$(call Image/Build/Profile/TLWDR4300,$(1))
 	$(call Image/Build/Profile/TLWR703,$(1))
 	$(call Image/Build/Profile/TLWR740,$(1))
 	$(call Image/Build/Profile/TLWR741,$(1))

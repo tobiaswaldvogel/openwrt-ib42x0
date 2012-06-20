@@ -41,6 +41,8 @@ wndr3700_board_detect() {
 		model=$(ar71xx_get_mtd_offset_size_format art 56 10 %c)
 		if [ -z "$model" ] || [ "$model" = $'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff' ]; then
 			machine="NETGEAR WNDR3700v2"
+		elif [ -z "$model" ] || [ "$model" = $'\xff\xff\xff\xff\xff\xff\xff\xff\xffN' ]; then
+			machine="NETGEAR WNDRMAC"
 		else
 			machine="NETGEAR $model"
 		fi
@@ -120,6 +122,9 @@ tplink_board_detect() {
 		;;
 	"342000"*)
 		model="TP-Link TL-MR3420"
+		;;
+	"430000"*)
+		model="TP-Link TL-WDR4300"
 		;;
 	*)
 		hwver=""
@@ -307,6 +312,9 @@ ar71xx_board_detect() {
 	*"TL-WA901ND v2")
 		name="tl-wa901nd-v2"
 		;;
+	*TL-WDR4300)
+		name="tl-wdr4300"
+		;;
 	*TL-WR741ND)
 		name="tl-wr741nd"
 		;;
@@ -375,6 +383,9 @@ ar71xx_board_detect() {
 		;;
 	*ZCN-1523H-5)
 		name="zcn-1523h-5"
+		;;
+	*EmbWir-Dorin)
+		name="ew-dorin"
 		;;
 	esac
 
