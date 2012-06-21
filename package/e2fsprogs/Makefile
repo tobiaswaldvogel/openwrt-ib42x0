@@ -20,7 +20,7 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-EXTRA_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib
+EXTRA_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib -L$(PKG_BUILD_DIR)/lib
 
 define Package/e2fsprogs/Default
   URL:=http://e2fsprogs.sourceforge.net/
