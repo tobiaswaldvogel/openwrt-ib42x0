@@ -11,7 +11,7 @@
 
 #include <linux/serial_reg.h>
 #include <asm/io.h>
-#include <mach/hardware.h>
+#include <mach/mcs814x.h>
 #include <mach/cpu.h>
 
 #define UART_SHIFT	(2)
@@ -32,7 +32,7 @@ static inline void flush(void)
 static inline void arch_decomp_setup(void)
 {
 	if (soc_is_mcs8140())
-		uart_base = (void __iomem *)(_PHYS_CONFADDR + _CONFOFFSET_UART);
+		uart_base = (void __iomem *)(MCS814X_PHYS_BASE +MCS814X_UART);
 }
 
 #define arch_decomp_wdog()

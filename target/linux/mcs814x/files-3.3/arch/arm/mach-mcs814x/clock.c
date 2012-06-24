@@ -14,18 +14,9 @@
 #include <linux/clkdev.h>
 #include <linux/clk.h>
 
-#include <mach/hardware.h>
+#include <mach/mcs814x.h>
 
-/* System configuration registers offsets */
-#define SYSDBG_BS1	0x00
-#define SYSDBG_SYSCTL	0x08
-#define  SYSCTL_EMAC	(1 << 0)
-#define  SYSCTL_CIPHER	(1 << 16)
-#define SYSDBG_PLL_CTL	0x3C
-
-#define CPU_FREQ_SHIFT	27
-#define CPU_FREQ_MASK	0x0F
-#define SDRAM_FREQ_BIT	(1 << 22)
+#include "common.h"
 
 #define KHZ	1000
 #define MHZ	(KHZ * KHZ)
@@ -43,7 +34,7 @@ struct clk {
 	unsigned long divider;		/* clock divider */
 	u32 usecount;			/* reference count */
 	struct clk_ops *ops;		/* clock operation */
-	void __iomem *enable_reg;	/* clock enable register */
+	u32 enable_reg;			/* clock enable register */
 	u32 enable_mask;		/* clock enable mask */
 };
 
@@ -63,13 +54,13 @@ static int clk_local_onoff_enable(struct clk *clk, int enable)
 	if (!clk->enable_reg)
 		return 0;
 
-	tmp = __raw_readl(clk->enable_reg);
+	tmp = __raw_readl(mcs814x_sysdbg_base + clk->enable_reg);
 	if (!enable)
 		tmp &= ~clk->enable_mask;
 	else
 		tmp |= clk->enable_mask;
 
-	__raw_writel(tmp, clk->enable_reg);
+	__raw_writel(tmp, mcs814x_sysdbg_base + clk->enable_reg);
 
 	return 0;
 }
@@ -128,19 +119,19 @@ static struct clk clk_wdt = {
 
 static struct clk clk_emac = {
 	.ops		= &default_clk_ops,
-	.enable_reg	= (void __iomem *)(_CONFADDR_SYSDBG + SYSDBG_SYSCTL),
+	.enable_reg	= SYSDBG_SYSCTL,
 	.enable_mask	= SYSCTL_EMAC,
 };
 
 static struct clk clk_ephy = {
 	.ops		= &default_clk_ops,
-	.enable_reg	= (void __iomem *)(_CONFADDR_SYSDBG + SYSDBG_PLL_CTL),
-	.enable_mask	= ~(1 << 0),
+	.enable_reg	= SYSDBG_PLL_CTL,
+	.enable_mask	= ~SYSCTL_EPHY,	/* active low */
 };
 
 static struct clk clk_cipher = {
 	.ops		= &default_clk_ops,
-	.enable_reg	= (void __iomem *)(_CONFADDR_SYSDBG + SYSDBG_SYSCTL),
+	.enable_reg	= SYSDBG_SYSCTL,
 	.enable_mask	= SYSCTL_CIPHER,
 };
 
@@ -263,7 +254,7 @@ void __init mcs814x_clk_init(void)
 	clkdev_add_table(mcs814x_chip_clks, ARRAY_SIZE(mcs814x_chip_clks));
 
 	/* read the bootstrap registers to know the exact clocking scheme */
-	bs1 = __raw_readl(_CONFADDR_SYSDBG + SYSDBG_BS1);
+	bs1 = __raw_readl(mcs814x_sysdbg_base + SYSDBG_BS1);
 	cpu_freq = (bs1 >> CPU_FREQ_SHIFT) & CPU_FREQ_MASK;
 
 	pr_info("CPU frequency: %lu (kHz)\n", cpu_freq_table[cpu_freq]);
