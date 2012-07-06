@@ -425,13 +425,13 @@ endef
 define Image/Build/TPLINK-LZMA
 	$(call PatchKernelLzma,$(2),$(3))
 	-$(STAGING_DIR_HOST)/bin/mktplinkfw \
-		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION)\
+		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION) $(7) \
 		-k $(KDIR_TMP)/vmlinux-$(2).bin.lzma \
 		-r $(KDIR)/root.$(1) \
 		-a $(call rootfs_align,$(1)) -j \
 		-o $(call factoryname,$(1),$(2))
 	-$(STAGING_DIR_HOST)/bin/mktplinkfw \
-		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION) -s \
+		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION) $(7) -s \
 		-k $(KDIR_TMP)/vmlinux-$(2).bin.lzma \
 		-r $(KDIR)/root.$(1) \
 		-a $(call rootfs_align,$(1)) -j \
@@ -441,7 +441,7 @@ endef
 define Image/Build/TPLINK-LZMA/initramfs
 	$(call PatchKernelLzma,$(2),$(3))
 	-$(STAGING_DIR_HOST)/bin/mktplinkfw -c \
-		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION) -s \
+		-H $(4) -W $(5) -F $(6) -N OpenWrt -V $(REVISION) $(7) -s \
 		-k $(KDIR_TMP)/vmlinux-$(2).bin.lzma \
 		-o $(call imgname,$(1),$(2))-uImage.bin
 endef
@@ -655,6 +655,12 @@ define Image/Build/Profile/ALFAAP96
 	$(call Image/Build/Template/$(fs_128k)/$(1),AthLzma,alfa-ap96,$(alfa_ap96_cmdline),$(alfa_ap96_mtdlayout),2097152,13631488,RKuImage)
 endef
 
+all0258n_cmdline=board=ALL0258N console=ttyS0,115200
+all0258n_mtdlayout=mtdparts=spi0.0:256k(u-boot),64k(u-boot-env),1024k(kernel),5248k(rootfs),1536k(failsafe),64k(art),6272k@0x50000(firmware)
+define Image/Build/Profile/ALL0258N
+	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,all0258n,$(all0258n_cmdline),$(all0258n_mtdlayout),1048576,5373952,KRuImage)
+endef
+
 ap113_mtd_layout=64k(u-boot),3008k(rootfs),896k(uImage),64k(NVRAM),64k(ART),3904k@0x10000(firmware)
 ap113_cmdline=board=AP113 console=ttyS0,115200
 define Image/Build/Profile/AP113
@@ -676,9 +682,9 @@ define Image/Build/Profile/AP121MINI
 endef
 
 ew-dorin_cmdline=board=EW-DORIN console=ttyATH0,115200
-ew-dorin_mtdlayout_4M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),896k(kernel),2816k(rootfs),64k(art),3712k@0x50000(firmware)
+ew-dorin_mtdlayout_4M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),1024k(kernel),2688k(rootfs),64k(art),3712k@0x50000(firmware)
 define Image/Build/Profile/EWDORIN
-	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ew-dorin,$(ew-dorin_cmdline),$(ew-dorin_mtdlayout_4M),917504,2883584,KRuImage)
+	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ew-dorin,$(ew-dorin_cmdline),$(ew-dorin_mtdlayout_4M),1048576,2752512,KRuImage)
 endef
 
 ap81_cmdline=board=AP81 console=ttyS0,115200
@@ -702,6 +708,13 @@ db120_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6336k(rootfs),1
 define Image/Build/Profile/DB120
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,db120,$(db120_cmdline),$(db120_mtdlayout),1441792,6488064,RKuImage)
 endef
+
+ap136_cmdline=board=AP136 console=ttyS0,115200
+ap136_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6336k(rootfs),1408k(kernel),64k(mib0),64k(art)ro,7744k@0x50000(firmware)
+define Image/Build/Profile/AP136
+	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ap136,$(ap136_cmdline),$(ap136_mtdlayout),1441792,6488064,RKuImage)
+endef
+
 
 pb42_cmdline=board=PB42 console=ttyS0,115200
 define Image/Build/Profile/PB42
@@ -971,7 +984,7 @@ endef
 
 tlwr2543_cmdline=board=TL-WR2543N console=ttyS0,115200
 define Image/Build/Profile/TLWR2543
-	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wr2543n-v1,$(tlwr2543_cmdline),0x25430001,1,8Mlzma)
+	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wr2543n-v1,$(tlwr2543_cmdline),0x25430001,1,8Mlzma,-v 3.13.99)
 endef
 
 tlwdr4300_cmdline=board=TL-WDR4300 console=ttyS0,115200
@@ -1057,11 +1070,6 @@ define Image/Build/Profile/ZCN1523H516
 	$(call Image/Build/Template/$(fs_64k)/$(1),Zcomax,zcn-1523h-5-16,$(zcn1523h516_cmdline))
 endef
 
-all0258n_cmdline=board=ALL0258N console=ttyS0,115200
-define Image/Build/Profile/ALL0258N
-	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,all0258n,$(all0258n_cmdline),,917504,5505024,KRuImage)
-endef
-
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/ALFAAP96,$(1))
 	$(call Image/Build/Profile/ALFANX,$(1))
@@ -1069,6 +1077,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/AP113,$(1))
 	$(call Image/Build/Profile/AP121,$(1))
 	$(call Image/Build/Profile/AP121MINI,$(1))
+	$(call Image/Build/Profile/AP136,$(1))
 	$(call Image/Build/Profile/AP81,$(1))
 	$(call Image/Build/Profile/AP83,$(1))
 	$(call Image/Build/Profile/A02RBW300N,$(1))

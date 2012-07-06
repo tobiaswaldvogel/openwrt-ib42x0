@@ -286,7 +286,7 @@ indicate_writing(const char *mtd)
 }
 
 static int
-mtd_write(int imagefd, const char *mtd, char *fis_layout)
+mtd_write(int imagefd, const char *mtd, char *fis_layout, size_t part_offset)
 {
 	char *next = NULL;
 	char *str = NULL;
@@ -368,6 +368,11 @@ resume:
 	if(fd < 0) {
 		fprintf(stderr, "Could not open mtd device: %s\n", mtd);
 		exit(1);
+	}
+
+	if (part_offset > 0) {
+		fprintf(stderr, "Seeking on mtd device '%s' to: %u\n", mtd, part_offset);
+		lseek(fd, part_offset, SEEK_SET);
 	}
 
 	indicate_writing(mtd);
@@ -512,7 +517,7 @@ static void usage(void)
 	    fprintf(stderr,
 	"        fixtrx                  fix the checksum in a trx header on first boot\n");
 	}
-    fprintf(stderr,	
+    fprintf(stderr,
 	"Following options are available:\n"
 	"        -q                      quiet mode (once: no [w] on writing,\n"
 	"                                           twice: no status messages)\n"
@@ -521,7 +526,8 @@ static void usage(void)
 	"        -f                      force write without trx checks\n"
 	"        -e <device>             erase <device> before executing the command\n"
 	"        -d <name>               directory for jffs2write, defaults to \"tmp\"\n"
-	"        -j <name>               integrate <file> into jffs2 data when writing an image\n");
+	"        -j <name>               integrate <file> into jffs2 data when writing an image\n"
+	"        -p                      write beginning at partition offset\n");
 	if (mtd_fixtrx) {
 	    fprintf(stderr,
 	"        -o offset               offset of the image header in the partition(for fixtrx)\n");
@@ -557,7 +563,7 @@ int main (int argc, char **argv)
 	int ch, i, boot, imagefd = 0, force, unlocked, option = 0;
 	char *erase[MAX_ARGS], *device = NULL;
 	char *fis_layout = NULL;
-	size_t offset = 0;
+	size_t offset = 0, part_offset = 0;
 	enum {
 		CMD_ERASE,
 		CMD_WRITE,
@@ -578,7 +584,7 @@ int main (int argc, char **argv)
 #ifdef FIS_SUPPORT
 			"F:"
 #endif
-			"frnqe:d:j:o:")) != -1)
+			"frnqe:d:j:p:o:")) != -1)
 		switch (ch) {
 			case 'f':
 				force = 1;
@@ -605,6 +611,14 @@ int main (int argc, char **argv)
 				break;
 			case 'd':
 				jffs2dir = optarg;
+				break;
+			case 'p':
+				errno = 0;
+				part_offset = strtoul(optarg, 0, 0);
+				if (errno) {
+					fprintf(stderr, "-p: illegal numeric string\n");
+					usage();
+				}
 				break;
 			case 'o':
 				if (!mtd_fixtrx) {
@@ -709,7 +723,7 @@ int main (int argc, char **argv)
 		case CMD_WRITE:
 			if (!unlocked)
 				mtd_unlock(device);
-			mtd_write(imagefd, device, fis_layout);
+			mtd_write(imagefd, device, fis_layout, part_offset);
 			break;
 		case CMD_JFFS2WRITE:
 			if (!unlocked)

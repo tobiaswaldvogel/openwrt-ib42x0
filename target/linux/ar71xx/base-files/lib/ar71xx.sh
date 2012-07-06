@@ -162,6 +162,9 @@ ar71xx_board_detect() {
 	*AP121-MINI)
 		name="ap121-mini"
 		;;
+	*"AP136 reference board")
+		name="ap136"
+		;;
 	*AP81)
 		name="ap81"
 		;;
@@ -221,6 +224,9 @@ ar71xx_board_detect() {
 		;;
 	*OM2P)
 		name="om2p"
+		;;
+	*"OM2P LC")
+		name="om2p-lc"
 		;;
 	*PB42)
 		name="pb42"

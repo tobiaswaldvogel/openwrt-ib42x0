@@ -351,6 +351,20 @@ static int nl80211_freq2channel(int freq)
 	return (freq / 5) - 1000;
 }
 
+static int nl80211_channel2freq(int channel, const char *band)
+{
+	if (channel == 14)
+		return 2484;
+
+	if ((channel < 14) && (!band || band[0] != 'a'))
+		return (channel * 5) + 2407;
+
+	if (channel > 0)
+		return (1000 + channel) * 5;
+
+	return 0;
+}
+
 static char * nl80211_getval(const char *ifname, const char *buf, const char *key)
 {
 	int i, len;
@@ -751,31 +765,67 @@ int nl80211_get_bssid(const char *ifname, char *buf)
 	return -1;
 }
 
-int nl80211_get_channel(const char *ifname, int *buf)
+
+static int nl80211_get_frequency_cb(struct nl_msg *msg, void *arg)
 {
-	char *first;
+	int *freq = arg;
+	struct nlattr **attr = nl80211_parse(msg);
+	struct nlattr *binfo[NL80211_BSS_MAX + 1];
 
-	if (!wext_get_channel(ifname, buf))
-		return 0;
+	static struct nla_policy bss_policy[NL80211_BSS_MAX + 1] = {
+		[NL80211_BSS_FREQUENCY] = { .type = NLA_U32 },
+	};
 
-	else if ((first = nl80211_phy2ifname(nl80211_ifname2phy(ifname))) != NULL)
-		return wext_get_channel(first, buf);
+	if (attr[NL80211_ATTR_BSS] &&
+	    !nla_parse_nested(binfo, NL80211_BSS_MAX,
+	                      attr[NL80211_ATTR_BSS], bss_policy))
+	{
+		if (binfo[NL80211_BSS_FREQUENCY])
+			*freq = nla_get_u32(binfo[NL80211_BSS_FREQUENCY]);
+	}
 
-	return -1;
+	return NL_SKIP;
 }
 
 int nl80211_get_frequency(const char *ifname, int *buf)
 {
-	char *first;
+	char *res, *channel;
+	struct nl80211_msg_conveyor *req;
 
-	if (!wext_get_frequency(ifname, buf))
+	*buf = 0;
+
+	if ((res = nl80211_hostapd_info(ifname)) &&
+	    (channel = nl80211_getval(NULL, res, "channel")))
+	{
+		*buf = nl80211_channel2freq(atoi(channel),
+		                            nl80211_getval(NULL, res, "hw_mode"));
+	}
+	else
+	{
+		res = nl80211_phy2ifname(ifname);
+		req = nl80211_msg(res ? res : ifname, NL80211_CMD_GET_SCAN, NLM_F_DUMP);
+
+		if (req)
+		{
+			nl80211_send(req, nl80211_get_frequency_cb, buf);
+			nl80211_free(req);
+		}
+	}
+
+	return (*buf == 0) ? -1 : 0;
+}
+
+int nl80211_get_channel(const char *ifname, int *buf)
+{
+	if (!nl80211_get_frequency(ifname, buf))
+	{
+		*buf = nl80211_freq2channel(*buf);
 		return 0;
-
-	else if ((first = nl80211_phy2ifname(nl80211_ifname2phy(ifname))) != NULL)
-		return wext_get_frequency(first, buf);
+	}
 
 	return -1;
 }
+
 
 int nl80211_get_txpower(const char *ifname, int *buf)
 {
