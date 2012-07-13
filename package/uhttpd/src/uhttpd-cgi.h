@@ -28,10 +28,11 @@
 
 
 struct uh_cgi_state {
-	int rfd;
-	int wfd;
-	struct client *cl;
-	char httpbuf[UH_LIMIT_MSGHEAD];
+	struct {
+		char buf[UH_LIMIT_MSGHEAD];
+		char *ptr;
+		int len;
+	} httpbuf;
 	int content_length;
 	bool header_sent;
 };

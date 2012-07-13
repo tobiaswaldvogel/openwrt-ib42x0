@@ -128,49 +128,45 @@ static char * uh_cgi_header_lookup(struct http_response *res,
 
 static void uh_cgi_shutdown(struct uh_cgi_state *state)
 {
-	close(state->rfd);
-	close(state->wfd);
 	free(state);
 }
 
 static bool uh_cgi_socket_cb(struct client *cl)
 {
-	int i, len, hdroff;
+	int i, len, blen, hdroff;
 	char buf[UH_LIMIT_MSGHEAD];
 
 	struct uh_cgi_state *state = (struct uh_cgi_state *)cl->priv;
-	struct http_response *res = &state->cl->response;
-	struct http_request *req = &state->cl->request;
+	struct http_response *res = &cl->response;
+	struct http_request *req = &cl->request;
 
 	/* there is unread post data waiting */
 	while (state->content_length > 0)
 	{
 		/* remaining data in http head buffer ... */
-		if (state->cl->httpbuf.len > 0)
+		if (cl->httpbuf.len > 0)
 		{
-			len = min(state->content_length, state->cl->httpbuf.len);
+			len = min(state->content_length, cl->httpbuf.len);
 
-			D("CGI: Child(%d) feed %d HTTP buffer bytes\n",
-			  state->cl->proc.pid, len);
+			D("CGI: Child(%d) feed %d HTTP buffer bytes\n", cl->proc.pid, len);
 
-			memcpy(buf, state->cl->httpbuf.ptr, len);
+			memcpy(buf, cl->httpbuf.ptr, len);
 
-			state->cl->httpbuf.len -= len;
-			state->cl->httpbuf.ptr +=len;
+			cl->httpbuf.len -= len;
+			cl->httpbuf.ptr +=len;
 		}
 
 		/* read it from socket ... */
 		else
 		{
-			len = uh_tcp_recv(state->cl, buf,
+			len = uh_tcp_recv(cl, buf,
 							  min(state->content_length, sizeof(buf)));
 
 			if ((len < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))
 				break;
 
 			D("CGI: Child(%d) feed %d/%d TCP socket bytes\n",
-			  state->cl->proc.pid, len,
-			  min(state->content_length, sizeof(buf)));
+			  cl->proc.pid, len, min(state->content_length, sizeof(buf)));
 		}
 
 		if (len)
@@ -179,27 +175,32 @@ static bool uh_cgi_socket_cb(struct client *cl)
 			state->content_length = 0;
 
 		/* ... write to CGI process */
-		len = uh_raw_send(state->wfd, buf, len,
+		len = uh_raw_send(cl->wpipe.fd, buf, len,
 						  cl->server->conf->script_timeout);
 
 		/* explicit EOF notification for the child */
 		if (state->content_length <= 0)
-			close(state->wfd);
+			uh_ufd_remove(&cl->wpipe);
 	}
 
 	/* try to read data from child */
-	while ((len = uh_raw_recv(state->rfd, buf, sizeof(buf), -1)) > 0)
+	while ((len = uh_raw_recv(cl->rpipe.fd, buf, state->header_sent
+	                          ? sizeof(buf) : state->httpbuf.len, -1)) > 0)
 	{
 		/* we have not pushed out headers yet, parse input */
 		if (!state->header_sent)
 		{
 			/* try to parse header ... */
-			memcpy(state->httpbuf, buf, len);
+			memcpy(state->httpbuf.ptr, buf, len);
+			state->httpbuf.len -= len;
+			state->httpbuf.ptr += len;
 
-			if (uh_cgi_header_parse(res, state->httpbuf, len, &hdroff))
+			blen = state->httpbuf.ptr - state->httpbuf.buf;
+
+			if (uh_cgi_header_parse(res, state->httpbuf.buf, blen, &hdroff))
 			{
 				/* write status */
-				ensure_out(uh_http_sendf(state->cl, NULL,
+				ensure_out(uh_http_sendf(cl, NULL,
 					"HTTP/%.1f %03d %s\r\n"
 					"Connection: close\r\n",
 					req->version, res->statuscode, res->statusmsg));
@@ -208,7 +209,7 @@ static bool uh_cgi_socket_cb(struct client *cl)
 				if (!uh_cgi_header_lookup(res, "Location") &&
 					!uh_cgi_header_lookup(res, "Content-Type"))
 				{
-					ensure_out(uh_http_send(state->cl, NULL,
+					ensure_out(uh_http_send(cl, NULL,
 						"Content-Type: text/plain\r\n", -1));
 				}
 
@@ -216,35 +217,36 @@ static bool uh_cgi_socket_cb(struct client *cl)
 				if ((req->version > 1.0) &&
 					!uh_cgi_header_lookup(res, "Transfer-Encoding"))
 				{
-					ensure_out(uh_http_send(state->cl, NULL,
+					ensure_out(uh_http_send(cl, NULL,
 						"Transfer-Encoding: chunked\r\n", -1));
 				}
 
 				/* write headers from CGI program */
 				foreach_header(i, res->headers)
 				{
-					ensure_out(uh_http_sendf(state->cl, NULL, "%s: %s\r\n",
+					ensure_out(uh_http_sendf(cl, NULL, "%s: %s\r\n",
 						res->headers[i], res->headers[i+1]));
 				}
 
 				/* terminate header */
-				ensure_out(uh_http_send(state->cl, NULL, "\r\n", -1));
+				ensure_out(uh_http_send(cl, NULL, "\r\n", -1));
 
 				state->header_sent = true;
 
 				/* push out remaining head buffer */
-				if (hdroff < len)
+				if (hdroff < blen)
 				{
 					D("CGI: Child(%d) relaying %d rest bytes\n",
-					  state->cl->proc.pid, len - hdroff);
+					  cl->proc.pid, blen - hdroff);
 
-					ensure_out(uh_http_send(state->cl, req,
-											&buf[hdroff], len - hdroff));
+					ensure_out(uh_http_send(cl, req,
+					                        state->httpbuf.buf + hdroff,
+					                        blen - hdroff));
 				}
 			}
 
 			/* ... failed and head buffer exceeded */
-			else
+			else if (!state->httpbuf.len)
 			{
 				/* I would do this ...
 				 *
@@ -257,7 +259,7 @@ static bool uh_cgi_socket_cb(struct client *cl)
 				 * build the required headers here.
 				 */
 
-				ensure_out(uh_http_sendf(state->cl, NULL,
+				ensure_out(uh_http_sendf(cl, NULL,
 										 "HTTP/%.1f 200 OK\r\n"
 										 "Content-Type: text/plain\r\n"
 										 "%s\r\n",
@@ -268,18 +270,16 @@ static bool uh_cgi_socket_cb(struct client *cl)
 				state->header_sent = true;
 
 				D("CGI: Child(%d) relaying %d invalid bytes\n",
-				  state->cl->proc.pid, len);
+				  cl->proc.pid, len);
 
-				ensure_out(uh_http_send(state->cl, req, buf, len));
+				ensure_out(uh_http_send(cl, req, buf, len));
 			}
 		}
 		else
 		{
 			/* headers complete, pass through buffer to socket */
-			D("CGI: Child(%d) relaying %d normal bytes\n",
-			  state->cl->proc.pid, len);
-
-			ensure_out(uh_http_send(state->cl, req, buf, len));
+			D("CGI: Child(%d) relaying %d normal bytes\n", cl->proc.pid, len);
+			ensure_out(uh_http_send(cl, req, buf, len));
 		}
 	}
 
@@ -287,8 +287,7 @@ static bool uh_cgi_socket_cb(struct client *cl)
 	if ((len == 0) ||
 		((errno != EAGAIN) && (errno != EWOULDBLOCK) && (len == -1)))
 	{
-		D("CGI: Child(%d) presumed dead [%s]\n",
-		  state->cl->proc.pid, strerror(errno));
+		D("CGI: Child(%d) presumed dead [%s]\n", cl->proc.pid, strerror(errno));
 
 		goto out;
 	}
@@ -298,17 +297,17 @@ static bool uh_cgi_socket_cb(struct client *cl)
 out:
 	if (!state->header_sent)
 	{
-		if (state->cl->timeout.pending)
-			uh_http_sendhf(state->cl, 502, "Bad Gateway",
+		if (cl->timeout.pending)
+			uh_http_sendhf(cl, 502, "Bad Gateway",
 						   "The CGI process did not produce any response\n");
 		else
-			uh_http_sendhf(state->cl, 504, "Gateway Timeout",
+			uh_http_sendhf(cl, 504, "Gateway Timeout",
 						   "The CGI process took too long to produce a "
 						   "response\n");
 	}
 	else
 	{
-		uh_http_send(state->cl, req, "", 0);
+		uh_http_send(cl, req, "", 0);
 	}
 
 	uh_cgi_shutdown(state);
@@ -529,14 +528,22 @@ bool uh_cgi_request(struct client *cl, struct path_info *pi,
 	default:
 		memset(state, 0, sizeof(*state));
 
-		state->cl = cl;
-		state->cl->proc.pid = child;
+		cl->rpipe.fd = rfd[0];
+		cl->wpipe.fd = wfd[1];
+		cl->proc.pid = child;
+
+		/* make pipe non-blocking */
+		fd_nonblock(cl->rpipe.fd);
+		fd_nonblock(cl->wpipe.fd);
 
 		/* close unneeded pipe ends */
 		close(rfd[1]);
 		close(wfd[0]);
 
 		D("CGI: Child(%d) created: rfd(%d) wfd(%d)\n", child, rfd[0], wfd[1]);
+
+		state->httpbuf.ptr = state->httpbuf.buf;
+		state->httpbuf.len = sizeof(state->httpbuf.buf);
 
 		state->content_length = cl->httpbuf.len;
 
@@ -552,12 +559,6 @@ bool uh_cgi_request(struct client *cl, struct path_info *pi,
 				}
 			}
 		}
-
-		state->rfd = rfd[0];
-		fd_nonblock(state->rfd);
-
-		state->wfd = wfd[1];
-		fd_nonblock(state->wfd);
 
 		cl->cb = uh_cgi_socket_cb;
 		cl->priv = state;
