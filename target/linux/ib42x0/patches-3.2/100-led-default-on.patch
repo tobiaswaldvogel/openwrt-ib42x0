@@ -1,6 +1,6 @@
 --- linux-3.2.2/arch/arm/mach-gemini/board-nas4220b.c.orig	2012-02-05 20:44:11.294060034 +0100
 +++ linux-3.2.2/arch/arm/mach-gemini/board-nas4220b.c	2012-02-05 20:46:28.943083884 +0100
-@@ -55,13 +55,13 @@
+@@ -37,13 +37,13 @@
  
  static struct gpio_led ib4220b_leds[] = {
  	{

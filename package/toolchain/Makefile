@@ -393,6 +393,9 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 			fi; \
 		done; \
 	done
+	ifneq ($(CONFIG_EGLIBC_OPTION_EGLIBC_NSSWITCH),)
+		$(INSTALL_BIN) $(TOOLCHAIN_DIR)/bin/getent $(1)/bin
+	endif
   endef
 
   define Package/uClibc/install

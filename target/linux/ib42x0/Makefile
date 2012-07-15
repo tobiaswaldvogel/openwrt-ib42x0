@@ -29,10 +29,10 @@ DEFAULT_PACKAGES += \
   hd-idle2 hdparm sfdisk \
   zoneinfo-core zoneinfo-europe zoneinfo-northamerica zoneinfo-simple \
   file ldd mdadm parted quota screen smartd smartmontools \
-  usbutils xfs-mkfs xfs-fsck blkid uuidgen lualdap luaspcdns \
+  usbutils xfs-tools blkid uuidgen lualdap luaspcdns \
   samba36-server-ads ca-cert-digicert wget
 
-LINUX_VERSION=3.3.8
+LINUX_VERSION=3.2.18
 
 include $(INCLUDE_DIR)/target.mk
 

@@ -42,6 +42,11 @@ $(call Package/xfsprogs/default)
   TITLE:=Utility for increasing the size of XFS filesystems
 endef
 
+define Package/xfs-tools
+$(call Package/xfsprogs/default)
+  TITLE:=Multicall for xfs_repair xfs_db and xfs_mkfs
+endef
+
 CONFIGURE_ARGS += \
 	--enable-gettext=no \
 	--enable-lib64=no
@@ -82,6 +87,16 @@ define Package/xfs-growfs/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xfs_growfs $(1)/sbin
 endef
 
+define Package/xfs-tools/install
+	mkdir -p $(1)/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/xfs_tools $(1)/sbin
+	ln -sf xfs_tools $(1)/sbin/xfs_repair
+	ln -sf xfs_tools $(1)/sbin/xfs_db
+	ln -sf xfs_tools $(1)/sbin/xfs_growfs
+	ln -sf xfs_tools $(1)/sbin/mkfs.xfs
+endef
+
 $(eval $(call BuildPackage,xfs-mkfs))
 $(eval $(call BuildPackage,xfs-fsck))
 $(eval $(call BuildPackage,xfs-growfs))
+$(eval $(call BuildPackage,xfs-tools))
