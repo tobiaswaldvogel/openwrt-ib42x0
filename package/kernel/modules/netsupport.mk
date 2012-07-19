@@ -275,11 +275,11 @@ define KernelPackage/ipsec4
   KCONFIG:= \
 	CONFIG_INET_AH \
 	CONFIG_INET_ESP \
-	CONFIG_INET_IPCOMP \
 	CONFIG_INET_XFRM_MODE_BEET \
 	CONFIG_INET_XFRM_MODE_TRANSPORT \
 	CONFIG_INET_XFRM_MODE_TUNNEL \
-	CONFIG_INET_XFRM_TUNNEL
+	CONFIG_INET_XFRM_TUNNEL \
+	CONFIG_INET_IPCOMP
   FILES:=$(foreach mod,$(IPSEC4-m),$(LINUX_DIR)/net/$(mod).ko)
   AUTOLOAD:=$(call AutoLoad,32,$(notdir $(IPSEC4-m)))
 endef
@@ -289,11 +289,11 @@ define KernelPackage/ipsec4/description
  Includes:
  - ah4
  - esp4
- - ipcomp4
  - xfrm4_mode_beet
  - xfrm4_mode_transport
  - xfrm4_mode_tunnel
  - xfrm4_tunnel
+ - ipcomp
 endef
 
 $(eval $(call KernelPackage,ipsec4))
@@ -302,11 +302,11 @@ $(eval $(call KernelPackage,ipsec4))
 IPSEC6-m:= \
 	ipv6/ah6 \
 	ipv6/esp6 \
-	ipv6/ipcomp6 \
 	ipv6/xfrm6_mode_beet \
 	ipv6/xfrm6_mode_transport \
 	ipv6/xfrm6_mode_tunnel \
 	ipv6/xfrm6_tunnel \
+	ipv6/ipcomp6 \
 
 define KernelPackage/ipsec6
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
@@ -315,11 +315,11 @@ define KernelPackage/ipsec6
   KCONFIG:= \
 	CONFIG_INET6_AH \
 	CONFIG_INET6_ESP \
-	CONFIG_INET6_IPCOMP \
 	CONFIG_INET6_XFRM_MODE_BEET \
 	CONFIG_INET6_XFRM_MODE_TRANSPORT \
 	CONFIG_INET6_XFRM_MODE_TUNNEL \
-	CONFIG_INET6_XFRM_TUNNEL
+	CONFIG_INET6_XFRM_TUNNEL \
+	CONFIG_INET6_IPCOMP
   FILES:=$(foreach mod,$(IPSEC6-m),$(LINUX_DIR)/net/$(mod).ko)
   AUTOLOAD:=$(call AutoLoad,32,$(notdir $(IPSEC6-m)))
 endef
@@ -329,11 +329,11 @@ define KernelPackage/ipsec6/description
  Includes:
  - ah6
  - esp6
- - ipcomp6
  - xfrm6_mode_beet
  - xfrm6_mode_transport
  - xfrm6_mode_tunnel
  - xfrm6_tunnel
+ - ipcomp6
 endef
 
 $(eval $(call KernelPackage,ipsec6))
