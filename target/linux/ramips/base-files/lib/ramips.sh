@@ -53,6 +53,9 @@ ramips_board_name() {
 	*"Allnet ALL0256N")
 		name="all0256n"
 		;;
+	*"Allnet ALL5002")
+		name="all5002"
+		;;
 	*"ARC FreeStation5")
 		name="freestation5"
 		;;
@@ -77,6 +80,9 @@ ramips_board_name() {
 	*"DIR-600 B2")
 		name="dir-600-b2"
 		;;
+        *"DAP-1350")
+                name="dap-1350"
+                ;;
 	*"ESR-9753")
 		name="esr-9753"
 		;;

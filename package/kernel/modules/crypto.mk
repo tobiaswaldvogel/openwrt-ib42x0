@@ -154,23 +154,6 @@ endef
 $(eval $(call KernelPackage,crypto-hw-hifn-795x))
 
 
-define KernelPackage/crypto-hw-ixp4xx
-  TITLE:=Intel IXP4xx hardware crypto module
-  DEPENDS:=@TARGET_ixp4xx
-  KCONFIG:= \
-	CONFIG_CRYPTO_DEV_IXP4XX
-  FILES:=$(LINUX_DIR)/drivers/crypto/ixp4xx_crypto.ko
-  AUTOLOAD:=$(call AutoLoad,90,ixp4xx_crypto)
-  $(call AddDepends/crypto,+kmod-crypto-authenc +kmod-crypto-des)
-endef
-
-define KernelPackage/crypto-hw-ixp4xx/description
-  Kernel support for the Intel IXP4xx HW crypto engine.
-endef
-
-$(eval $(call KernelPackage,crypto-hw-ixp4xx))
-
-
 define KernelPackage/crypto-hw-ppc4xx
   TITLE:=AMCC PPC4xx hardware crypto module
   DEPENDS:=@TARGET_ppc40x||TARGET_ppc44x
@@ -488,19 +471,3 @@ define KernelPackage/crypto-mv-cesa
 endef
 
 $(eval $(call KernelPackage,crypto-mv-cesa))
-
-
-define KernelPackage/ocf-ubsec-ssb
-  TITLE:=BCM5365P IPSec Core driver
-  DEPENDS:=@TARGET_brcm47xx +kmod-crypto-ocf
-  KCONFIG:=CONFIG_OCF_UBSEC_SSB
-  FILES:=$(LINUX_DIR)/crypto/ocf/ubsec_ssb/ubsec_ssb.ko
-  AUTOLOAD:=$(call AutoLoad,10,ubsec_ssb)
-  $(call AddDepends/crypto)
-endef
-
-define KernelPackage/ocf-ubsec-ssb/description
-  This package contains the OCF driver for the BCM5365p IPSec Core
-endef
-
-$(eval $(call KernelPackage,ocf-ubsec-ssb))

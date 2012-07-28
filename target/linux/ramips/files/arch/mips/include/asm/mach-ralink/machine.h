@@ -36,6 +36,7 @@ enum ramips_mach_type {
 	/* RT3052 based machines */
 	RAMIPS_MACH_ARGUS_ATP52B,	/* Argus ATP-52B */
 	RAMIPS_MACH_BC2,		/* NexAira BC2 */
+	RAMIPS_MACH_DAP_1350,		/* D-Link DAP-1350 */
 	RAMIPS_MACH_ESR_9753,		/* Senao / EnGenius ESR-9753*/
 	RAMIPS_MACH_F5D8235_V2,         /* Belkin F5D8235 v2 */
 	RAMIPS_MACH_FONERA20N,		/* La Fonera 2.0N */
@@ -58,6 +59,9 @@ enum ramips_mach_type {
 	RAMIPS_MACH_WR6202,		/* Accton WR6202 */
 	RAMIPS_MACH_XDXRN502J,          /* unknown XDX-RN502J */
 	RAMIPS_MACH_UR_336UN,		/* UPVEL ROUTER */
+	
+	/* RT3352 based machines */
+	RAMIPS_MACH_ALL5002,		/* Allnet ALL5002 */
 
 	/* RT3662 based machines */
 	RAMIPS_MACH_RT_N56U,		/* Asus RT-N56U */

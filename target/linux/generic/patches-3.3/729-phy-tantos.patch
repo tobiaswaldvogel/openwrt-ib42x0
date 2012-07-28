@@ -1,6 +1,6 @@
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
-@@ -206,3 +206,7 @@ endif # PHYLIB
+@@ -206,3 +206,8 @@ endif # PHYLIB
  config MICREL_KS8995MA
  	tristate "Micrel KS8995MA 5-ports 10/100 managed Ethernet switch"
  	depends on SPI
@@ -8,6 +8,7 @@
 +config PSB6970_PHY
 +	tristate "Lantiq XWAY Tantos (PSB6970) Ethernet switch"
 +	select SWCONFIG
++	select ETHERNET_PACKET_MANGLE
 --- a/drivers/net/phy/Makefile
 +++ b/drivers/net/phy/Makefile
 @@ -28,6 +28,7 @@ obj-$(CONFIG_RTL8366RB_PHY)	+= rtl8366rb

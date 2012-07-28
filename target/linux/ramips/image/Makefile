@@ -129,6 +129,15 @@ define BuildFirmware/3G6200N
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_edimax_3g6200n)),917504,2818048)
 endef
 
+mtdlayout_allnet_all5002=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,1024k(kernel),31424k(rootfs),32448k@0x50000(firmware)
+define BuildFirmware/ALL5002
+	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_allnet_all5002)),1048576,32178176)
+endef
+
+define BuildFirmware/ALL5002/initramfs
+	$(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_allnet_all5002)))
+endef
+
 mtdlayout_argus_atp52b=192k(bootloader)ro,64k(config),64k(factory),1152k(kernel),6656k(rootfs),7808k@0x50000(firmware)
 mtd_argus_atp52b_kernel_part_size=1179648
 mtd_argus_atp52b_rootfs_part_size=6815744
@@ -171,6 +180,20 @@ endef
 
 define BuildFirmware/DIR300B1/initramfs
 	$(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),ttyS1,57600) $(call mkmtd/phys,$(mtdlayout_dir300b1)),$(mtd_dir300b1_kernel_part_size),$(mtd_dir300b1_rootfs_part_size))
+endef
+
+mtdlayout_dap1350=192k(u-boot)ro,64k(devdata)ro,192k(devconf)ro,256k(devlang)ro,1088k(kernel),6400k(rootfs),7488k@0xb0000(firmware)
+mtd_dap1350_kernel_part_size=1114112
+mtd_dap1350_rootfs_part_size=6553600
+define BuildFirmware/DAP1350
+	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),ttyS1,115200) $(call mkmtd/phys,$(mtdlayout_dap1350)),$(mtd_dap1350_kernel_part_size),$(mtd_dap1350_rootfs_part_size))
+	mkdapimg -s $(4) \
+		-i $(call sysupname,$(1),$(2)) \
+		-o $(call imgname,$(1),$(2))-factory.bin
+endef
+
+define BuildFirmware/DAP1350/initramfs
+	$(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),ttyS1,115200) $(call mkmtd/phys,$(mtdlayout_dap1350)),$(mtd_dap1350_kernel_part_size),$(mtd_dap1350_rootfs_part_size))
 endef
 
 define BuildFirmware/Edimax
@@ -325,6 +348,10 @@ define Image/Build/Profile/ALL0256N
 	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,all0256n,ALL0256N,ttyS1,57600,spi)
 endef
 
+define Image/Build/Profile/ALL5002
+	$(call Image/Build/Template/$(fs_squash)/$(1),ALL5002,all5002,ALL5002,ttyS1,57600,spi)
+endef
+
 define Image/Build/Profile/ARGUS_ATP52B
 	$(call Image/Build/Template/$(fs_squash)/$(1),ARGUS_ATP52B,argus_atp52b,ARGUS_ATP52B)
 endef
@@ -338,6 +365,10 @@ define Image/Build/Profile/DIR300B1
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR300B1,dir-600-b1,DIR-600-B1,wrgn23_dlwbr_dir600b)
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR300B1,dir-600-b2,DIR-600-B2,wrgn23_dlwbr_dir600b)
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR300B1,dir-615-d,DIR-615-D,wrgn23_dlwbr_dir615d)
+endef
+
+define Image/Build/Profile/DAP1350
+	$(call Image/Build/Template/$(fs_squash)/$(1),DAP1350,dap-1350,DAP-1350,RT3052-AP-DAP1350-3)
 endef
 
 define Image/Build/Profile/ESR9753
@@ -455,9 +486,11 @@ ifeq ($(CONFIG_RALINK_RT305X),y)
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/3G6200N,$(1))
 	$(call Image/Build/Profile/ALL0256N,$(1))
+	$(call Image/Build/Profile/ALL5002,$(1))
 	$(call Image/Build/Profile/ARGUS_ATP52B,$(1))
 	$(call Image/Build/Profile/BC2,$(1))
 	$(call Image/Build/Profile/DIR300B1,$(1))
+	$(call Image/Build/Profile/DAP1350,$(1))
 	$(call Image/Build/Profile/ESR9753,$(1))
 	$(call Image/Build/Profile/F5D8235V2,$(1))
 	$(call Image/Build/Profile/RTN10PLUS,$(1))
