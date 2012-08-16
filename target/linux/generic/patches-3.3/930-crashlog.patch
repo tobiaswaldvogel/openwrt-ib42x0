@@ -5,8 +5,8 @@
 +#define __CRASHLOG_H
 +
 +#ifdef CONFIG_CRASHLOG
-+void __init crashlog_init_bootmem(struct bootmem_data *bdata);
-+void __init crashlog_init_memblock(phys_addr_t addr, phys_addr_t size);
++void crashlog_init_bootmem(struct bootmem_data *bdata);
++void crashlog_init_memblock(phys_addr_t addr, phys_addr_t size);
 +#else
 +static inline void crashlog_init_bootmem(struct bootmem_data *bdata)
 +{
@@ -26,7 +26,7 @@
  
 +config CRASHLOG
 +	bool "Crash logging"
-+	depends on !NO_BOOTMEM || HAVE_MEMBLOCK
++	depends on (!NO_BOOTMEM || HAVE_MEMBLOCK) && !ARM
 +
  config BLK_DEV_INITRD
  	bool "Initial RAM filesystem and RAM disk (initramfs/initrd) support"
@@ -121,7 +121,7 @@
 +#endif
 +
 +#ifdef CONFIG_HAVE_MEMBLOCK
-+void __init crashlog_init_memblock(phys_addr_t addr, phys_addr_t size)
++void __meminit crashlog_init_memblock(phys_addr_t addr, phys_addr_t size)
 +{
 +	if (crashlog_addr)
 +		return;

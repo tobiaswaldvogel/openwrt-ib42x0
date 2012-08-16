@@ -354,6 +354,9 @@ ar71xx_board_detect() {
 	*WHR-HP-GN)
 		name="whr-hp-gn"
 		;;
+	*WLAE-AG300N)
+		name="wlae-ag300n"
+		;;
 	*WP543)
 		name="wp543"
 		;;
@@ -395,6 +398,9 @@ ar71xx_board_detect() {
 		;;
 	*EmbWir-Dorin)
 		name="ew-dorin"
+		;;
+	*EmbWir-Dorin-Router)
+		name="ew-dorin-router"
 		;;
 	esac
 

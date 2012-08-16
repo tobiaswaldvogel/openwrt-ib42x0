@@ -123,6 +123,10 @@ LIBRPC=-ltirpc
 LIBRPC_DEPENDS=+libtirpc
 LIBRPC_INCLUDE=-I$(STAGING_DIR)/usr/include/tirpc
 
+ifneq ($(findstring $(ARCH) , mips64 x86_64 ),)
+  LIB_SUFFIX:=64
+endif
+
 ifndef DUMP
   ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
     -include $(TOOLCHAIN_DIR)/info.mk
@@ -170,7 +174,6 @@ PKG_CONFIG:=$(STAGING_DIR_HOST)/bin/pkg-config
 export PKG_CONFIG
 
 HOSTCC:=gcc
-HOSTCC_NOCACHE:=$(HOSTCC)
 HOST_CFLAGS:=-O2 -I$(STAGING_DIR_HOST)/include
 HOST_LDFLAGS:=-L$(STAGING_DIR_HOST)/lib
 

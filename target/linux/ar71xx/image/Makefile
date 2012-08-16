@@ -113,7 +113,7 @@ define Image/BuildLoader
 	-rm -rf $(KDIR)/lzma-loader
 	$(LOADER_MAKE) LOADER=loader-$(1).$(2) KERNEL_CMDLINE="$(3)"\
 		LZMA_TEXT_START=0x80a00000 LOADADDR=0x80060000 \
-		LOADER_DATA="$(KDIR)/vmlinux.bin.lzma" \
+		LOADER_DATA="$(KDIR)/vmlinux.bin.lzma" BOARD="$(1)" \
 		compile loader.$(2)
 endef
 
@@ -121,7 +121,7 @@ define Image/BuildLoaderAlone
 	-rm -rf $(KDIR)/lzma-loader
 	$(LOADER_MAKE) LOADER=loader-$(1).$(2) KERNEL_CMDLINE="$(3)" \
 		LZMA_TEXT_START=0x80a00000 LOADADDR=0x80060000 \
-		FLASH_OFFS=$(4) FLASH_MAX=$(5) \
+		BOARD="$(1)" FLASH_OFFS=$(4) FLASH_MAX=$(5) \
 		compile loader.$(2)
 endef
 
@@ -682,9 +682,11 @@ define Image/Build/Profile/AP121MINI
 endef
 
 ew-dorin_cmdline=board=EW-DORIN console=ttyATH0,115200
+ew-dorin-router_cmdline=board=EW-DORIN-ROUTER console=ttyATH0,115200
 ew-dorin_mtdlayout_4M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),1024k(kernel),2688k(rootfs),64k(art),3712k@0x50000(firmware)
 define Image/Build/Profile/EWDORIN
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ew-dorin,$(ew-dorin_cmdline),$(ew-dorin_mtdlayout_4M),1048576,2752512,KRuImage)
+	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ew-dorin-router,$(ew-dorin-router_cmdline),$(ew-dorin_mtdlayout_4M),1048576,2752512,KRuImage)
 endef
 
 ap81_cmdline=board=AP81 console=ttyS0,115200
@@ -1040,6 +1042,11 @@ define Image/Build/Profile/WHRHPGN
 	$(call Image/Build/Template/$(fs_64k)/$(1),WHRHPG300N,whr-hp-gn,$(whrhpgn_cmdline),$(whrhpg300n_mtdlayout),WHR-HP-GN)
 endef
 
+wlaeag300n_cmdline=board=WLAE-AG300N console=ttyS0,115200
+define Image/Build/Profile/WLAEAG300N
+	$(call Image/Build/Template/$(fs_64k)/$(1),WHRHPG300N,wlae-ag300n,$(wlaeag300n_cmdline),$(whrhpg300n_mtdlayout),WLAE-AG300N)
+endef
+
 wzrhpg300nh_cmdline=board=WZR-HP-G300NH console=ttyS0,115200
 define Image/Build/Profile/WZRHPG300NH
 	$(call Image/Build/Template/$(fs_128k)/$(1),WZRHPG30XNH,wzr-hp-g300nh,$(wzrhpg300nh_cmdline),WZR-HP-G300NH)
@@ -1134,6 +1141,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/WHRG301N,$(1))
 	$(call Image/Build/Profile/WHRHPG300N,$(1))
 	$(call Image/Build/Profile/WHRHPGN,$(1))
+	$(call Image/Build/Profile/WLAEAG300N,$(1))
 	$(call Image/Build/Profile/WZRHPG300NH,$(1))
 	$(call Image/Build/Profile/WZRHPG300NH2,$(1))
 	$(call Image/Build/Profile/WZRHPAG300H,$(1))
