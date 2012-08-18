@@ -77,7 +77,7 @@ define KernelPackage/usb-uhci
 	CONFIG_USB_UHCI_ALT \
 	CONFIG_USB_UHCI_HCD
   FILES:=$(LINUX_DIR)/drivers/usb/host/uhci-hcd.ko
-  AUTOLOAD:=$(call AutoLoad,50,uhci-hcd,1)
+  AUTOLOAD:=$(call AutoLoad,50,uhci-hcd)
   $(call AddDepends/usb)
 endef
 
@@ -99,7 +99,7 @@ define KernelPackage/usb-ohci
 	CONFIG_USB_OHCI_RT3883=y \
 	CONFIG_USB_OCTEON_OHCI=y
   FILES:=$(LINUX_DIR)/drivers/usb/host/ohci-hcd.ko
-  AUTOLOAD:=$(call AutoLoad,50,ohci-hcd,1)
+  AUTOLOAD:=$(call AutoLoad,50,ohci-hcd)
   $(call AddDepends/usb)
 endef
 
@@ -120,7 +120,7 @@ define KernelPackage/usb2
     CONFIG_USB_OCTEON_EHCI=y \
     CONFIG_USB_EHCI_FSL=n
   FILES:=$(LINUX_DIR)/drivers/usb/host/ehci-hcd.ko
-  AUTOLOAD:=$(call AutoLoad,40,ehci-hcd,1)
+  AUTOLOAD:=$(call AutoLoad,40,ehci-hcd)
   $(call AddDepends/usb)
 endef
 
