@@ -35,6 +35,7 @@ enum ramips_mach_type {
 	RAMIPS_MACH_WL_330N3G,		/* Asus WL-330N3G */
 
 	/* RT3052 based machines */
+	RAMIPS_MACH_ALL0239_3G,		/* ALL0239-3G */
 	RAMIPS_MACH_ARGUS_ATP52B,	/* Argus ATP-52B */
 	RAMIPS_MACH_BC2,		/* NexAira BC2 */
 	RAMIPS_MACH_DAP_1350,		/* D-Link DAP-1350 */
@@ -63,6 +64,7 @@ enum ramips_mach_type {
 	
 	/* RT3352 based machines */
 	RAMIPS_MACH_ALL5002,		/* Allnet ALL5002 */
+	RAMIPS_MACH_DIR_615_H1,
 
 	/* RT3662 based machines */
 	RAMIPS_MACH_RT_N56U,		/* Asus RT-N56U */

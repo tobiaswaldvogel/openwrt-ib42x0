@@ -220,6 +220,18 @@ define Image/Build/Cameo
 	fi
 endef
 
+define Image/Build/CameoHornet
+	$(call MkuImageLzma,$(2),$(3) $(4))
+	$(call Sysupgrade/KRuImage,$(1),$(2),$(5),$(6))
+	if [ -e "$(call sysupname,$(1),$(2))" ]; then \
+		mkcameofw -M HORNET -R "DEF" -S $(7) -V "1.99" \
+			-K $(5) -I $$$$(($(5)+$(6))) \
+			-k $(KDIR_TMP)/vmlinux-$(2).uImage \
+			-r $(BIN_DIR)/$(IMG_PREFIX)-root.$(1) \
+			-o $(call factoryname,$(1),$(2)); \
+	fi
+endef
+
 cameo913x_mtdlayout=mtdparts=spi0.0:128k(u-boot)ro,64k(config)ro,960k(kernel),2880k(rootfs),64k(art)ro,3840k@0x30000(firmware)
 define Image/Build/Cameo913x
 	$(call Image/Build/Cameo,$(1),$(2),$(3),$(cameo913x_mtdlayout),983040,2949120,$(4))
@@ -236,6 +248,15 @@ endef
 
 define Image/Build/Cameo7240/initramfs
 	$(call MkuImageLzma/initramfs,$(2),$(3) $(cameo7240_mtdlayout))
+endef
+
+cameo933x_mtdlayout=mtdparts=spi0.0:64k(u-boot)ro,64k(art)ro,64k(mac)ro,64k(nvram)ro,192k(language)ro,896k(kernel),2752k(rootfs),3648k@0x70000(firmware)
+define Image/Build/Cameo933x
+	$(call Image/Build/CameoHornet,$(1),$(2),$(3),$(cameo933x_mtdlayout),917504,2818048,$(4))
+endef
+
+define Image/Build/Cameo933x/initramfs
+	$(call MkuImageLzma/initramfs,$(2),$(3) $(cameo933x_mtdlayout))
 endef
 
 define Image/Build/Ath
@@ -661,7 +682,12 @@ define Image/Build/Profile/ALL0258N
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,all0258n,$(all0258n_cmdline),$(all0258n_mtdlayout),1048576,5373952,KRuImage)
 endef
 
-ap113_mtd_layout=64k(u-boot),3008k(rootfs),896k(uImage),64k(NVRAM),64k(ART),3904k@0x10000(firmware)
+all0305_cmdline=board=ALL0305 console=ttyS0,115200
+define Image/Build/Profile/ALL0305
+	$(call Image/Build/Template/$(fs_128k)/$(1),PB4X,all0305,$(all0305_cmdline))
+endef
+
+ap113_mtd_layout=mtdparts=spi0.0:64k(u-boot),3008k(rootfs),896k(uImage),64k(NVRAM),64k(ART),3904k@0x10000(firmware)
 ap113_cmdline=board=AP113 console=ttyS0,115200
 define Image/Build/Profile/AP113
 	$(call Image/Build/Template/$(fs_64k)/$(1),AthLzma,ap113,$(ap113_cmdline),$(ap113_mtd_layout),917504,3080192,RK)
@@ -812,6 +838,12 @@ define Image/Build/Profile/TEW652BRP
 	$(call Image/Build/Template/$(fs_squash)/$(1),Cameo913x,tew-652brp,$(tew652brp_cmdline),"AP81-AR9130-RT-080609-05")
 	$(call Image/Build/Template/$(fs_squash)/$(1),Cameo913x,tew-652brp-recovery,$(tew652brp_cmdline),"AP81-AR9130-RT-070614-02")
 endef
+
+tew712br_cmdline=board=TEW-712BR console=ttyATH0,115200
+define Image/Build/Profile/TEW712BR
+	$(call Image/Build/Template/$(fs_squash)/$(1),Cameo933x,tew-712br,$(tew712br_cmdline),"HORNET-RT-TEW712BR-3")
+endef
+
 
 a05rbw300n_cmdline=board=TEW-632BRP console=ttyS0,115200
 define Image/Build/Profile/A02RBW300N
@@ -991,6 +1023,7 @@ endef
 
 tlwdr4300_cmdline=board=TL-WDR4300 console=ttyS0,115200
 define Image/Build/Profile/TLWDR4300
+	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wdr3600-v1,$(tlwdr4300_cmdline),0x36000001,1,8Mlzma)
 	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wdr4300-v1,$(tlwdr4300_cmdline),0x43000001,1,8Mlzma)
 	$(call Image/Build/Template/$(fs_64kraw)/$(1),TPLINK-LZMA,tl-wdr4310-v1,$(tlwdr4300_cmdline),0x43100001,1,8Mlzma)
 endef
@@ -1082,6 +1115,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/ALFAAP96,$(1))
 	$(call Image/Build/Profile/ALFANX,$(1))
 	$(call Image/Build/Profile/ALL0258N,$(1))
+	$(call Image/Build/Profile/ALL0305,$(1))
 	$(call Image/Build/Profile/AP113,$(1))
 	$(call Image/Build/Profile/AP121,$(1))
 	$(call Image/Build/Profile/AP121MINI,$(1))
@@ -1113,6 +1147,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/TEW632BRP,$(1))
 	$(call Image/Build/Profile/TEW652BRP,$(1))
 	$(call Image/Build/Profile/TEW673GRU,$(1))
+	$(call Image/Build/Profile/TEW712BR,$(1))
 	$(call Image/Build/Profile/TLMR11U,$(1))
 	$(call Image/Build/Profile/TLMR3020,$(1))
 	$(call Image/Build/Profile/TLMR3040,$(1))

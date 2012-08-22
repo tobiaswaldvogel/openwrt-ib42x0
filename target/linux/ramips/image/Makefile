@@ -60,6 +60,18 @@ define MkImageLzma
 	$(call MkImage,lzma,$(KDIR)/vmlinux-$(1).bin.lzma,$(KDIR)/vmlinux-$(1).uImage,$(3))
 endef
 
+define MkCombineduImage
+	$(call PatchKernelLzma,$(2),$(3))
+	if [ `stat -c%s "$(KDIR)/vmlinux-$(2).bin.lzma"` -gt `expr $(4) - 64` ]; then \
+		echo "Warning: $(KDIR)/vmlinux-$(2).bin.lzma is too big"; \
+	else if [ `stat -c%s "$(KDIR)/root.$(1)"` -gt $(5) ]; then \
+		echo "Warning: $(KDIR)/root.$(1) is too big"; \
+	else \
+		( dd if=$(KDIR)/vmlinux-$(2).bin.lzma bs=`expr $(4) - 64` conv=sync ; dd if=$(KDIR)/root.$(1) ) > $(KDIR)/vmlinux-$(2).bin.lzma.combined ; \
+	fi ; fi
+	$(call MkImage,lzma,$(KDIR)/vmlinux-$(2).bin.lzma.combined,$(call sysupname,$(1),$(2)),$(6))
+endef
+
 define CatFiles
 	if [ `stat -c%s "$(1)"` -gt $(2) ]; then \
 		echo "Warning: $(1) is too big"; \
@@ -125,6 +137,10 @@ define BuildFirmware/GENERIC_8M/initramfs
 	$(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_8M)))
 endef
 
+define BuildFirmware/UIMAGE_8M
+	$(call MkCombineduImage,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_8M)),$(kernel_size_8M),$(rootfs_size_8M),$(7))
+endef
+
 mtdlayout_edimax_3g6200n=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,896k(kernel),2752k(rootfs),128k@0x3e0000(cimage)ro,3648k@0x50000(firmware)
 define BuildFirmware/3G6200N
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_edimax_3g6200n)),917504,2818048)
@@ -181,6 +197,17 @@ endef
 
 define BuildFirmware/DIR300B1/initramfs
 	$(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),ttyS1,57600) $(call mkmtd/phys,$(mtdlayout_dir300b1)),$(mtd_dir300b1_kernel_part_size),$(mtd_dir300b1_rootfs_part_size))
+endef
+
+mtdlayout_dir615h1=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,896k(kernel),2880k(rootfs),3776k@0x50000(firmware)
+define BuildFirmware/DIR615H1
+        $(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_dir615h1)),917504,2949120)
+	mkdir615h1 -e $(call sysupname,$(1),$(2)) \
+		-o $(call imgname,$(1),$(2))-factory.bin
+endef
+
+define BuildFirmware/DIR615H1/initramfs
+        $(call BuildFirmware/Generic/initramfs,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_dir615h1)))
 endef
 
 mtdlayout_dap1350=192k(u-boot)ro,64k(devdata)ro,192k(devconf)ro,256k(devlang)ro,1088k(kernel),6400k(rootfs),7488k@0xb0000(firmware)
@@ -356,6 +383,10 @@ define Image/Build/Profile/3G6200N
 	$(call Image/Build/Template/$(fs_squash)/$(1),3G6200N,3g-6200n,3G-6200N,ttyS1,57600,phys)
 endef
 
+define Image/Build/Profile/ALL02393G
+	$(call Image/Build/Template/$(fs_squash)/$(1),UIMAGE_8M,all0239-3g,ALL0239-3G,ttyS1,57600,phys)
+endef
+
 define Image/Build/Profile/ALL0256N
 	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,all0256n,ALL0256N,ttyS1,57600,spi)
 endef
@@ -378,6 +409,10 @@ define Image/Build/Profile/DIR300B1
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR300B1,dir-600-b2,DIR-600-B2,wrgn23_dlwbr_dir600b)
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR300B1,dir-615-d,DIR-615-D,wrgn23_dlwbr_dir615d)
 	$(call Image/Build/Template/$(fs_squash)/$(1),DIR620A1,dir-620-a1,DIR-620-A1)
+endef
+
+define Image/Build/Profile/DIR615H1
+        $(call Image/Build/Template/$(fs_squash)/$(1),DIR615H1,dir-615-h1,DIR-615-H1,ttyS1,57600,spi)
 endef
 
 define Image/Build/Profile/DAP1350
@@ -409,7 +444,7 @@ define Image/Build/Profile/MOFI35003GN
 endef
 
 define Image/Build/Profile/NBG419N
-	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,nbg-419n,NBG419N,ttyS1,57600,phys)
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,nbg-419n,NBG-419N,ttyS1,57600,phys)
 endef
 
 define Image/Build/Profile/NW718
@@ -498,11 +533,13 @@ endef
 ifeq ($(CONFIG_RALINK_RT305X),y)
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/3G6200N,$(1))
+	$(call Image/Build/Profile/ALL02393G,$(1))
 	$(call Image/Build/Profile/ALL0256N,$(1))
 	$(call Image/Build/Profile/ALL5002,$(1))
 	$(call Image/Build/Profile/ARGUS_ATP52B,$(1))
 	$(call Image/Build/Profile/BC2,$(1))
 	$(call Image/Build/Profile/DIR300B1,$(1))
+	$(call Image/Build/Profile/DIR615H1,$(1))
 	$(call Image/Build/Profile/DAP1350,$(1))
 	$(call Image/Build/Profile/ESR9753,$(1))
 	$(call Image/Build/Profile/F5D8235V2,$(1))

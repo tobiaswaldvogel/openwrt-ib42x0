@@ -123,6 +123,9 @@ tplink_board_detect() {
 	"342000"*)
 		model="TP-Link TL-MR3420"
 		;;
+	"360000"*)
+		model="TP-Link TL-WDR3600"
+		;;
 	"430000"*)
 		model="TP-Link TL-WDR4300"
 		;;
@@ -155,6 +158,9 @@ ar71xx_board_detect() {
 		;;
 	*ALL0258N)
 		name="all0258n"
+		;;
+	*ALL0305)
+		name="all0305"
 		;;
 	*AP113)
 		name="ap113"
@@ -294,6 +300,9 @@ ar71xx_board_detect() {
 	*TEW-673GRU)
 		name="tew-673gru"
 		;;
+	*TEW-712BR)
+		name="tew-712br"
+		;;
 	*"TL-WR1041N v2")
 		name="tl-wr1041n-v2"
 		;;
@@ -321,7 +330,7 @@ ar71xx_board_detect() {
 	*"TL-WA901ND v2")
 		name="tl-wa901nd-v2"
 		;;
-	*TL-WDR4300)
+	*"TL-WDR3600/4300/4310")
 		name="tl-wdr4300"
 		;;
 	*TL-WR741ND)
