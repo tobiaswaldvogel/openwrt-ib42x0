@@ -46,7 +46,7 @@ define Package/busybox
   URL:=http://busybox.net/
   DEPENDS:=+BUSYBOX_USE_LIBRPC:librpc
   DEPENDS:=+BUSYBOX_USE_LIBTIRPC:libtirpc
-  DEPENDS:=+BUSYBOX_CONFIG_PAM:libpam
+  DEPENDS:=+PACKAGE_libpam:libpam
   MENU:=1
 endef
 
