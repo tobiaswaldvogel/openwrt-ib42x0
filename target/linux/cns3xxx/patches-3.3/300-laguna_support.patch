@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/arch/arm/mach-cns3xxx/laguna.c
-@@ -0,0 +1,761 @@
+@@ -0,0 +1,765 @@
 +/*
 + * Gateworks Corporation Laguna Platform
 + *
@@ -45,6 +45,7 @@
 +#include <mach/irqs.h>
 +#include <mach/platform.h>
 +#include <mach/pm.h>
++#include <asm/hardware/gic.h>
 +#include "core.h"
 +#include "devices.h"
 +
@@ -614,7 +615,8 @@
 +
 +static void __init laguna_map_io(void)
 +{
-+	cns3xxx_map_io();
++	cns3xxx_common_init();
++	cns3xxx_pcie_iotable_init(0x3);
 +	iotable_init(laguna_io_desc, ARRAY_SIZE(laguna_io_desc));
 +	laguna_early_serial_setup();
 +}
@@ -760,7 +762,9 @@
 +	.map_io		= laguna_map_io,
 +	.init_irq	= cns3xxx_init_irq,
 +	.timer		= &cns3xxx_timer,
++	.handle_irq	= gic_handle_irq,
 +	.init_machine	= laguna_init,
++	.restart	= cns3xxx_restart,
 +MACHINE_END
 --- a/arch/arm/mach-cns3xxx/Kconfig
 +++ b/arch/arm/mach-cns3xxx/Kconfig
@@ -779,152 +783,6 @@
 +	  for USB, USB-OTG, MMC/SD/SDIO, SATA, PCI-E, I2C, GIG, etc.
 +
  endmenu
---- a/arch/arm/mach-cns3xxx/core.c
-+++ b/arch/arm/mach-cns3xxx/core.c
-@@ -19,6 +19,7 @@
- #include <asm/mach/time.h>
- #include <asm/mach/irq.h>
- #include <asm/hardware/gic.h>
-+#include <asm/smp_twd.h>
- #include <asm/hardware/cache-l2x0.h>
- #include <mach/cns3xxx.h>
- #include "core.h"
-@@ -68,11 +69,24 @@ static struct map_desc cns3xxx_io_desc[]
- 		.pfn		= __phys_to_pfn(CNS3XXX_PM_BASE),
- 		.length		= SZ_4K,
- 		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= CNS3XXX_SWITCH_BASE_VIRT,
-+		.pfn		= __phys_to_pfn(CNS3XXX_SWITCH_BASE),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= CNS3XXX_SSP_BASE_VIRT,
-+		.pfn		= __phys_to_pfn(CNS3XXX_SSP_BASE),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
- 	},
- };
- 
- void __init cns3xxx_map_io(void)
- {
-+#ifdef CONFIG_LOCAL_TIMERS
-+	twd_base = (void __iomem *) CNS3XXX_TC11MP_TWD_BASE_VIRT;
-+#endif
- 	iotable_init(cns3xxx_io_desc, ARRAY_SIZE(cns3xxx_io_desc));
- }
- 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -366,6 +366,7 @@ config ARCH_CLPS711X
- config ARCH_CNS3XXX
- 	bool "Cavium Networks CNS3XXX family"
- 	select CPU_V6K
-+	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select GENERIC_CLOCKEVENTS
- 	select ARM_GIC
- 	select CLKDEV_LOOKUP
---- /dev/null
-+++ b/arch/arm/mach-cns3xxx/include/mach/gpio.h
-@@ -0,0 +1,98 @@
-+/*
-+ * arch/arm/mach-cns3xxx/include/mach/gpio.h
-+ *
-+ * CNS3xxx GPIO wrappers for arch-neutral GPIO calls
-+ *
-+ * Copyright 2011 Gateworks Corporation
-+ *		  Chris Lang <clang@gateworks.com>
-+ *
-+ * Based on IXP implementation by Milan Svoboda <msvoboda@ra.rockwell.com>
-+ * Based on PXA implementation by Philipp Zabel <philipp.zabel@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ */
-+
-+#ifndef __ASM_ARCH_CNS3XXX_GPIO_H
-+#define __ASM_ARCH_CNS3XXX_GPIO_H
-+
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <mach/platform.h>
-+#include <asm-generic/gpio.h>			/* cansleep wrappers */
-+
-+#define NR_BUILTIN_GPIO 64
-+
-+#define CNS3XXX_GPIO_IN    0x0
-+#define CNS3XXX_GPIO_OUT   0x1
-+
-+#define CNS3XXX_GPIO_LO   0
-+#define CNS3XXX_GPIO_HI   1
-+
-+#define CNS3XXX_GPIO_OUTPUT         0x00
-+#define CNS3XXX_GPIO_INPUT          0x04
-+#define CNS3XXX_GPIO_DIR            0x08
-+#define CNS3XXX_GPIO_SET            0x10
-+#define CNS3XXX_GPIO_CLEAR          0x14
-+
-+static inline void gpio_line_get(u8 line, int *value)
-+{
-+	if (line < 32)
-+		*value = ((__raw_readl(CNS3XXX_GPIOA_BASE_VIRT + CNS3XXX_GPIO_INPUT) >> line) & 0x1);
-+	else
-+		*value = ((__raw_readl(CNS3XXX_GPIOB_BASE_VIRT + CNS3XXX_GPIO_INPUT) >> (line - 32)) & 0x1);
-+}
-+
-+static inline void gpio_line_set(u8 line, int value)
-+{
-+	if (line < 32) {
-+		if (value)
-+			__raw_writel((1 << line), CNS3XXX_GPIOA_BASE_VIRT + CNS3XXX_GPIO_SET);
-+		else
-+			__raw_writel((1 << line), CNS3XXX_GPIOA_BASE_VIRT + CNS3XXX_GPIO_CLEAR);
-+	} else {
-+		if (value)
-+			__raw_writel((1 << line), CNS3XXX_GPIOB_BASE_VIRT + CNS3XXX_GPIO_SET);
-+		else
-+			__raw_writel((1 << line), CNS3XXX_GPIOB_BASE_VIRT + CNS3XXX_GPIO_CLEAR);
-+	}
-+}
-+
-+static inline int gpio_get_value(unsigned gpio)
-+{
-+	if (gpio < NR_BUILTIN_GPIO)
-+	{
-+		int value;
-+		gpio_line_get(gpio, &value);
-+		return value;
-+	}
-+	else
-+		return __gpio_get_value(gpio);
-+}
-+
-+static inline void gpio_set_value(unsigned gpio, int value)
-+{
-+	if (gpio < NR_BUILTIN_GPIO)
-+		gpio_line_set(gpio, value);
-+	else
-+		__gpio_set_value(gpio, value);
-+}
-+
-+#define gpio_cansleep __gpio_cansleep
-+
-+extern int gpio_to_irq(int gpio);
-+extern int irq_to_gpio(int gpio);
-+
-+#endif
 --- a/arch/arm/mach-cns3xxx/Makefile
 +++ b/arch/arm/mach-cns3xxx/Makefile
 @@ -1,6 +1,7 @@
@@ -935,58 +793,3 @@
  obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
  obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
  obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
---- a/arch/arm/mach-cns3xxx/pcie.c
-+++ b/arch/arm/mach-cns3xxx/pcie.c
-@@ -365,7 +365,7 @@ static int cns3xxx_pcie_abort_handler(un
- 	return 0;
- }
- 
--static int __init cns3xxx_pcie_init(void)
-+int cns3xxx_pcie_init(u8 bitmap)
- {
- 	int i;
- 
-@@ -376,6 +376,9 @@ static int __init cns3xxx_pcie_init(void
- 			"imprecise external abort");
- 
- 	for (i = 0; i < ARRAY_SIZE(cns3xxx_pcie); i++) {
-+		if (!(bitmap & (1 << i)))
-+			continue;
-+
- 		iotable_init(cns3xxx_pcie[i].cfg_bases,
- 			     ARRAY_SIZE(cns3xxx_pcie[i].cfg_bases));
- 		cns3xxx_pcie_check_link(&cns3xxx_pcie[i]);
-@@ -387,4 +390,3 @@ static int __init cns3xxx_pcie_init(void
- 
- 	return 0;
- }
--device_initcall(cns3xxx_pcie_init);
---- a/arch/arm/mach-cns3xxx/cns3420vb.c
-+++ b/arch/arm/mach-cns3xxx/cns3420vb.c
-@@ -32,6 +32,7 @@
- #include <asm/mach/time.h>
- #include <mach/cns3xxx.h>
- #include <mach/irqs.h>
-+#include <mach/platform.h>
- #include "core.h"
- #include "devices.h"
- 
-@@ -199,6 +200,8 @@ static void __init cns3420_init(void)
- 	cns3xxx_ahci_init();
- 	cns3xxx_sdhci_init();
- 
-+	cns3xxx_pcie_init(0x3);
-+
- 	pm_power_off = cns3xxx_power_off;
- }
- 
---- a/arch/arm/mach-cns3xxx/core.h
-+++ b/arch/arm/mach-cns3xxx/core.h
-@@ -12,6 +12,7 @@
- #define __CNS3XXX_CORE_H
- 
- extern struct sys_timer cns3xxx_timer;
-+extern int cns3xxx_pcie_init(u8 bitmap);
- 
- #ifdef CONFIG_CACHE_L2X0
- void __init cns3xxx_l2x0_init(void);

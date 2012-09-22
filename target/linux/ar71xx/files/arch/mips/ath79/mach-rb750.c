@@ -14,6 +14,8 @@
 #include <linux/platform_device.h>
 #include <linux/phy.h>
 #include <linux/ar8216_platform.h>
+#include <linux/rle.h>
+#include <linux/routerboot.h>
 
 #include <asm/mach-ath79/ar71xx_regs.h>
 #include <asm/mach-ath79/ath79.h>
@@ -25,6 +27,7 @@
 #include "dev-usb.h"
 #include "dev-eth.h"
 #include "machtypes.h"
+#include "routerboot.h"
 
 static struct rb750_led_data rb750_leds[] = {
 	{
@@ -276,45 +279,17 @@ static void __init rb750gr3_setup(void)
 MIPS_MACHINE(ATH79_MACH_RB_750G_R3, "750Gr3", "MikroTik RouterBOARD 750GL",
 	     rb750gr3_setup);
 
-static int decode_rle(char *output, int len, char *in)
-{
-	char *ptr = output;
-	char *end = output + len;
-
-	if (!output || !in)
-		return -EINVAL;
-
-	while (*in) {
-		if (*in < 0) {
-			int i = -*in++;
-			while (i-- > 0) {
-				if (ptr >= end)
-					return -EINVAL;
-				*ptr++ = *in++;
-			}
-		} else if (*in > 0) {
-			int i = *in++;
-			while (i-- > 0) {
-				if (ptr >= end)
-					return -EINVAL;
-				*ptr++ = *in;
-			}
-			in++;
-		}
-	}
-
-	return ptr - output;
-}
-
-#define RB751_HARDCONFIG 0x1f00b000
+#define RB751_HARDCONFIG	0x1f00b000
+#define RB751_HARDCONFIG_SIZE	0x1000
 #define RB751_MAC_ADDRESS_OFFSET 0xE80
-#define RB751_CALDATA_OFFSET 0x27C
 
 static void __init rb751_wlan_setup(void)
 {
 	u8 *hardconfig = (u8 *) KSEG1ADDR(RB751_HARDCONFIG);
 	struct ath9k_platform_data *wmac_data;
-	int dec_size;
+	u16 tag_len;
+	u8 *tag;
+	int err;
 
 	wmac_data = ap9x_pci_get_wmac_data(0);
 	if (!wmac_data) {
@@ -324,10 +299,16 @@ static void __init rb751_wlan_setup(void)
 
 	ap9x_pci_setup_wmac_led_pin(0, 9);
 
-	dec_size = decode_rle((char *) wmac_data->eeprom_data,
-			      sizeof(wmac_data->eeprom_data),
-			      hardconfig + RB751_CALDATA_OFFSET);
-	if (dec_size != sizeof(wmac_data->eeprom_data)) {
+	err = routerboot_find_tag(hardconfig, RB751_HARDCONFIG_SIZE,
+				  RB_ID_WLAN_DATA, &tag, &tag_len);
+	if (err) {
+		pr_err("rb75x: no calibration data found\n");
+		return;
+	}
+
+	err = rle_decode(tag, tag_len, (unsigned char *) wmac_data->eeprom_data,
+			 sizeof(wmac_data->eeprom_data), NULL, NULL);
+	if (err) {
 		pr_err("rb75x: unable to decode wlan eeprom data\n");
 		return;
 	}

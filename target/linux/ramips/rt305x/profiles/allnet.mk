@@ -20,7 +20,7 @@ $(eval $(call Profile,ALL02393G))
 
 define Profile/ALL0256N
 	NAME:=Allnet ALL0256N
-	PACKAGES:=
+	PACKAGES:=rssileds
 endef
 
 define Profile/ALL0256N/Description
@@ -31,7 +31,7 @@ $(eval $(call Profile,ALL0256N))
 
 define Profile/ALL5002
 	NAME:=Allnet ALL5002
-	PACKAGES:=kmod-usb-core kmod-usb2 kmod-ledtrig-usbdev
+	PACKAGES:=kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-ledtrig-usbdev
 endef
 
 define Profile/ALL5002/Description

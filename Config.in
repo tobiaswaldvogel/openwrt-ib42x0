@@ -193,9 +193,14 @@ menu "Global build settings"
 		  debugging files into. Enable this option to be able to read and
 		  write to these files.
 
+	config KERNEL_PERF_EVENTS
+		bool
+		default n
+
 	config KERNEL_PROFILING
 		bool "Compile the kernel with profiling enabled"
 		default n
+		select KERNEL_PERF_EVENTS
 		help
 		  Enable the extended profiling support mechanisms used by profilers such
 		  as OProfile.
@@ -311,12 +316,21 @@ menu "Global build settings"
 
 		  If you are unsure, select N.
 
+	config PKG_BUILD_USE_JOBSERVER
+		bool
+		prompt "Use top-level make jobserver for packages"
+		depends on PKG_BUILD_PARALLEL
+		default y
+		help
+		  This passes the main make process jobserver fds to package builds,
+		  enabling full parallelization across different packages
+
 	config PKG_BUILD_JOBS
 		int
 		prompt "Number of package submake jobs (2-512)"
 		range 2 512
 		default 2
-		depends on PKG_BUILD_PARALLEL
+		depends on PKG_BUILD_PARALLEL && !PKG_BUILD_USE_JOBSERVER
 		help
 		  The number of jobs (-jX) to pass to packages submake.
 

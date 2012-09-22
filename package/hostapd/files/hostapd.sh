@@ -9,6 +9,9 @@ hostapd_set_bss_options() {
 	config_get wpa_pair_rekey   "$vif" wpa_pair_rekey   # 300
 	config_get wpa_master_rekey "$vif" wpa_master_rekey # 640
 	config_get_bool ap_isolate "$vif" isolate 0
+	config_get_bool disassoc_low_ack "$vif" disassoc_low_ack 1
+	config_get max_num_sta "$vif" max_num_sta 0
+	config_get max_inactivity "$vif" max_inactivity 0
 
 	config_get device "$vif" device
 	config_get hwmode "$device" hwmode
@@ -19,6 +22,13 @@ hostapd_set_bss_options() {
 	if [ "$ap_isolate" -gt 0 ]; then
 		append "$var" "ap_isolate=$ap_isolate" "$N"
 	fi
+	if [ "$max_num_sta" -gt 0 ]; then
+		append "$var" "max_num_sta=$max_num_sta" "$N"
+	fi
+	if [ "$max_inactivity" -gt 0 ]; then
+		append "$var" "ap_max_inactivity=$max_inactivity" "$N"
+	fi
+	append "$var" "disassoc_low_ack=$disassoc_low_ack" "$N"
 
 	# Examples:
 	# psk-mixed/tkip 	=> WPA1+2 PSK, TKIP
@@ -84,6 +94,9 @@ hostapd_set_bss_options() {
 			config_get auth_secret "$vif" auth_secret
 			[ -z "$auth_secret" ] && config_get auth_secret "$vif" key
 			append "$var" "auth_server_shared_secret=$auth_secret" "$N"
+			config_get_bool auth_cache "$vif" auth_cache 0
+			[ "$auth_cache" -gt 0 ] || append "$var" "disable_pmksa_caching=1" "$N"
+			[ "$auth_cache" -gt 0 ] || append "$var" "okc=0" "$N"
 			config_get acct_server "$vif" acct_server
 			[ -n "$acct_server" ] && append "$var" "acct_server_addr=$acct_server" "$N"
 			config_get acct_port "$vif" acct_port
@@ -174,7 +187,7 @@ hostapd_set_bss_options() {
 	if [ "$wpa" -ge "2" ]
 	then
 		# RSN -> allow preauthentication
-		config_get rsn_preauth "$vif" rsn_preauth
+		config_get_bool rsn_preauth "$vif" rsn_preauth "$auth_cache"
 		if [ -n "$bridge" -a "$rsn_preauth" = 1 ]
 		then
 			append "$var" "rsn_preauth=1" "$N"

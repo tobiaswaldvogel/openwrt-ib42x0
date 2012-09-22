@@ -15,11 +15,17 @@ PKG_MD5SUM ?= unknown
 PKG_BUILD_PARALLEL ?=
 PKG_INFO_DIR := $(STAGING_DIR)/pkginfo
 
+ifneq ($(CONFIG_PKG_BUILD_USE_JOBSERVER),)
+  MAKE_J:=$(if $(MAKE_JOBSERVER),$(MAKE_JOBSERVER) -j)
+else
+  MAKE_J:=-j$(CONFIG_PKG_BUILD_JOBS)
+endif
+
 ifeq ($(strip $(PKG_BUILD_PARALLEL)),0)
 PKG_JOBS?=-j1
 else
 PKG_JOBS?=$(if $(PKG_BUILD_PARALLEL)$(CONFIG_PKG_DEFAULT_PARALLEL),\
-	$(if $(CONFIG_PKG_BUILD_PARALLEL),-j$(CONFIG_PKG_BUILD_JOBS),-j1),-j1)
+	$(if $(CONFIG_PKG_BUILD_PARALLEL),$(MAKE_J),-j1),-j1)
 endif
 
 include $(INCLUDE_DIR)/prereq.mk
@@ -241,6 +247,8 @@ Build/Compile=$(call Build/Compile/Default,)
 Build/Install=$(if $(PKG_INSTALL),$(call Build/Install/Default,))
 Build/Dist=$(call Build/Dist/Default,)
 Build/DistCheck=$(call Build/DistCheck/Default,)
+
+.NOTPARALLEL:
 
 $(PACKAGE_DIR):
 	mkdir -p $@
