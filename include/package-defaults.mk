@@ -13,6 +13,8 @@ else
   PKG_FIXUP_DEPENDS = $(2)
 endif
 
+PKG_MAINTAINER ?= OpenWrt Developers Team <openwrt-devel@openwrt.org>
+
 define Package/Default
   CONFIGFILE:=
   SECTION:=opt
@@ -21,7 +23,7 @@ define Package/Default
   MDEPENDS:=
   PROVIDES:=
   EXTRA_DEPENDS:=
-  MAINTAINER:=OpenWrt Developers Team <openwrt-devel@openwrt.org>
+  MAINTAINER:=$(PKG_MAINTAINER)
   SOURCE:=$(patsubst $(TOPDIR)/%,%,$(CURDIR))
   ifneq ($(PKG_VERSION),)
     ifneq ($(PKG_RELEASE),)
@@ -129,7 +131,7 @@ MAKE_INSTALL_FLAGS = \
 MAKE_PATH = .
 
 define Build/Compile/Default
-	$(MAKE_VARS) \
+	+$(MAKE_VARS) \
 	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/$(MAKE_PATH) \
 		$(MAKE_FLAGS) \
 		$(1);

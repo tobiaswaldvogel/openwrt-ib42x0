@@ -11,13 +11,15 @@ include $(INCLUDE_DIR)/kernel.mk
 PKG_NAME:=mac80211
 
 PKG_VERSION:=2012-09-07
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 PKG_MD5SUM:=59e0a114ee4b755a6e47cb6cd0f32ebc
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
 PKG_BUILD_PARALLEL:=1
+
+PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
 
 PKG_DRIVERS = \
 	ath5k libertas-usb libertas-sd p54-common p54-pci p54-usb p54-spi \
@@ -55,7 +57,7 @@ endef
 define KernelPackage/cfg80211
   $(call KernelPackage/mac80211/Default)
   TITLE:=cfg80211 - wireless configuration API
-  DEPENDS+= +wireless-tools +iw
+  DEPENDS+= +iw
   FILES:= \
 	$(PKG_BUILD_DIR)/compat/compat.ko \
 	$(PKG_BUILD_DIR)/net/wireless/cfg80211.ko
@@ -822,35 +824,6 @@ PKG_B43_FWV3_SOURCE:=$(PKG_B43_FWV3_NAME)-$(PKG_B43_FWV3_VERSION).o
 PKG_B43_FWV3_SOURCE_URL:=http://downloads.openwrt.org/sources/
 PKG_B43_FWV3_MD5SUM:=e08665c5c5b66beb9c3b2dd54aa80cb3
 
-ifeq ($(CONFIG_B43_OPENFIRMWARE),y)
-  PKG_B43_FWCUTTER_NAME:=b43-fwcutter
-  PKG_B43_FWCUTTER_VERSION:=3e69531aa65b8f664a0ab00dfc3e2eefeb0cb417
-  PKG_B43_FWCUTTER_SOURCE:=$(PKG_B43_FWCUTTER_NAME)-$(PKG_B43_FWCUTTER_VERSION).tar.bz2
-  PKG_B43_FWCUTTER_PROTO:=git
-  PKG_B43_FWCUTTER_SOURCE_URL:=http://git.bu3sch.de/git/b43-tools.git
-  PKG_B43_FWCUTTER_SUBDIR:=$(PKG_B43_FWCUTTER_NAME)-$(PKG_B43_FWCUTTER_VERSION)
-  PKG_B43_FWCUTTER_OBJECT:=$(PKG_B43_FWCUTTER_NAME)-$(PKG_B43_FWCUTTER_VERSION)/fwcutter/
-else
-  PKG_B43_FWCUTTER_NAME:=b43-fwcutter
-  PKG_B43_FWCUTTER_VERSION:=015
-  PKG_B43_FWCUTTER_SOURCE:=$(PKG_B43_FWCUTTER_NAME)-$(PKG_B43_FWCUTTER_VERSION).tar.bz2
-  PKG_B43_FWCUTTER_PROTO:=default
-  PKG_B43_FWCUTTER_SOURCE_URL:=http://bu3sch.de/b43/fwcutter/
-  PKG_B43_FWCUTTER_MD5SUM:=628e030565222a107bc40300313cbe76
-  PKG_B43_FWCUTTER_SUBDIR:=b43-fwcutter-$(PKG_B43_FWCUTTER_VERSION)
-  PKG_B43_FWCUTTER_OBJECT:=$(PKG_B43_FWCUTTER_NAME)-$(PKG_B43_FWCUTTER_VERSION)/
-endif
-
-define Download/b43-common
-  FILE:=$(PKG_B43_FWCUTTER_SOURCE)
-  URL:=$(PKG_B43_FWCUTTER_SOURCE_URL)
-  MD5SUM:=$(PKG_B43_FWCUTTER_MD5SUM)
-  PROTO:=$(PKG_B43_FWCUTTER_PROTO)
-  VERSION:=$(PKG_B43_FWCUTTER_VERSION)
-  SUBDIR:=$(PKG_B43_FWCUTTER_SUBDIR)
-endef
-$(eval $(call Download,b43-common))
-
 define Download/b43
   FILE:=$(PKG_B43_FWV4_SOURCE)
   URL:=$(PKG_B43_FWV4_SOURCE_URL)
@@ -865,19 +838,14 @@ define Download/b43legacy
 endef
 $(eval $(call Download,b43legacy))
 
-define KernelPackage/b43-common
+
+define KernelPackage/b43
   $(call KernelPackage/mac80211/Default)
-  TITLE:=Generic stuff for Broadcom wireless devices
+  TITLE:=Broadcom 43xx wireless support
   URL:=http://linuxwireless.org/en/users/Drivers/b43
   KCONFIG:= \
   	CONFIG_HW_RANDOM=y
-  DEPENDS+= +kmod-mac80211 +!(TARGET_brcm47xx||TARGET_brcm63xx):kmod-ssb
-endef
-
-define KernelPackage/b43
-$(call KernelPackage/b43-common)
-  DEPENDS+= +@DRIVER_11N_SUPPORT +!TARGET_brcm47xx:kmod-bcma
-  TITLE:=Broadcom 43xx wireless support
+  DEPENDS+= +kmod-mac80211 +!TARGET_brcm47xx:kmod-bcma +!(TARGET_brcm47xx||TARGET_brcm63xx):kmod-ssb
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/b43/b43.ko
   AUTOLOAD:=$(call AutoLoad,30,b43)
   MENU:=1
@@ -917,7 +885,7 @@ define KernelPackage/b43/config
 		  This firmware is mostly untested. It is needed for some N-PHY devices.
 
 		  If unsure, select the "stable" firmware.
-   
+
 	config B43_FW_5_100_138
 		bool "Firmware 666.2 from driver 5.100.138 (stable)"
 		help
@@ -977,6 +945,8 @@ define KernelPackage/b43/config
 		    G  => G-PHY
 		    LP => LP-PHY
 		    N  => N-PHY
+		    HT  => HT-PHY
+		    LCN  => LCN-PHY
 
 		  Example (keep files for G-PHY only):
 		    G
@@ -1037,8 +1007,12 @@ Kernel module for Broadcom 43xx wireless support (mac80211 stack) new
 endef
 
 define KernelPackage/b43legacy
-$(call KernelPackage/b43-common)
+  $(call KernelPackage/mac80211/Default)
   TITLE:=Broadcom 43xx-legacy wireless support
+  URL:=http://linuxwireless.org/en/users/Drivers/b43
+  KCONFIG:= \
+  	CONFIG_HW_RANDOM=y
+  DEPENDS+= +kmod-mac80211 +!(TARGET_brcm47xx||TARGET_brcm63xx):kmod-ssb
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/b43legacy/b43legacy.ko
   AUTOLOAD:=$(call AutoLoad,30,b43legacy)
   MENU:=1
@@ -1105,6 +1079,13 @@ define KernelPackage/brcmutil/config
 	endmenu
 endef
 
+PKG_BRCMSMAC_FW_NAME:=broadcom-wl
+PKG_BRCMSMAC_FW_VERSION:=5.100.138
+PKG_BRCMSMAC_FW_OBJECT:=$(PKG_BRCMSMAC_FW_NAME)-$(PKG_BRCMSMAC_FW_VERSION)/linux/wl_apsta.o
+PKG_BRCMSMAC_FW_SOURCE:=$(PKG_BRCMSMAC_FW_NAME)-$(PKG_BRCMSMAC_FW_VERSION).tar.bz2
+PKG_BRCMSMAC_FW_SOURCE_URL:=http://www.lwfinger.com/b43-firmware/
+PKG_BRCMSMAC_FW_MD5SUM:=f4e357b09eaf5d8b1f1920cf3493a555
+
 define KernelPackage/brcmsmac
   $(call KernelPackage/mac80211/Default)
   TITLE:=Broadcom IEEE802.11n PCIe SoftMAC WLAN driver
@@ -1112,11 +1093,31 @@ define KernelPackage/brcmsmac
   DEPENDS+= +kmod-mac80211 +@DRIVER_11N_SUPPORT +!TARGET_brcm47xx:kmod-bcma +kmod-lib-cordic +kmod-lib-crc8 +kmod-brcmutil
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/brcm80211/brcmsmac/brcmsmac.ko
   AUTOLOAD:=$(call AutoLoad,31,brcmsmac)
+  MENU:=1
 endef
 
 define KernelPackage/brcmsmac/description
  Kernel module for Broadcom IEEE802.11n PCIe Wireless cards
 endef
+
+define KernelPackage/brcmsmac/config
+	menu "Configuration"
+		depends on PACKAGE_kmod-brcmsmac
+
+	config BRCMSMAC_USE_FW_FROM_WL
+		bool "Use firmware extracted from broadcom proprietary driver"
+		default y
+		help
+		  Instead of using the official brcmsmac firmware a firmware
+		  version 666.2 extracted from the proprietary Broadcom driver
+		  is used. This is needed to get core rev 17 used in bcm4716
+		  to work.
+
+		  If unsure, say Y.
+
+	endmenu
+endef
+
 
 define KernelPackage/brcmfmac
   $(call KernelPackage/mac80211/Default)
@@ -1341,7 +1342,7 @@ endef
 ifneq ($(CONFIG_PACKAGE_kmod-cfg80211)$(CONFIG_PACKAGE_kmod-lib80211),)
  define Build/Compile/kmod
 	rm -rf $(PKG_BUILD_DIR)/modules
-	$(MAKE) $(PKG_JOBS) -C "$(PKG_BUILD_DIR)" $(MAKE_OPTS) modules
+	+$(MAKE) $(PKG_JOBS) -C "$(PKG_BUILD_DIR)" $(MAKE_OPTS) modules
  endef
 endif
 
@@ -1478,7 +1479,7 @@ define KernelPackage/net-ipw2200/install
 endef
 
 define KernelPackage/iwlagn/install
-        $(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DIR) $(1)/lib/firmware
 ifneq ($(CONFIG_IWL5000_FW),)
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/iwlwifi-5000-5.ucode $(1)/lib/firmware
 endif
@@ -1506,34 +1507,17 @@ endif
 endef
 
 define KernelPackage/iwl3945/install
-        $(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DIR) $(1)/lib/firmware
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/iwlwifi-3945-2.ucode $(1)/lib/firmware
 endef
 
 define KernelPackage/iwl4965/install
-        $(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DIR) $(1)/lib/firmware
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/iwlwifi-4965-2.ucode $(1)/lib/firmware
-endef
-
-define Build/b43-common
-	tar xjf "$(DL_DIR)/$(PKG_B43_FWCUTTER_SOURCE)" -C "$(PKG_BUILD_DIR)"
-	patch -p1 -d  "$(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)" < ./files/b43-fwcutter-fw-dirname.patch
-	$(MAKE) -C "$(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)" \
-		CFLAGS="-I$(STAGING_DIR_HOST)/include -include endian.h" \
-		QUIET_SPARSE=:
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_OBJECT)/b43-fwcutter $(STAGING_DIR_HOST)/bin/
-ifeq ($(CONFIG_B43_OPENFIRMWARE),y)
-	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin/
-	$(MAKE) -C "$(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_SUBDIR)/assembler/"
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_SUBDIR)/assembler/b43-asm $(STAGING_DIR_HOST)/bin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(PKG_B43_FWCUTTER_SUBDIR)/assembler/b43-asm.bin $(STAGING_DIR_HOST)/bin/
-endif
-	$(INSTALL_BIN) ./files/host_bin/b43-fwsquash.py $(STAGING_DIR_HOST)/bin/
 endef
 
 define KernelPackage/b43/install
 	rm -rf $(1)/lib/firmware/
-	$(call Build/b43-common)
 ifeq ($(CONFIG_B43_OPENFIRMWARE),y)
 	tar xzf "$(DL_DIR)/$(PKG_B43_FWV4_SOURCE)" -C "$(PKG_BUILD_DIR)"
 else
@@ -1555,9 +1539,7 @@ endif
 endef
 
 define KernelPackage/b43legacy/install
-	$(call Build/b43-common)
 	$(INSTALL_DIR) $(1)/lib/firmware/
-
 	b43-fwcutter --unsupported -w $(1)/lib/firmware/ $(DL_DIR)/$(PKG_B43_FWV3_SOURCE)
 ifneq ($(CONFIG_B43LEGACY_FW_SQUASH),)
 	b43-fwsquash.py "G" "$(CONFIG_B43LEGACY_FW_SQUASH_COREREVS)" "$(1)/lib/firmware/b43legacy"
@@ -1566,10 +1548,15 @@ endef
 
 define KernelPackage/brcmsmac/install
 	$(INSTALL_DIR) $(1)/lib/firmware/brcm
+ifeq ($(CONFIG_BRCMSMAC_USE_FW_FROM_WL),y)
+	tar xjf "$(DL_DIR)/$(PKG_BRCMSMAC_FW_SOURCE)" -C "$(PKG_BUILD_DIR)"
+	b43-fwcutter --brcmsmac -w $(1)/lib/firmware/ $(PKG_BUILD_DIR)/$(PKG_BRCMSMAC_FW_OBJECT)
+else
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/brcm/bcm43xx-0.fw \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/brcm/bcm43xx_hdr-0.fw \
 		$(1)/lib/firmware/brcm/
+endif
 endef
 
 define KernelPackage/brcmfmac/install

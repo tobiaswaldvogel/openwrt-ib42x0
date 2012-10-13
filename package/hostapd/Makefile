@@ -19,6 +19,8 @@ PKG_SOURCE_VERSION:=$(PKG_REV)
 PKG_SOURCE_PROTO:=git
 PKG_MIRROR_MD5SUM:=fa3227c146cb50732fe8511ce6d1d862
 
+PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
+
 PKG_BUILD_PARALLEL:=1
 
 PKG_BUILD_DEPENDS:= \
@@ -238,6 +240,7 @@ define Build/RunMake
 		$(TARGET_CONFIGURE_OPTS) \
 		$(DRIVER_MAKEOPTS) \
 		LIBS="$(TARGET_LDFLAGS)" \
+		BCHECK= \
 		$(2)
 endef
 
@@ -247,12 +250,12 @@ define Build/Compile/wpad
 		$(call Build/RunMake,wpa_supplicant,-s MULTICALL=1 dump_cflags) | \
 		sed -e 's,-n ,,g' -e 's,$(TARGET_CFLAGS),,' \
 	` > $(PKG_BUILD_DIR)/.cflags
-	$(call Build/RunMake,hostapd, \
+	+$(call Build/RunMake,hostapd, \
 		CFLAGS="$$$$(cat $(PKG_BUILD_DIR)/.cflags)" \
 		MULTICALL=1 \
 		hostapd_cli hostapd_multi.a \
 	)
-	$(call Build/RunMake,wpa_supplicant, \
+	+$(call Build/RunMake,wpa_supplicant, \
 		CFLAGS="$$$$(cat $(PKG_BUILD_DIR)/.cflags)" \
 		MULTICALL=1 \
 		wpa_cli wpa_supplicant_multi.a \

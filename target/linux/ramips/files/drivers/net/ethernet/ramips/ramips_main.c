@@ -33,10 +33,12 @@
 #define	MAX_RX_LENGTH	1600
 
 #ifdef CONFIG_RALINK_RT305X
+#include <rt305x.h>
 #include "ramips_esw.c"
 #else
 static inline int rt305x_esw_init(void) { return 0; }
 static inline void rt305x_esw_exit(void) { }
+static inline int soc_is_rt5350(void) { return 0; }
 #endif
 
 #define phys_to_bus(a)  (a & 0x1FFFFFFF)
@@ -47,8 +49,66 @@ static inline void rt305x_esw_exit(void) { }
 #define RADEBUG(fmt, args...)	do {} while (0)
 #endif
 
+#define RX_DLY_INT ((soc_is_rt5350())?(RT5350_RX_DLY_INT):(RAMIPS_RX_DLY_INT))
+#define TX_DLY_INT ((soc_is_rt5350())?(RT5350_TX_DLY_INT):(RAMIPS_TX_DLY_INT))
+
+enum raeth_reg {
+	RAETH_REG_PDMA_GLO_CFG = 0,
+	RAETH_REG_PDMA_RST_CFG,
+	RAETH_REG_DLY_INT_CFG,
+	RAETH_REG_TX_BASE_PTR0,
+	RAETH_REG_TX_MAX_CNT0,
+	RAETH_REG_TX_CTX_IDX0,
+	RAETH_REG_RX_BASE_PTR0,
+	RAETH_REG_RX_MAX_CNT0,
+	RAETH_REG_RX_CALC_IDX0,
+	RAETH_REG_FE_INT_ENABLE,
+	RAETH_REG_FE_INT_STATUS,
+	RAETH_REG_COUNT
+};
+
+static const u32 ramips_reg_table[RAETH_REG_COUNT] = {
+	[RAETH_REG_PDMA_GLO_CFG] = RAMIPS_PDMA_GLO_CFG,
+	[RAETH_REG_PDMA_RST_CFG] = RAMIPS_PDMA_RST_CFG,
+	[RAETH_REG_DLY_INT_CFG] = RAMIPS_DLY_INT_CFG,
+	[RAETH_REG_TX_BASE_PTR0] = RAMIPS_TX_BASE_PTR0,
+	[RAETH_REG_TX_MAX_CNT0] = RAMIPS_TX_MAX_CNT0,
+	[RAETH_REG_TX_CTX_IDX0] = RAMIPS_TX_CTX_IDX0,
+	[RAETH_REG_RX_BASE_PTR0] = RAMIPS_RX_BASE_PTR0,
+	[RAETH_REG_RX_MAX_CNT0] = RAMIPS_RX_MAX_CNT0,
+	[RAETH_REG_RX_CALC_IDX0] = RAMIPS_RX_CALC_IDX0,
+	[RAETH_REG_FE_INT_ENABLE] = RAMIPS_FE_INT_ENABLE,
+	[RAETH_REG_FE_INT_STATUS] = RAMIPS_FE_INT_STATUS,
+};
+
+static const u32 rt5350_reg_table[RAETH_REG_COUNT] = {
+	[RAETH_REG_PDMA_GLO_CFG] = RT5350_PDMA_GLO_CFG,
+	[RAETH_REG_PDMA_RST_CFG] = RT5350_PDMA_RST_CFG,
+	[RAETH_REG_DLY_INT_CFG] = RT5350_DLY_INT_CFG,
+	[RAETH_REG_TX_BASE_PTR0] = RT5350_TX_BASE_PTR0,
+	[RAETH_REG_TX_MAX_CNT0] = RT5350_TX_MAX_CNT0,
+	[RAETH_REG_TX_CTX_IDX0] = RT5350_TX_CTX_IDX0,
+	[RAETH_REG_RX_BASE_PTR0] = RT5350_RX_BASE_PTR0,
+	[RAETH_REG_RX_MAX_CNT0] = RT5350_RX_MAX_CNT0,
+	[RAETH_REG_RX_CALC_IDX0] = RT5350_RX_CALC_IDX0,
+	[RAETH_REG_FE_INT_ENABLE] = RT5350_FE_INT_ENABLE,
+	[RAETH_REG_FE_INT_STATUS] = RT5350_FE_INT_STATUS,
+};
+
 static struct net_device * ramips_dev;
 static void __iomem *ramips_fe_base = 0;
+
+static inline u32 get_reg_offset(enum raeth_reg reg)
+{
+	const u32 *table;
+
+	if (soc_is_rt5350())
+		table = rt5350_reg_table;
+	else
+		table = ramips_reg_table;
+
+	return table[reg];
+}
 
 static inline void
 ramips_fe_wr(u32 val, unsigned reg)
@@ -63,29 +123,47 @@ ramips_fe_rr(unsigned reg)
 }
 
 static inline void
+ramips_fe_twr(u32 val, enum raeth_reg reg)
+{
+	ramips_fe_wr(val, get_reg_offset(reg));
+}
+
+static inline u32
+ramips_fe_trr(enum raeth_reg reg)
+{
+	return ramips_fe_rr(get_reg_offset(reg));
+}
+
+static inline void
 ramips_fe_int_disable(u32 mask)
 {
-	ramips_fe_wr(ramips_fe_rr(RAMIPS_FE_INT_ENABLE) & ~mask,
-		     RAMIPS_FE_INT_ENABLE);
+	ramips_fe_twr(ramips_fe_trr(RAETH_REG_FE_INT_ENABLE) & ~mask,
+		     RAETH_REG_FE_INT_ENABLE);
 	/* flush write */
-	ramips_fe_rr(RAMIPS_FE_INT_ENABLE);
+	ramips_fe_trr(RAETH_REG_FE_INT_ENABLE);
 }
 
 static inline void
 ramips_fe_int_enable(u32 mask)
 {
-	ramips_fe_wr(ramips_fe_rr(RAMIPS_FE_INT_ENABLE) | mask,
-		     RAMIPS_FE_INT_ENABLE);
+	ramips_fe_twr(ramips_fe_trr(RAETH_REG_FE_INT_ENABLE) | mask,
+		     RAETH_REG_FE_INT_ENABLE);
 	/* flush write */
-	ramips_fe_rr(RAMIPS_FE_INT_ENABLE);
+	ramips_fe_trr(RAETH_REG_FE_INT_ENABLE);
 }
 
 static inline void
 ramips_hw_set_macaddr(unsigned char *mac)
 {
-	ramips_fe_wr((mac[0] << 8) | mac[1], RAMIPS_GDMA1_MAC_ADRH);
-	ramips_fe_wr((mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5],
-		     RAMIPS_GDMA1_MAC_ADRL);
+	if (soc_is_rt5350()) {
+		ramips_fe_wr((mac[0] << 8) | mac[1], RT5350_SDM_MAC_ADRH);
+		ramips_fe_wr((mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5],
+			     RT5350_SDM_MAC_ADRL);
+	} else {
+		ramips_fe_wr((mac[0] << 8) | mac[1], RAMIPS_GDMA1_MAC_ADRH);
+		ramips_fe_wr((mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5],
+			     RAMIPS_GDMA1_MAC_ADRL);
+	}
 }
 
 static struct sk_buff *
@@ -642,15 +720,15 @@ err_cleanup:
 static void
 ramips_setup_dma(struct raeth_priv *re)
 {
-	ramips_fe_wr(re->tx_desc_dma, RAMIPS_TX_BASE_PTR0);
-	ramips_fe_wr(NUM_TX_DESC, RAMIPS_TX_MAX_CNT0);
-	ramips_fe_wr(0, RAMIPS_TX_CTX_IDX0);
-	ramips_fe_wr(RAMIPS_PST_DTX_IDX0, RAMIPS_PDMA_RST_CFG);
+	ramips_fe_twr(re->tx_desc_dma, RAETH_REG_TX_BASE_PTR0);
+	ramips_fe_twr(NUM_TX_DESC, RAETH_REG_TX_MAX_CNT0);
+	ramips_fe_twr(0, RAETH_REG_TX_CTX_IDX0);
+	ramips_fe_twr(RAMIPS_PST_DTX_IDX0, RAETH_REG_PDMA_RST_CFG);
 
-	ramips_fe_wr(re->rx_desc_dma, RAMIPS_RX_BASE_PTR0);
-	ramips_fe_wr(NUM_RX_DESC, RAMIPS_RX_MAX_CNT0);
-	ramips_fe_wr((NUM_RX_DESC - 1), RAMIPS_RX_CALC_IDX0);
-	ramips_fe_wr(RAMIPS_PST_DRX_IDX0, RAMIPS_PDMA_RST_CFG);
+	ramips_fe_twr(re->rx_desc_dma, RAETH_REG_RX_BASE_PTR0);
+	ramips_fe_twr(NUM_RX_DESC, RAETH_REG_RX_MAX_CNT0);
+	ramips_fe_twr((NUM_RX_DESC - 1), RAETH_REG_RX_CALC_IDX0);
+	ramips_fe_twr(RAMIPS_PST_DRX_IDX0, RAETH_REG_PDMA_RST_CFG);
 }
 
 static int
@@ -680,7 +758,7 @@ ramips_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 				     DMA_TO_DEVICE);
 
 	spin_lock(&re->page_lock);
-	tx = ramips_fe_rr(RAMIPS_TX_CTX_IDX0);
+	tx = ramips_fe_trr(RAETH_REG_TX_CTX_IDX0);
 	tx_next = (tx + 1) % NUM_TX_DESC;
 
 	txi = &re->tx_info[tx];
@@ -700,7 +778,7 @@ ramips_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	txd->txd2 = TX_DMA_LSO | TX_DMA_PLEN0(skb->len);
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += skb->len;
-	ramips_fe_wr(tx_next, RAMIPS_TX_CTX_IDX0);
+	ramips_fe_twr(tx_next, RAETH_REG_TX_CTX_IDX0);
 	netdev_sent_queue(dev, skb->len);
 	spin_unlock(&re->page_lock);
 	return NETDEV_TX_OK;
@@ -720,7 +798,7 @@ ramips_eth_rx_hw(unsigned long ptr)
 	int rx;
 	int max_rx = 16;
 
-	rx = ramips_fe_rr(RAMIPS_RX_CALC_IDX0);
+	rx = ramips_fe_trr(RAETH_REG_RX_CALC_IDX0);
 
 	while (max_rx) {
 		struct raeth_rx_info *rxi;
@@ -768,14 +846,14 @@ ramips_eth_rx_hw(unsigned long ptr)
 		}
 
 		rxd->rxd2 = RX_DMA_LSO;
-		ramips_fe_wr(rx, RAMIPS_RX_CALC_IDX0);
+		ramips_fe_twr(rx, RAETH_REG_RX_CALC_IDX0);
 		max_rx--;
 	}
 
 	if (max_rx == 0)
 		tasklet_schedule(&re->rx_tasklet);
 	else
-		ramips_fe_int_enable(RAMIPS_RX_DLY_INT);
+		ramips_fe_int_enable(RX_DLY_INT);
 }
 
 static void
@@ -808,7 +886,7 @@ ramips_eth_tx_housekeeping(unsigned long ptr)
 	netdev_completed_queue(dev, pkts_compl, bytes_compl);
 	spin_unlock(&re->page_lock);
 
-	ramips_fe_int_enable(RAMIPS_TX_DLY_INT);
+	ramips_fe_int_enable(TX_DLY_INT);
 }
 
 static void
@@ -825,21 +903,21 @@ ramips_eth_irq(int irq, void *dev)
 	struct raeth_priv *re = netdev_priv(dev);
 	unsigned int status;
 
-	status = ramips_fe_rr(RAMIPS_FE_INT_STATUS);
-	status &= ramips_fe_rr(RAMIPS_FE_INT_ENABLE);
+	status = ramips_fe_trr(RAETH_REG_FE_INT_STATUS);
+	status &= ramips_fe_trr(RAETH_REG_FE_INT_ENABLE);
 
 	if (!status)
 		return IRQ_NONE;
 
-	ramips_fe_wr(status, RAMIPS_FE_INT_STATUS);
+	ramips_fe_twr(status, RAETH_REG_FE_INT_STATUS);
 
-	if (status & RAMIPS_RX_DLY_INT) {
-		ramips_fe_int_disable(RAMIPS_RX_DLY_INT);
+	if (status & RX_DLY_INT) {
+		ramips_fe_int_disable(RX_DLY_INT);
 		tasklet_schedule(&re->rx_tasklet);
 	}
 
-	if (status & RAMIPS_TX_DLY_INT) {
-		ramips_fe_int_disable(RAMIPS_TX_DLY_INT);
+	if (status & TX_DLY_INT) {
+		ramips_fe_int_disable(TX_DLY_INT);
 		tasklet_schedule(&re->tx_housekeeping_tasklet);
 	}
 
@@ -867,10 +945,10 @@ ramips_eth_open(struct net_device *dev)
 	ramips_hw_set_macaddr(dev->dev_addr);
 
 	ramips_setup_dma(re);
-	ramips_fe_wr((ramips_fe_rr(RAMIPS_PDMA_GLO_CFG) & 0xff) |
+	ramips_fe_twr((ramips_fe_trr(RAETH_REG_PDMA_GLO_CFG) & 0xff) |
 		(RAMIPS_TX_WB_DDONE | RAMIPS_RX_DMA_EN |
 		RAMIPS_TX_DMA_EN | RAMIPS_PDMA_SIZE_4DWORDS),
-		RAMIPS_PDMA_GLO_CFG);
+		RAETH_REG_PDMA_GLO_CFG);
 	ramips_fe_wr((ramips_fe_rr(RAMIPS_FE_GLO_CFG) &
 		~(RAMIPS_US_CYC_CNT_MASK << RAMIPS_US_CYC_CNT_SHIFT)) |
 		((re->plat->sys_freq / RAMIPS_US_CYC_CNT_DIVISOR) << RAMIPS_US_CYC_CNT_SHIFT),
@@ -882,15 +960,21 @@ ramips_eth_open(struct net_device *dev)
 
 	ramips_phy_start(re);
 
-	ramips_fe_wr(RAMIPS_DELAY_INIT, RAMIPS_DLY_INT_CFG);
-	ramips_fe_wr(RAMIPS_TX_DLY_INT | RAMIPS_RX_DLY_INT, RAMIPS_FE_INT_ENABLE);
-	ramips_fe_wr(ramips_fe_rr(RAMIPS_GDMA1_FWD_CFG) &
-		~(RAMIPS_GDM1_ICS_EN | RAMIPS_GDM1_TCS_EN | RAMIPS_GDM1_UCS_EN | 0xffff),
-		RAMIPS_GDMA1_FWD_CFG);
-	ramips_fe_wr(ramips_fe_rr(RAMIPS_CDMA_CSG_CFG) &
-		~(RAMIPS_ICS_GEN_EN | RAMIPS_TCS_GEN_EN | RAMIPS_UCS_GEN_EN),
-		RAMIPS_CDMA_CSG_CFG);
-	ramips_fe_wr(RAMIPS_PSE_FQFC_CFG_INIT, RAMIPS_PSE_FQ_CFG);
+	ramips_fe_twr(RAMIPS_DELAY_INIT, RAETH_REG_DLY_INT_CFG);
+	ramips_fe_twr(TX_DLY_INT | RX_DLY_INT, RAETH_REG_FE_INT_ENABLE);
+	if (soc_is_rt5350()) {
+		ramips_fe_wr(ramips_fe_rr(RT5350_SDM_CFG) &
+			~(RT5350_SDM_ICS_EN | RT5350_SDM_TCS_EN | RT5350_SDM_UCS_EN | 0xffff),
+			RT5350_SDM_CFG);
+	} else {
+		ramips_fe_wr(ramips_fe_rr(RAMIPS_GDMA1_FWD_CFG) &
+			~(RAMIPS_GDM1_ICS_EN | RAMIPS_GDM1_TCS_EN | RAMIPS_GDM1_UCS_EN | 0xffff),
+			RAMIPS_GDMA1_FWD_CFG);
+		ramips_fe_wr(ramips_fe_rr(RAMIPS_CDMA_CSG_CFG) &
+			~(RAMIPS_ICS_GEN_EN | RAMIPS_TCS_GEN_EN | RAMIPS_UCS_GEN_EN),
+			RAMIPS_CDMA_CSG_CFG);
+		ramips_fe_wr(RAMIPS_PSE_FQFC_CFG_INIT, RAMIPS_PSE_FQ_CFG);
+	}
 	ramips_fe_wr(1, RAMIPS_FE_RST_GL);
 	ramips_fe_wr(0, RAMIPS_FE_RST_GL);
 
@@ -907,12 +991,12 @@ ramips_eth_stop(struct net_device *dev)
 {
 	struct raeth_priv *re = netdev_priv(dev);
 
-	ramips_fe_wr(ramips_fe_rr(RAMIPS_PDMA_GLO_CFG) &
+	ramips_fe_twr(ramips_fe_trr(RAETH_REG_PDMA_GLO_CFG) &
 		     ~(RAMIPS_TX_WB_DDONE | RAMIPS_RX_DMA_EN | RAMIPS_TX_DMA_EN),
-		     RAMIPS_PDMA_GLO_CFG);
+		     RAETH_REG_PDMA_GLO_CFG);
 
 	/* disable all interrupts in the hw */
-	ramips_fe_wr(0, RAMIPS_FE_INT_ENABLE);
+	ramips_fe_twr(0, RAETH_REG_FE_INT_ENABLE);
 
 	ramips_phy_stop(re);
 	free_irq(dev->irq, dev);

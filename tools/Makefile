@@ -25,6 +25,9 @@ ifneq ($(CONFIG_TARGET_ar71xx),)
 tools-y += lzma-old squashfs
 endif
 tools-y += lzma squashfs4
+ifneq ($(CONFIG_PACKAGE_kmod-b43)$(CONFIG_PACKAGE_kmod-b43legacy)$(CONFIG_BRCMSMAC_USE_FW_FROM_WL),)
+tools-y += b43-tools
+endif
 
 ifneq ($(CONFIG_PACKAGE_firmwarehotplug),)
 tools-y += sdcc
@@ -39,6 +42,7 @@ endif
 
 # builddir dependencies
 $(curdir)/bison/compile := $(curdir)/flex/install
+$(curdir)/flex/compile := $(curdir)/m4/install
 $(curdir)/pkg-config/compile := $(curdir)/sed/install
 $(curdir)/libtool/compile := $(curdir)/sed/install
 $(curdir)/squashfs/compile := $(curdir)/lzma-old/install
@@ -63,6 +67,7 @@ $(curdir)/missing-macros/compile := $(curdir)/automake/install
 $(curdir)/e2fsprogs/compile := $(curdir)/automake/install
 $(curdir)/libelf/compile := $(curdir)/automake/install
 $(curdir)/sdcc/compile := $(curdir)/bison/install
+$(curdir)/b43-tools/compile := $(curdir)/bison/install
 
 ifneq ($(CONFIG_CCACHE),)
 $(foreach tool, $(tools-y), $(eval $(curdir)/$(tool)/compile += $(curdir)/ccache/install))

@@ -69,6 +69,8 @@ HOST_CONFIGURE_ARGS = \
 	--localstatedir=$(STAGING_DIR_HOST)/var \
 	--sbindir=$(STAGING_DIR_HOST)/bin
 
+HOST_MAKE_FLAGS =
+
 HOST_CONFIGURE_CMD = ./configure
 
 ifneq ($(HOST_OS),Darwin)
@@ -78,7 +80,7 @@ ifneq ($(HOST_OS),Darwin)
 endif
 
 define Host/Configure/Default
-	(cd $(HOST_BUILD_DIR)/$(3); \
+	$(if $(HOST_CONFIGURE_PARALLEL),+)(cd $(HOST_BUILD_DIR)/$(3); \
 		if [ -x configure ]; then \
 			$(CP) $(SCRIPT_DIR)/config.{guess,sub} $(HOST_BUILD_DIR)/$(3)/ && \
 			$(2) \
@@ -95,7 +97,9 @@ define Host/Configure
 endef
 
 define Host/Compile/Default
-	$(MAKE) $(HOST_JOBS) -C $(HOST_BUILD_DIR) $(1)
+	+$(MAKE) $(HOST_JOBS) -C $(HOST_BUILD_DIR) \
+		$(HOST_MAKE_FLAGS) \
+		$(1)
 endef
 
 define Host/Compile

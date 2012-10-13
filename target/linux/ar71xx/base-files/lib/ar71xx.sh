@@ -327,6 +327,9 @@ ar71xx_board_detect() {
 	*TL-MR3020)
 		name="tl-mr3020"
 		;;
+	*TL-MR3040)
+		name="tl-mr3040"
+		;;
 	*TL-MR3220)
 		name="tl-mr3220"
 		;;
@@ -353,6 +356,9 @@ ar71xx_board_detect() {
 		;;
 	*"TL-WR841N/ND v7")
 		name="tl-wr841n-v7"
+		;;
+	*"TL-WR841N/ND v8")
+		name="tl-wr841n-v8"
 		;;
 	*TL-WR941ND)
 		name="tl-wr941nd"
