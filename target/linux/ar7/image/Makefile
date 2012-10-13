@@ -41,7 +41,9 @@ define Image/Prepare
 		$(LOADER_MAKEOPTS) \
 		clean compile
 	$(OBJCOPY_SREC) $(KDIR)/loader.elf $(KDIR)/loader.srec
+	$(OBJCOPY_SREC) $(KDIR)/vmlinux.elf $(KDIR)/vmlinux.srec
 	srec2bin $(KDIR)/loader.srec $(KDIR)/loader.bin
+	srec2bin $(KDIR)/vmlinux.srec $(KDIR)/vmlinux.bin
 endef
 
 define align/jffs2-64k
@@ -81,6 +83,10 @@ define Image/Build/EVA
 	$(call prepare_generic_squashfs,$(BIN_DIR)/openwrt-$(2)-$(KERNEL)-$(1).bin)
 endef
 
+define Image/Build/Initramfs
+	$(CP) $(KDIR)/vmlinux.bin $(BIN_DIR)/$(IMG_PREFIX)-initramfs.bin
+endef
+
 define Image/Build
 	dd if=$(KDIR)/loader.bin $(call align/$(1)) > $(BIN_DIR)/$(IMG_PREFIX)-$(1).bin
 	cat $(KDIR)/root.$(1) >> $(BIN_DIR)/$(IMG_PREFIX)-$(1).bin
@@ -104,6 +110,9 @@ define Image/Build
 #	$(call Image/Build/sErCoMm,$(1),jdr454wb,$(1))
 	$(call Image/Build/EVA,$(1),EVA)
 	$(call Image/Build/Titan,$(1),Titan,Titan,$(1))
+ifeq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),y)
+	$(call Image/Build/Initramfs)
+endif
 endef
 
 $(eval $(call BuildImage))
