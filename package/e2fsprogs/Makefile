@@ -134,7 +134,8 @@ define Build/InstallDev
 		BUILDCC="$(HOSTCC)" \
 		DESTDIR="$(1)" \
 		install
-	rm $(1)/usr/lib/libcom_err.so
+	rm -f $(1)/usr/lib/libcom_err.so
+	rm -f $(1)/usr/lib/libcom_err.a
 endef
 
 define Package/e2fsprogs/install
