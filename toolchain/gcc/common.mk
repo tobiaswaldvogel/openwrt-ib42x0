@@ -38,22 +38,22 @@ ifdef CONFIG_GCC_VERSION_LLVM
 else
 ifeq ($(findstring linaro, $(CONFIG_GCC_VERSION)),linaro)
     ifeq ($(CONFIG_GCC_VERSION),"4.5-linaro")
-      PKG_REV:=4.5-2012.02
+      PKG_REV:=4.5-2012.03
       PKG_VERSION:=4.5.4
       PKG_VERSION_MAJOR:=4.5
-      PKG_MD5SUM:=e05be9ea8eca2ad4c859d35dbab568e7
+      PKG_MD5SUM:=0c25f93e15e362e352c933e4649a7fc6
     endif
     ifeq ($(CONFIG_GCC_VERSION),"4.6-linaro")
-      PKG_REV:=4.6-2012.02
-      PKG_VERSION:=4.6.3
+      PKG_REV:=4.6-2012.10
+      PKG_VERSION:=4.6.4
       PKG_VERSION_MAJOR:=4.6
-      PKG_MD5SUM:=2b7887846f8e5ac1ca58fe4dfaabf5a6
+      PKG_MD5SUM:=acd304caf055ccaaca4e3ef61da11e7d
     endif
     ifeq ($(CONFIG_GCC_VERSION),"4.7-linaro")
-      PKG_REV:=4.7-2012.04
-      PKG_VERSION:=4.7.1
+      PKG_REV:=4.7-2012.10
+      PKG_VERSION:=4.7.3
       PKG_VERSION_MAJOR:=4.7
-      PKG_MD5SUM:=6dab459c1177fc9ae2969e7a39549d44
+      PKG_MD5SUM:=a5ca87667350f1395d4da40c94ef059c
     endif
     PKG_SOURCE_URL:=http://launchpad.net/gcc-linaro/$(PKG_VERSION_MAJOR)/$(PKG_REV)/+download/
     PKG_SOURCE:=$(PKG_NAME)-linaro-$(PKG_REV).tar.bz2
