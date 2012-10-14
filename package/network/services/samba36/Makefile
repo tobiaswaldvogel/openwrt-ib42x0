@@ -145,7 +145,7 @@ ifeq ($(BUILD_VARIANT),samba36-server-ads)
 	TARGET_LDFLAGS += \
 		-Wl,-rpath-link=$(STAGING_DIR)/usr/lib -lkrb5 \
 		-L$(STAGING_DIR)/usr/lib/libiconv/lib \
-		-lkrb5 -lcom_err -ldl -ltirpc -lgssapi_krb5
+		-lkrb5 -l:libcom_err.so.3 -ldl -ltirpc -lgssapi_krb5
 
 	CONFIGURE_VARS += \
 		ac_cv_lib_ext_krb5_krb5_mk_req_extended=yes \
