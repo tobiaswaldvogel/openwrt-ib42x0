@@ -34,7 +34,6 @@ else
 endif
 
 init-y :=
-init-$(CONFIG_BUSYBOX_CONFIG_HTTPD) += httpd
 init-$(CONFIG_BUSYBOX_CONFIG_CROND) += cron
 init-$(CONFIG_BUSYBOX_CONFIG_TELNETD) += telnet
 
