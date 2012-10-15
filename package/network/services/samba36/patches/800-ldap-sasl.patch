@@ -1,0 +1,63 @@
+--- a/source3/lib/smbldap.c	2012-07-27 23:46:34.263321077 +0200
++++ b/source3/lib/smbldap.c	2012-07-27 23:55:23.854641486 +0200
+@@ -1100,7 +1100,15 @@
+ 	    Could we get a referral to a machine that we don't want to give our
+ 	    username and password to? */
+ 
+-	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
++	if (ldap_state->bind_secret)
++		rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
++	else {
++		struct berval *servercredp=NULL;
++
++		rc = ldap_sasl_bind_s(ldap_struct, NULL, "EXTERNAL", NULL, NULL, NULL, &servercredp);
++		if (rc == LDAP_SASL_BIND_IN_PROGRESS)
++			rc = ldap_sasl_bind_s(ldap_struct, NULL, "EXTERNAL", servercredp, NULL, NULL, &servercredp);
++	}
+ 
+ 	/* only set the last rebind timestamp when we did rebind after a
+ 	 * non-read LDAP operation. That way we avoid the replication sleep
+@@ -1177,19 +1185,16 @@
+ 
+ 		/* get the default dn and password only if they are not set already */
+ 		if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
+-			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
+-			rc = LDAP_INVALID_CREDENTIALS;
+-			goto done;
++			DEBUG(1, ("ldap_connect_system: Failed to retrieve password from secrets.tdb. Switching to SASL\n"));
++			smbldap_set_creds(ldap_state, true, NULL, NULL);
++		} else {
++			smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
++			SAFE_FREE(bind_dn);
++			memset(bind_secret, '\0', strlen(bind_secret));
++			SAFE_FREE(bind_secret);
+ 		}
+-		smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
+-		SAFE_FREE(bind_dn);
+-		memset(bind_secret, '\0', strlen(bind_secret));
+-		SAFE_FREE(bind_secret);
+ 	}
+ 
+-	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
+-	   (OpenLDAP) doesnt' seem to support it */
+-
+ 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
+ 		  ldap_state->uri, ldap_state->bind_dn));
+ 
+@@ -1211,7 +1216,15 @@
+ #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
+ #endif
+ 
+-	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
++	if (ldap_state->bind_secret)
++		rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
++	else {
++		struct berval *servercredp=NULL;
++
++		rc = ldap_sasl_bind_s(ldap_struct, NULL, "EXTERNAL", NULL, NULL, NULL, &servercredp);
++		if (rc == LDAP_SASL_BIND_IN_PROGRESS)
++			rc = ldap_sasl_bind_s(ldap_struct, NULL, "EXTERNAL", servercredp, NULL, NULL, &servercredp);
++	}
+ 
+ 	if (rc != LDAP_SUCCESS) {
+ 		char *ld_error = NULL;

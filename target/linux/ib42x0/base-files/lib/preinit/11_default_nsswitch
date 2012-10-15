@@ -1,0 +1,8 @@
+#!/bin/sh
+
+default_nsswitch() {
+	mkdir -p /var/etc
+	cp /etc/nsswitch.conf.template /var/etc/nsswitch.conf
+}
+
+boot_hook_add preinit_main default_nsswitch

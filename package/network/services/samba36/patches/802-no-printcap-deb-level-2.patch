@@ -1,0 +1,11 @@
+--- a/source3/printing/print_standard.c	2012-09-26 21:07:07.845083590 +0200
++++ b/source3/printing/print_standard.c	2012-09-26 21:08:03.375428997 +0200
+@@ -65,7 +65,7 @@
+ 	char *pcap_line;
+ 
+ 	if ((pcap_file = x_fopen(pcap_name, O_RDONLY, 0)) == NULL) {
+-		DEBUG(0, ("Unable to open printcap file %s for read!\n", pcap_name));
++		DEBUG(2, ("Unable to open printcap file %s for read!\n", pcap_name));
+ 		return false;
+ 	}
+ 

@@ -1,0 +1,8 @@
+#!/bin/sh
+grep -q 'anon_mount' /etc/config/fstab 2>/dev/null
+[ $? -ne 0 ] && {
+	echo    >>/etc/config/fstab
+	echo    >>/etc/config/fstab "config global automount"
+	echo -e >>/etc/config/fstab "\toption anon_mount '0'"
+}
+
