@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# OpenWrt version: Barrier Breaker (r33761)
-# Sun Oct 14 20:11:02 2012
+# OpenWrt version: Barrier Breaker (r33773)
+# Thu Oct 18 19:08:42 2012
 #
 CONFIG_HAVE_DOT_CONFIG=y
 # CONFIG_TARGET_ppc40x is not set
@@ -463,7 +463,9 @@ CONFIG_BINUTILS_VERSION="2.22"
 #
 # CONFIG_GCC_VERSION_4_4_7 is not set
 # CONFIG_GCC_VERSION_4_6_2 is not set
+# CONFIG_GCC_VERSION_4_6_3 is not set
 # CONFIG_GCC_VERSION_4_7_0 is not set
+# CONFIG_GCC_VERSION_4_7_2 is not set
 # CONFIG_GCC_VERSION_4_5_LINARO is not set
 # CONFIG_GCC_VERSION_4_6_LINARO is not set
 CONFIG_GCC_VERSION_4_7_LINARO=y
@@ -1620,9 +1622,8 @@ CONFIG_PACKAGE_luci-proto-ppp=y
 #
 # 7. Server Interfaces
 #
-CONFIG_PACKAGE_luci-sgi-cgi=y
-CONFIG_PACKAGE_luci-sgi-fcgi=y
-# CONFIG_PACKAGE_luci-sgi-uhttpd is not set
+# CONFIG_PACKAGE_luci-sgi-cgi is not set
+CONFIG_PACKAGE_luci-sgi-uhttpd=y
 
 #
 # 8. Libraries
@@ -2660,7 +2661,7 @@ CONFIG_PACKAGE_lighttpd-mod-webdav=m
 # CONFIG_PACKAGE_mini-httpd-htpasswd is not set
 # CONFIG_PACKAGE_mini-httpd-matrixssl is not set
 # CONFIG_PACKAGE_mini-httpd-openssl is not set
-CONFIG_PACKAGE_nginx=y
+CONFIG_PACKAGE_nginx=m
 
 #
 # Configuration
@@ -2683,11 +2684,14 @@ CONFIG_NGINX_DAV=y
 CONFIG_PACKAGE_tinyproxy=m
 # CONFIG_PACKAGE_transocks is not set
 # CONFIG_PACKAGE_tsocks is not set
-CONFIG_PACKAGE_uhttpd=m
+CONFIG_PACKAGE_uhttp-lua-luci-act=y
+CONFIG_PACKAGE_uhttpd=y
 # CONFIG_PACKAGE_uhttpd_debug is not set
-# CONFIG_PACKAGE_uhttpd-mod-lua is not set
-# CONFIG_PACKAGE_uhttpd-mod-tls is not set
-# CONFIG_PACKAGE_uhttpd-mod-ubus is not set
+CONFIG_PACKAGE_uhttpd-mod-lua=y
+CONFIG_PACKAGE_uhttpd-mod-tls=m
+# CONFIG_PACKAGE_uhttpd-mod-tls_cyassl is not set
+CONFIG_PACKAGE_uhttpd-mod-tls_openssl=y
+CONFIG_PACKAGE_uhttpd-mod-ubus=m
 # CONFIG_PACKAGE_wccpd is not set
 
 #
@@ -3915,7 +3919,6 @@ CONFIG_PACKAGE_lua=y
 # CONFIG_PACKAGE_lua-examples is not set
 # CONFIG_PACKAGE_luac is not set
 # CONFIG_PACKAGE_luaexpat is not set
-CONFIG_PACKAGE_luafcgid=y
 # CONFIG_PACKAGE_luafilesystem is not set
 CONFIG_PACKAGE_lualdap=y
 # CONFIG_PACKAGE_luaposix is not set
