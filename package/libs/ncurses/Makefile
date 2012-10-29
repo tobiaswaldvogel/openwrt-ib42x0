@@ -66,6 +66,11 @@ CONFIGURE_ARGS += \
 	--enable-widec \
 	--with-build-cppflags=-D_GNU_SOURCE
 
+ifneq ($(INSTALL_LIBSTDCPP),y)
+CONFIGURE_ARGS += \
+	--without-cxx-binding
+endif
+
 ifeq ($(HOST_OS),FreeBSD)
 	CONFIGURE_ARGS +=
 		--with-terminfo=/usr/share/terminfo.db 

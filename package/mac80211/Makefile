@@ -41,7 +41,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_B43_N_PHY \
 	CONFIG_ATH_USER_REGD \
 
-CARL9170_FW_VERSION:=1.9.4
+CARL9170_FW_VERSION:=1.9.6
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -108,6 +108,7 @@ PKG_LINUX_FIRMWARE_SOURCE:=$(PKG_LINUX_FIRMWARE_NAME)-$(PKG_LINUX_FIRMWARE_VERSI
 PKG_LINUX_FIRMWARE_PROTO:=git
 PKG_LINUX_FIRMWARE_SOURCE_URL:=git://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git
 PKG_LINUX_FIRMWARE_SUBDIR:=$(PKG_LINUX_FIRMWARE_NAME)-$(PKG_LINUX_FIRMWARE_VERSION)
+PKG_LINUX_FIRMWARE_MIRROR_MD5SUM:=5086f5da17c6043f09391c6c16dc0177
 
 define Download/linux-firmware
   FILE:=$(PKG_LINUX_FIRMWARE_SOURCE)
@@ -116,6 +117,7 @@ define Download/linux-firmware
   PROTO:=$(PKG_LINUX_FIRMWARE_PROTO)
   VERSION:=$(PKG_LINUX_FIRMWARE_VERSION)
   SUBDIR:=$(PKG_LINUX_FIRMWARE_SUBDIR)
+  MIRROR_MD5SUM:=$(PKG_LINUX_FIRMWARE_MIRROR_MD5SUM)
 endef
 $(eval $(call Download,linux-firmware))
 
@@ -149,7 +151,7 @@ $(eval $(call Download,p54spi))
 define Download/carl9170
   FILE:=$(CARL9170_FW)-$(CARL9170_FW_VERSION)
   URL:=http://downloads.openwrt.org/sources/
-  MD5SUM:=30e2ae80c33b3008d271556d1a14e3ea
+  MD5SUM:=2fa6ed98d53d0b5fbcc136d1cf5e9609
 endef
 $(eval $(call Download,carl9170))
 

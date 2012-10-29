@@ -192,7 +192,7 @@ define KernelPackage/crypto-arc4
   KCONFIG:=CONFIG_CRYPTO_ARC4
   FILES:=$(LINUX_DIR)/crypto/arc4.ko
   AUTOLOAD:=$(call AutoLoad,09,arc4)
-  $(call AddDepends/crypto)
+  $(call AddDepends/crypto,+!LINUX_3_3:kmod-crypto-manager)
 endef
 
 $(eval $(call KernelPackage,crypto-arc4))
@@ -324,6 +324,9 @@ endef
 
 $(eval $(call KernelPackage,crypto-sha1))
 
+ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.6.0)),1)
+camellia_mod_suffix=_generic
+endif
 
 define KernelPackage/crypto-misc
   TITLE:=Other CryptoAPI modules
@@ -347,7 +350,7 @@ define KernelPackage/crypto-misc
 	CONFIG_CRYPTO_WP512
   FILES:= \
 	$(LINUX_DIR)/crypto/anubis.ko \
-	$(LINUX_DIR)/crypto/camellia.ko \
+	$(LINUX_DIR)/crypto/camellia$(camellia_mod_suffix).ko \
 	$(LINUX_DIR)/crypto/cast5.ko \
 	$(LINUX_DIR)/crypto/cast6.ko \
 	$(LINUX_DIR)/crypto/fcrypt.ko \

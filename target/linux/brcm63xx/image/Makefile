@@ -148,9 +148,12 @@ define Image/Build
 	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-4M-flash-generic,,--pad 2)
 	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-8M-flash-generic,,--pad 4)
 	$(call Image/Build/CFE,$(1),96328avng,6328,96328avng-16M-flash-generic,,--pad 8)
+	$(call Image/Build/CFE,$(1),96328A-1241N,6328,96328A-1241N-generic,,--pad 8)
+	$(call Image/Build/CFE,$(1),96328A-1441N1,6328,96328A-1441N1-generic,,--pad 8)
 	$(call Image/Build/CFE,$(1),963281TAN,6328,963281TAN-4M-flash-generic,,--pad 2)
 	$(call Image/Build/CFE,$(1),963281TAN,6328,963281TAN-8M-flash-generic,,--pad 4)
 	$(call Image/Build/CFE,$(1),963281TAN,6328,963281TAN-16M-flash-generic,,--pad 8)
+	$(call Image/Build/CFE,$(1),963281T_TEF,6328,963281T_TEF-generic,,--pad 8)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,96345GW2-generic)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,96348GW2-bc221,,--layoutver 5)
 	$(call Image/Build/CFE,$(1),96345GW2,6345,92345GW2-rev,OpenWRT-$(REVISION))
@@ -227,6 +230,9 @@ define Image/Build
 	# Sagem F@ST2404
 	$(call Image/Build/CFE,$(1),F@ST2404,6348,F@ST2404-cfe)
 	$(call Image/Build/CFE,$(1),F@ST2404,6348,F@ST2404,OpenWRT-$(REVISION))
+	# Sagem F@ST2604
+	$(call Image/Build/CFE,$(1),F@ST2604,6348,F@ST2604-cfe)
+	$(call Image/Build/CFE,$(1),F@ST2604,6348,F@ST2604,OpenWRT-$(REVISION))
 	# Inventel Livebox
 	$(call Image/Build/RedBoot,livebox)
 	# Pirelli Alice Gate VoIP 2 Plus Wi-Fi AGPF-S0
