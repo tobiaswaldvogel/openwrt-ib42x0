@@ -30,6 +30,11 @@ preinit_set_mac_address() {
                 mac=$(ramips_get_mac_binary devdata 16388)
                 ifconfig eth0 hw ether $mac 2>/dev/null
                 ;;
+	dir-645)
+		mac=$(ramips_get_mac_nvram nvram lanmac)
+		mac=$(maccalc or "$mac" "02:00:00:00:00:00")
+		ifconfig eth0 hw ether $mac 2>/dev/null
+		;;
 	dap-1350)
 		mac=$(ramips_get_mac_binary devdata 46)
 		ifconfig eth0 hw ether $mac 2>/dev/null
@@ -43,6 +48,8 @@ preinit_set_mac_address() {
 	hw550-3g |\
 	nbg-419n |\
 	omni-emb |\
+	tew-691gr |\
+	tew-692gr |\
 	w306r-v20 |\
 	w502u    |\
 	wl-330n |\

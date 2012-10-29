@@ -92,6 +92,9 @@ ramips_board_name() {
 	*"DIR-615 H1")
 		name="dir-615-h1"
 		;;
+	*"DIR-645")
+		name="dir-645"
+		;;
         *"DAP-1350")
                 name="dap-1350"
                 ;;
@@ -163,6 +166,12 @@ ramips_board_name() {
 		;;
 	*"Tenda W306R V2.0")
 		name="w306r-v20"
+		;;
+	*"TEW-691GR")
+		name="tew-691gr"
+		;;
+	*"TEW-692GR")
+		name="tew-692gr"
 		;;
 	*"Ralink V11ST-FE")
 		name="v11st-fe"

@@ -363,7 +363,8 @@ define KernelPackage/rfkill
   KCONFIG:= \
     CONFIG_RFKILL \
     CONFIG_RFKILL_INPUT=y \
-    CONFIG_RFKILL_LEDS=y
+    CONFIG_RFKILL_LEDS=y \
+    CONFIG_RFKILL_GPIO=y
   FILES:= \
     $(LINUX_DIR)/net/rfkill/rfkill.ko
   AUTOLOAD:=$(call AutoLoad,20,rfkill)
@@ -696,3 +697,18 @@ define KernelPackage/regmap/description
 endef
 
 $(eval $(call KernelPackage,regmap))
+
+define KernelPackage/ikconfig
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Kernel configuration via /proc/config.gz
+  KCONFIG:=CONFIG_IKCONFIG \
+	   CONFIG_IKCONFIG_PROC=y
+  FILES:=$(LINUX_DIR)/kernel/configs.ko
+  AUTOLOAD:=$(call AutoLoad,70,configs)
+endef
+
+define KernelPackage/ikconfig/description
+	Kernel configuration via /proc/config.gz
+endef
+
+$(eval $(call KernelPackage,ikconfig))

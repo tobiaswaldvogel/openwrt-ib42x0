@@ -9,7 +9,7 @@ RAMFS_COPY_DATA=/lib/ramips.sh
 
 platform_check_image() {
 	local board=$(ramips_board_name)
-	local magic="$(get_magic_word "$1")"
+	local magic="$(get_magic_long "$1")"
 
 	[ "$ARGC" -gt 1 ] && return 1
 
@@ -40,6 +40,8 @@ platform_check_image() {
 	rt-n15 | \
 	rt-n56u | \
 	sl-r7205 | \
+	tew-691gr | \
+	tew-692gr | \
 	w306r-v20 |\
 	w502u |\
 	wr6202 |\
@@ -51,7 +53,14 @@ platform_check_image() {
 	whr-g300n |\
 	ur-336un |\
 	wr512-3gn)
-		[ "$magic" != "2705" ] && {
+		[ "$magic" != "27051956" ] && {
+			echo "Invalid image type."
+			return 1
+		}
+		return 0
+		;;
+	dir-645)
+		[ "$magic" != "5ea3a417" ] && {
 			echo "Invalid image type."
 			return 1
 		}

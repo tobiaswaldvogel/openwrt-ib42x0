@@ -60,6 +60,8 @@ define Host/Compile
 	$(call cc,mkbrnimg)
 	$(call cc,mkdapimg)
 	$(call cc, mkcameofw, -Wall)
+	$(call cc,seama md5)
+	$(call cc,fix-u-media-header cyg_crc32,-Wall)
 endef
 
 define Host/Install
