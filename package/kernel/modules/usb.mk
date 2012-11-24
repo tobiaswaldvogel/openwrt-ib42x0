@@ -119,8 +119,7 @@ define KernelPackage/usb2
 	CONFIG_USB_EHCI_BCM63XX=y \
 	CONFIG_USB_EHCI_RT3883=y \
 	CONFIG_USB_OCTEON_EHCI=y \
-	CONFIG_USB_EHCI_FSL=n \
-	CONFIG_USB_EHCI_HCD_PLATFORM=y
+	CONFIG_USB_EHCI_FSL=n
   FILES:=$(LINUX_DIR)/drivers/usb/host/ehci-hcd.ko
   AUTOLOAD:=$(call AutoLoad,40,ehci-hcd)
   $(call AddDepends/usb)

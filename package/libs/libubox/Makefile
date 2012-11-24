@@ -1,21 +1,23 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libubox
-PKG_VERSION:=2012-10-29
+PKG_VERSION:=2012-10-31.1
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git://nbd.name/luci2/libubox.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=a9b44ebe556c3f60de2fc1154d48a26f43aa15b7
+PKG_SOURCE_VERSION:=407f7a0bb3272ee03f2eb05391ce8b94238fa92e
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_MD5SUM:=bb8401a9a747f5841780d1ca47661008
+PKG_MIRROR_MD5SUM:=5eb506d65853b9755cb37e5667c0a759
 CMAKE_INSTALL:=1
 
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
+
+PKG_BUILD_DEPENDS:=lua
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -46,6 +48,8 @@ define Package/jshn/description
 endef
 
 TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+CMAKE_OPTIONS = \
+	-DLUAPATH=/usr/lib/lua
 
 define Package/libubox/install
 	$(INSTALL_DIR) $(1)/lib/
