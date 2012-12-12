@@ -17,7 +17,8 @@ board=$(ar71xx_board_name)
 case "$board" in
 all0315n |\
 all0258n |\
-ja76pf2)
+ja76pf2|\
+ubnt-unifi-outdoor)
 	ucidef_set_interface_lan "eth0 eth1"
 	;;
 
@@ -50,6 +51,12 @@ rb-433u)
 	ucidef_set_interfaces_lan_wan "eth1" "eth0"
 	ucidef_add_switch "switch0" "1" "1"
 	ucidef_add_switch_vlan "switch0" "1" "1 2 5"
+	;;
+
+rb-435g)
+	ucidef_set_interfaces_lan_wan "eth1" "eth0"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0 1 2"
 	;;
 
 rb-450)
@@ -144,6 +151,7 @@ aw-nr580 |\
 bullet-m |\
 cap4200ag |\
 eap7660d |\
+mr600 |\
 rb-411 |\
 tl-mr11u |\
 tl-mr3020 |\

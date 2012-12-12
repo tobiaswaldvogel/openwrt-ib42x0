@@ -17,9 +17,6 @@ choice
 	config GCC_VERSION_4_6_3
 		bool "gcc 4.6.3"
 
-	config GCC_VERSION_4_7_0
-		bool "gcc 4.7.0"
-
 	config GCC_VERSION_4_7_2
 		bool "gcc 4.7.2"
 
@@ -82,7 +79,7 @@ config SJLJ_EXCEPTIONS
 config INSTALL_LIBSTDCPP
 	bool
 	prompt "Build/install c++ compiler and libstdc++?" if TOOLCHAINOPTS
-	default y
+	default y if !USE_MUSL
 	help
 	    Build/install c++ compiler and libstdc++?
 

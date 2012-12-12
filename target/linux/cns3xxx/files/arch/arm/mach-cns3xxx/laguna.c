@@ -36,6 +36,7 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
 #include <linux/if_ether.h>
+#include <linux/pps-gpio.h>
 #include <asm/setup.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -581,6 +582,22 @@ static struct platform_device laguna_watchdog = {
 };
 
 /*
+ * GPS PPS
+ */
+static struct pps_gpio_platform_data laguna_pps_data = {
+	.gpio_pin = 0,
+	.gpio_label = "GPS_PPS",
+	.assert_falling_edge = 0,
+	.capture_clear = 0,
+};
+
+static struct platform_device laguna_pps_device = {
+	.name = "pps-gpio",
+	.id = -1,
+	.dev.platform_data = &laguna_pps_data,
+};
+
+/*
  * GPIO
  */
 
@@ -764,6 +781,9 @@ static int __init laguna_model_setup(void)
 	u32 __iomem *mem;
 	u32 reg;
 
+	if (!machine_is_gw2388())
+		return 0;
+
 	printk("Running on Gateworks Laguna %s\n", laguna_info.model);
 	cns3xxx_gpio_init( 0, 32, CNS3XXX_GPIOA_BASE_VIRT, IRQ_CNS3XXX_GPIOA,
 		NR_IRQS_CNS3XXX);
@@ -868,6 +888,9 @@ static int __init laguna_model_setup(void)
 		if ((laguna_info.config_bitmap & SPI0_LOAD) ||
 		    (laguna_info.config_bitmap & SPI1_LOAD))
 			platform_device_register(&laguna_spi_controller);
+
+		if (laguna_info.config2_bitmap & GPS_LOAD)
+			platform_device_register(&laguna_pps_device);
 
 		/*
 		 * Do any model specific setup not known by the bitmap by matching

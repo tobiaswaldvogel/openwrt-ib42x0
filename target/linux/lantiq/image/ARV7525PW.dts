@@ -76,6 +76,7 @@
 			interrupt-parent = <&icu0>;
 			interrupts = <63 96>;
 		};
+
 		etop@E180000 {
 			compatible = "lantiq,etop-xway";
 			reg = <0xE180000 0x40000>;
@@ -91,32 +92,10 @@
 			interrupt-map = <
                                 0x7000 0 0 1 &icu0 30 1 // slot 14, irq 29
 			>;
-			gpios-reset = <&gpio 21 0>;
+			gpio-reset = <&gpio 21 0>;
 			req-mask = <0x1>;		/* GNT1 */
 		};
 
-	};
-
-	sflash@E100800 {
-		compatible = "lantiq,sflash_at45";
-		reg = <0xE100800 0x100>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		partition@0 {
-			label = "uboot";
-			reg = <0x00000 0x10000>;
-		};
-
-		partition@10000 {
-			label = "uboot_env";
-			reg = <0x10000 0x10000>;
-		};
-
-		partition@20000 {
-			label = "linux";
-			reg = <0x20000 0x1d0000>;
-		};
 	};
 
 	gpio-keys {
@@ -128,6 +107,7 @@
 			linux,code = <0x100>;
 		};
 	};
+
 	gpio-leds {
 		compatible = "gpio-leds";
 		festnetz {

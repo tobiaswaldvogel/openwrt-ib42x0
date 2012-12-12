@@ -74,7 +74,6 @@ define Build/Configure
 	touch $(PKG_BUILD_DIR)/stamp-h.in
 endef
 
-TARGET_CFLAGS += -I$(LINUX_DIR)/include -I$(LINUX_DIR)/arch/$(LINUX_KARCH)/include
 unexport PREFIX
 
 define Build/Compile
@@ -100,7 +99,7 @@ endef
 
 define Package/atm-tools/install
 	$(INSTALL_DIR) $(1)/usr/sbin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/arpd/atmarp{,d} $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/atmarp{,d} $(1)/usr/sbin/
 
 #
 #The following is disabled by default but still useful for some debugging

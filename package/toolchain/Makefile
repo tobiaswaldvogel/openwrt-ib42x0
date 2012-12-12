@@ -428,6 +428,16 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
 		$(1)/lib/
   endef
 
+  define Package/musl/install
+	$(INSTALL_DIR) $(1)/lib
+	$(CP) \
+		$(TOOLCHAIN_DIR)/lib/ld-musl-*.so* \
+		$(1)/lib/
+	$(CP) \
+		$(TOOLCHAIN_DIR)/lib/libc.so* \
+		$(1)/lib/
+  endef
+
   define Package/libc/install
     $(call Package/$(LIBC)/install,$1)
   endef
@@ -455,9 +465,12 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
   define Package/libthread-db/install
 	$(INSTALL_DIR) $(1)/lib
 	$(CP) \
-		$(TOOLCHAIN_DIR)/lib/libthread_db.so.* \
+		$(TOOLCHAIN_DIR)/lib/libthread_db.so.* $(1)/lib
+  ifeq ($(USE_UCLIBC),y)
+	$(CP) \
 		$(TOOLCHAIN_DIR)/lib/libthread_db-$(LIBC_SO_VERSION).so \
 		$(1)/lib/
+  endif
   endef
 
   define Package/libpthread/install_lib

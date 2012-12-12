@@ -1,13 +1,11 @@
 --- a/arch/arm/mach-cns3xxx/Kconfig
 +++ b/arch/arm/mach-cns3xxx/Kconfig
-@@ -11,4 +11,14 @@ config MACH_CNS3420VB
+@@ -10,4 +10,12 @@ config MACH_CNS3420VB
  	  This is a platform with an on-board ARM11 MPCore and has support
  	  for USB, USB-OTG, MMC/SD/SDIO, SATA, PCI-E, etc.
  
 +config MACH_GW2388
 +	bool "Support for Gateworks Laguna Platform"
-+	select HAVE_ARM_SCU if SMP
-+	select MIGHT_HAVE_PCI
 +	help
 +	  Include support for the Gateworks Laguna Platform
 +
@@ -18,11 +16,11 @@
 --- a/arch/arm/mach-cns3xxx/Makefile
 +++ b/arch/arm/mach-cns3xxx/Makefile
 @@ -1,6 +1,7 @@
- obj-$(CONFIG_ARCH_CNS3XXX)		+= core.o pm.o devices.o
+ obj-$(CONFIG_ARCH_CNS3XXX)		+= core.o gpio.o pm.o devices.o
  obj-$(CONFIG_PCI)			+= pcie.o
  obj-$(CONFIG_MACH_CNS3420VB)		+= cns3420vb.o
 +obj-$(CONFIG_MACH_GW2388)		+= laguna.o
- obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
+ obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o cns3xxx_fiq.o
  obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
  obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
 --- a/arch/arm/mach-cns3xxx/devices.c

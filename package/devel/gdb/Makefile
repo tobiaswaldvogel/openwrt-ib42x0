@@ -21,8 +21,8 @@ PKG_INSTALL:=1
 include $(INCLUDE_DIR)/package.mk
 
 define Package/gdb/Default
-  SECTION:=utils
-  CATEGORY:=Utilities
+  SECTION:=devel
+  CATEGORY:=Development
   DEPENDS:=@!(avr32||cris) +libthread-db +PACKAGE_zlib:zlib
   URL:=http://www.gnu.org/software/gdb/
 endef
@@ -30,7 +30,7 @@ endef
 define Package/gdb
 $(call Package/gdb/Default)
   TITLE:=GNU Debugger
-  DEPENDS+=+libreadline +libncurses
+  DEPENDS+=+libreadline +libncurses +zlib
 endef
 
 define Package/gdb/description
