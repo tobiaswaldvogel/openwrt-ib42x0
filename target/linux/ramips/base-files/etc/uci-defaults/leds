@@ -28,6 +28,10 @@ case $board in
 	bc2)
 		set_usb_led "bc2:blue:usb"
 		;;
+	broadway)
+		set_usb_led "red:diskmounted"
+		set_wifi_led "red:wps_active"
+		;;
 	dir-300-b1|\
 	dir-600-b1|\
 	dir-600-b2|\
@@ -36,6 +40,7 @@ case $board in
 		ucidef_set_led_default "wan" "WAN LED (amber)" "d-link:amber:wan" "1"
 		set_wifi_led "rt2800pci-phy0::radio"
 		;;
+	dir-615-d|\
 	dir-615-h1)
 		ucidef_set_led_default "status" "Status LED (amber)" "d-link:amber:status" "0"
 		set_wifi_led "rt2800pci-phy0::radio"

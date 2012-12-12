@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=6relayd
-PKG_VERSION:=2012-11-17
+PKG_VERSION:=2012-12-11
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=git://nbd.name/6relayd.git
+PKG_SOURCE_URL:=git://github.com/sbyx/6relayd.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=f0fec4df02e3310de134e46e9826dbeedb86119a
+PKG_SOURCE_VERSION:=352f15c78cea621d6e2adc1f6e26cbe95df6f03c
 
 PKG_MAINTAINER:=Steven Barth <steven@midlink.org>
 

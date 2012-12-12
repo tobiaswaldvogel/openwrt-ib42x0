@@ -13,6 +13,7 @@ preinit_set_mac_address() {
 		ifconfig eth0 hw ether $mac 2>/dev/null
 		;;
 	bc2 |\
+	broadway |\
 	dir-620-a1 |\
 	esr-9753 |\
 	freestation5 |\
@@ -45,6 +46,7 @@ preinit_set_mac_address() {
 	carambola |\
 	dir-615-h1 |\
 	fonera20n |\
+	rt-n13u |\
 	hw550-3g |\
 	nbg-419n |\
 	omni-emb |\

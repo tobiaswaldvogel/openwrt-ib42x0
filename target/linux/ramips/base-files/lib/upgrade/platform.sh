@@ -19,15 +19,18 @@ platform_check_image() {
 	all0256n | \
 	all5002 | \
 	bc2 | \
+	broadway | \
 	carambola | \
 	dir-300-b1 | \
 	dir-600-b1 | \
 	dir-600-b2 | \
 	dir-615-h1 | \
+	dir-615-d | \
 	dir-620-a1 | \
 	dap-1350 | \
 	esr-9753 | \
 	fonera20n | \
+	rt-n13u | \
 	freestation5 | \
 	hw550-3g | \
 	mofi3500-3gn | \

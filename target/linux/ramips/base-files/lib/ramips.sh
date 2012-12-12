@@ -92,6 +92,9 @@ ramips_board_name() {
 	*"DIR-615 H1")
 		name="dir-615-h1"
 		;;
+	*"DIR-615 D")
+		name="dir-615-d"
+		;;
 	*"DIR-645")
 		name="dir-645"
 		;;
@@ -107,8 +110,14 @@ ramips_board_name() {
 	*"F5D8235 v2")
 		name="f5d8235-v2"
 		;;
+	*"Hauppauge Broadway")
+		name="broadway"
+		;;
 	*"La Fonera 2.0N")
 		name="fonera20n"
+		;;
+	*"Asus RT-N13U")
+		name="rt-n13u"
 		;;
 	*"MoFi Network MOFI3500-3GN")
 		name="mofi3500-3gn"

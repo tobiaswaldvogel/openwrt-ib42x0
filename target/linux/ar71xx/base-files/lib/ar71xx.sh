@@ -408,6 +408,9 @@ ar71xx_board_detect() {
 	*"WNDR3700/WNDR3800/WNDRMAC")
 		wndr3700_board_detect "$machine"
 		;;
+	*"WNDR4300")
+		name="wndr4300"
+		;;
 	*WNR2000)
 		name="wnr2000"
 		;;
@@ -447,7 +450,7 @@ ar71xx_board_detect() {
 	esac
 
 	case "$machine" in
-	*TL-WR* | *TL-WA* | *TL-MR*)
+	*TL-WR* | *TL-WA* | *TL-MR* | *TL-WD*)
 		tplink_board_detect "$machine"
 		;;
 	esac

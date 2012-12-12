@@ -18,9 +18,9 @@ KDIR=$(KERNEL_BUILD_DIR)
 IMG_PREFIX:=openwrt-$(BOARD)$(if $(SUBTARGET),-$(SUBTARGET))
 
 ifneq ($(CONFIG_BIG_ENDIAN),)
-  JFFS2OPTS     :=  --pad --big-endian --squash -v
+  JFFS2OPTS     :=  --pad --big-endian --squash-uids -v
 else
-  JFFS2OPTS     :=  --pad --little-endian --squash -v
+  JFFS2OPTS     :=  --pad --little-endian --squash-uids -v
 endif
 
 ifeq ($(CONFIG_JFFS2_RTIME),y)
@@ -124,7 +124,7 @@ ifneq ($(CONFIG_TARGET_ROOTFS_EXT4FS),)
 
   define Image/mkfs/ext4
 # generate an ext2 fs
-	$(STAGING_DIR_HOST)/bin/genext2fs -U -b $(E2SIZE) -N $(CONFIG_TARGET_ROOTFS_MAXINODE) -d $(TARGET_DIR)/ $(KDIR)/root.ext4
+	$(STAGING_DIR_HOST)/bin/genext2fs -U -b $(E2SIZE) -N $(CONFIG_TARGET_ROOTFS_MAXINODE) -d $(TARGET_DIR)/ $(KDIR)/root.ext4 -m $(CONFIG_TARGET_ROOTFS_RESERVED_PCT)
 # convert it to ext4
 	$(STAGING_DIR_HOST)/bin/tune2fs -O extents,uninit_bg,dir_index $(KDIR)/root.ext4
 # fix it up
