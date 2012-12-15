@@ -28,7 +28,7 @@
 		};
 
 		watchdog@803F0 {
-			compatible = "lantiq,wdt1";
+			compatible = "lantiq,wdt";
 			reg = <0x803F0 0x10>;
 		};
 	};
@@ -42,11 +42,10 @@
 
 		eiu0: eiu@101000 {
 			#interrupt-cells = <1>;
-			interrupt-controller;
-			interrupt-parent;
-			compatible = "lantiq,eiu";
+			compatible = "lantiq,eiu-xway";
 			reg = <0x101000 0x1000>;
-			lantiq,count = <3>;
+			interrupt-parent = <&icu0>;
+			interrupts = <29 30 31>;
 		};
 
 		pmu0: pmu@102000 {
@@ -73,11 +72,28 @@
 		ranges = <0x0 0x10000000 0xEEFFFFF>;
 		reg = <0x10000000 0xEF00000>;
 
+		spi@E100800 {
+			compatible = "lantiq,spi-xway";
+			reg = <0xE100800 0x100>;
+			interrupt-parent = <&icu0>;
+			interrupts = <24 25 26>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+		};
+
 		gptu@E100A00 {
 			compatible = "lantiq,gptu-xway";
 			reg = <0xE100A00 0x100>;
 			interrupt-parent = <&icu0>;
                         interrupts = <97 98 99 100 101 102>;
+			status = "disabled";
+		};
+
+		gpio: pinmux@E100B10 {
+			compatible = "lantiq,pinctrl-ase";
+			#gpio-cells = <2>;
+			gpio-controller;
+			reg = <0xE100B10 0xA0>;
 		};
 
 		serial@E100C00 {
@@ -87,11 +103,19 @@
 			interrupts = <72 74 75>;
 		};
 
-		hcd@E101000 {
-			compatible = "lantiq,hcd";
-			reg = <0xE101000 0x100>;
+		mei@E116000 {
+			compatible = "lantiq,mei-xway";
+			interrupt-parent = <&icu0>;
+			interrupts = <63>;
+		};
+
+		ifxhcd@E101000 {
+			compatible = "lantiq,ifxhcd-ase";
+			reg = <0xE101000 0x1000
+				0xE120000 0x3f000>;
 			interrupt-parent = <&icu0>;
 			interrupts = <39>;
+			status = "disabled";
 		};
 
 		dma0: dma@E104100 {
@@ -103,5 +127,22 @@
 			compatible = "lantiq,ebu-xway";
 			reg = <0xE105300 0x100>;
 		};
+
+		ppe@E234000 {
+			compatible = "lantiq,ppe-ase";
+			interrupt-parent = <&icu0>;
+			interrupts = <85>;
+		};
+
+		etop@E180000 {
+			compatible = "lantiq,etop-xway";
+			reg = <0xE180000 0x40000>;
+			interrupt-parent = <&icu0>;
+			interrupts = <105 109>;
+		};
+	};
+
+	adsl {
+		compatible = "lantiq,adsl-ase";
 	};
 };

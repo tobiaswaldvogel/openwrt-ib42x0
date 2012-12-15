@@ -47,7 +47,15 @@
  config BCMA_DRIVER_GMAC_CMN
 --- a/drivers/bcma/bcma_private.h
 +++ b/drivers/bcma/bcma_private.h
-@@ -54,6 +54,7 @@ u32 bcma_pmu_get_clockcpu(struct bcma_dr
+@@ -48,12 +48,13 @@ void bcma_chipco_serial_init(struct bcma
+ #endif /* CONFIG_BCMA_DRIVER_MIPS */
+ 
+ /* driver_chipcommon_pmu.c */
+-u32 bcma_pmu_alp_clock(struct bcma_drv_cc *cc);
+-u32 bcma_pmu_get_clockcpu(struct bcma_drv_cc *cc);
++u32 bcma_pmu_get_alp_clock(struct bcma_drv_cc *cc);
++u32 bcma_pmu_get_cpu_clock(struct bcma_drv_cc *cc);
+ 
  #ifdef CONFIG_BCMA_SFLASH
  /* driver_chipcommon_sflash.c */
  int bcma_sflash_init(struct bcma_drv_cc *cc);
@@ -63,6 +71,15 @@
  #else
  static inline int bcma_nflash_init(struct bcma_drv_cc *cc)
  {
+@@ -82,6 +84,8 @@ extern void __exit bcma_host_pci_exit(vo
+ /* driver_pci.c */
+ u32 bcma_pcie_read(struct bcma_drv_pci *pc, u32 address);
+ 
++extern int bcma_chipco_watchdog_register(struct bcma_drv_cc *cc);
++
+ #ifdef CONFIG_BCMA_DRIVER_PCI_HOSTMODE
+ bool __devinit bcma_core_pci_is_in_hostmode(struct bcma_drv_pci *pc);
+ void __devinit bcma_core_pci_hostmode_init(struct bcma_drv_pci *pc);
 --- a/drivers/bcma/core.c
 +++ b/drivers/bcma/core.c
 @@ -65,7 +65,7 @@ void bcma_core_set_clockmode(struct bcma
@@ -76,22 +93,121 @@
  			    BCMA_CLKCTLST_HAVEHT) {
 --- a/drivers/bcma/driver_chipcommon.c
 +++ b/drivers/bcma/driver_chipcommon.c
-@@ -22,12 +22,9 @@ static inline u32 bcma_cc_write32_masked
+@@ -4,12 +4,15 @@
+  *
+  * Copyright 2005, Broadcom Corporation
+  * Copyright 2006, 2007, Michael Buesch <m@bues.ch>
++ * Copyright 2012, Hauke Mehrtens <hauke@hauke-m.de>
+  *
+  * Licensed under the GNU/GPL. See COPYING for details.
+  */
+ 
+ #include "bcma_private.h"
++#include <linux/bcm47xx_wdt.h>
+ #include <linux/export.h>
++#include <linux/platform_device.h>
+ #include <linux/bcma/bcma.h>
+ 
+ static inline u32 bcma_cc_write32_masked(struct bcma_drv_cc *cc, u16 offset,
+@@ -22,12 +25,93 @@ static inline u32 bcma_cc_write32_masked
  	return value;
  }
  
 -void bcma_core_chipcommon_init(struct bcma_drv_cc *cc)
-+void bcma_core_chipcommon_early_init(struct bcma_drv_cc *cc)
++static u32 bcma_chipco_get_alp_clock(struct bcma_drv_cc *cc)
  {
 -	u32 leddc_on = 10;
 -	u32 leddc_off = 90;
--
++	if (cc->capabilities & BCMA_CC_CAP_PMU)
++		return bcma_pmu_get_alp_clock(cc);
+ 
 -	if (cc->setup_done)
++	return 20000000;
++}
++
++static u32 bcma_chipco_watchdog_get_max_timer(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++	u32 nb;
++
++	if (cc->capabilities & BCMA_CC_CAP_PMU) {
++		if (bus->chipinfo.id == BCMA_CHIP_ID_BCM4706)
++			nb = 32;
++		else if (cc->core->id.rev < 26)
++			nb = 16;
++		else
++			nb = (cc->core->id.rev >= 37) ? 32 : 24;
++	} else {
++		nb = 28;
++	}
++	if (nb == 32)
++		return 0xffffffff;
++	else
++		return (1 << nb) - 1;
++}
++
++static u32 bcma_chipco_watchdog_timer_set_wdt(struct bcm47xx_wdt *wdt,
++					      u32 ticks)
++{
++	struct bcma_drv_cc *cc = bcm47xx_wdt_get_drvdata(wdt);
++
++	return bcma_chipco_watchdog_timer_set(cc, ticks);
++}
++
++static u32 bcma_chipco_watchdog_timer_set_ms_wdt(struct bcm47xx_wdt *wdt,
++						 u32 ms)
++{
++	struct bcma_drv_cc *cc = bcm47xx_wdt_get_drvdata(wdt);
++	u32 ticks;
++
++	ticks = bcma_chipco_watchdog_timer_set(cc, cc->ticks_per_ms * ms);
++	return ticks / cc->ticks_per_ms;
++}
++
++static int bcma_chipco_watchdog_ticks_per_ms(struct bcma_drv_cc *cc)
++{
++	struct bcma_bus *bus = cc->core->bus;
++
++	if (cc->capabilities & BCMA_CC_CAP_PMU) {
++		if (bus->chipinfo.id == BCMA_CHIP_ID_BCM4706)
++			/* 4706 CC and PMU watchdogs are clocked at 1/4 of ALP clock */
++			return bcma_chipco_get_alp_clock(cc) / 4000;
++		else
++			/* based on 32KHz ILP clock */
++			return 32;
++	} else {
++		return bcma_chipco_get_alp_clock(cc) / 1000;
++	}
++}
++
++int bcma_chipco_watchdog_register(struct bcma_drv_cc *cc)
++{
++	struct bcm47xx_wdt wdt = {};
++	struct platform_device *pdev;
++
++	wdt.driver_data = cc;
++	wdt.timer_set = bcma_chipco_watchdog_timer_set_wdt;
++	wdt.timer_set_ms = bcma_chipco_watchdog_timer_set_ms_wdt;
++	wdt.max_timer_ms = bcma_chipco_watchdog_get_max_timer(cc) / cc->ticks_per_ms;
++
++	pdev = platform_device_register_data(NULL, "bcm47xx-wdt",
++					     cc->core->bus->num, &wdt,
++					     sizeof(wdt));
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	cc->watchdog = pdev;
++
++	return 0;
++}
++
++void bcma_core_chipcommon_early_init(struct bcma_drv_cc *cc)
++{
 +	if (cc->early_setup_done)
  		return;
  
  	if (cc->core->id.rev >= 11)
-@@ -36,6 +33,22 @@ void bcma_core_chipcommon_init(struct bc
+@@ -36,6 +120,22 @@ void bcma_core_chipcommon_init(struct bc
  	if (cc->core->id.rev >= 35)
  		cc->capabilities_ext = bcma_cc_read32(cc, BCMA_CC_CAP_EXT);
  
@@ -114,6 +230,53 @@
  	if (cc->core->id.rev >= 20) {
  		bcma_cc_write32(cc, BCMA_CC_GPIOPULLUP, 0);
  		bcma_cc_write32(cc, BCMA_CC_GPIOPULLDOWN, 0);
+@@ -56,15 +156,33 @@ void bcma_core_chipcommon_init(struct bc
+ 			((leddc_on << BCMA_CC_GPIOTIMER_ONTIME_SHIFT) |
+ 			 (leddc_off << BCMA_CC_GPIOTIMER_OFFTIME_SHIFT)));
+ 	}
++	cc->ticks_per_ms = bcma_chipco_watchdog_ticks_per_ms(cc);
+ 
+ 	cc->setup_done = true;
+ }
+ 
+ /* Set chip watchdog reset timer to fire in 'ticks' backplane cycles */
+-void bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc, u32 ticks)
++u32 bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc, u32 ticks)
+ {
+-	/* instant NMI */
+-	bcma_cc_write32(cc, BCMA_CC_WATCHDOG, ticks);
++	u32 maxt;
++	enum bcma_clkmode clkmode;
++
++	maxt = bcma_chipco_watchdog_get_max_timer(cc);
++	if (cc->capabilities & BCMA_CC_CAP_PMU) {
++		if (ticks == 1)
++			ticks = 2;
++		else if (ticks > maxt)
++			ticks = maxt;
++		bcma_cc_write32(cc, BCMA_CC_PMU_WATCHDOG, ticks);
++	} else {
++		clkmode = ticks ? BCMA_CLKMODE_FAST : BCMA_CLKMODE_DYNAMIC;
++		bcma_core_set_clockmode(cc->core, clkmode);
++		if (ticks > maxt)
++			ticks = maxt;
++		/* instant NMI */
++		bcma_cc_write32(cc, BCMA_CC_WATCHDOG, ticks);
++	}
++	return ticks;
+ }
+ 
+ void bcma_chipco_irq_mask(struct bcma_drv_cc *cc, u32 mask, u32 value)
+@@ -118,8 +236,7 @@ void bcma_chipco_serial_init(struct bcma
+ 	struct bcma_serial_port *ports = cc->serial_ports;
+ 
+ 	if (ccrev >= 11 && ccrev != 15) {
+-		/* Fixed ALP clock */
+-		baud_base = bcma_pmu_alp_clock(cc);
++		baud_base = bcma_chipco_get_alp_clock(cc);
+ 		if (ccrev >= 21) {
+ 			/* Turn off UART clock before switching clocksource. */
+ 			bcma_cc_write32(cc, BCMA_CC_CORECTL,
 --- a/drivers/bcma/driver_chipcommon_nflash.c
 +++ b/drivers/bcma/driver_chipcommon_nflash.c
 @@ -5,15 +5,40 @@
@@ -203,15 +366,118 @@
  	if (cc->pmu.rev == 1)
  		bcma_cc_mask32(cc, BCMA_CC_PMU_CTL,
  			      ~BCMA_CC_PMU_CTL_NOILPONW);
+@@ -162,7 +168,7 @@ void bcma_pmu_init(struct bcma_drv_cc *c
+ 	bcma_pmu_workarounds(cc);
+ }
+ 
+-u32 bcma_pmu_alp_clock(struct bcma_drv_cc *cc)
++u32 bcma_pmu_get_alp_clock(struct bcma_drv_cc *cc)
+ {
+ 	struct bcma_bus *bus = cc->core->bus;
+ 
+@@ -190,7 +196,7 @@ u32 bcma_pmu_alp_clock(struct bcma_drv_c
+ /* Find the output of the "m" pll divider given pll controls that start with
+  * pllreg "pll0" i.e. 12 for main 6 for phy, 0 for misc.
+  */
+-static u32 bcma_pmu_clock(struct bcma_drv_cc *cc, u32 pll0, u32 m)
++static u32 bcma_pmu_pll_clock(struct bcma_drv_cc *cc, u32 pll0, u32 m)
+ {
+ 	u32 tmp, div, ndiv, p1, p2, fc;
+ 	struct bcma_bus *bus = cc->core->bus;
+@@ -219,14 +225,14 @@ static u32 bcma_pmu_clock(struct bcma_dr
+ 	ndiv = (tmp & BCMA_CC_PPL_NDIV_MASK) >> BCMA_CC_PPL_NDIV_SHIFT;
+ 
+ 	/* Do calculation in Mhz */
+-	fc = bcma_pmu_alp_clock(cc) / 1000000;
++	fc = bcma_pmu_get_alp_clock(cc) / 1000000;
+ 	fc = (p1 * ndiv * fc) / p2;
+ 
+ 	/* Return clock in Hertz */
+ 	return (fc / div) * 1000000;
+ }
+ 
+-static u32 bcma_pmu_clock_bcm4706(struct bcma_drv_cc *cc, u32 pll0, u32 m)
++static u32 bcma_pmu_pll_clock_bcm4706(struct bcma_drv_cc *cc, u32 pll0, u32 m)
+ {
+ 	u32 tmp, ndiv, p1div, p2div;
+ 	u32 clock;
 @@ -257,7 +263,7 @@ static u32 bcma_pmu_clock_bcm4706(struct
  }
  
  /* query bus clock frequency for PMU-enabled chipcommon */
 -u32 bcma_pmu_get_clockcontrol(struct bcma_drv_cc *cc)
-+static u32 bcma_pmu_get_clockcontrol(struct bcma_drv_cc *cc)
++static u32 bcma_pmu_get_bus_clock(struct bcma_drv_cc *cc)
  {
  	struct bcma_bus *bus = cc->core->bus;
  
+@@ -265,40 +271,42 @@ u32 bcma_pmu_get_clockcontrol(struct bcm
+ 	case BCMA_CHIP_ID_BCM4716:
+ 	case BCMA_CHIP_ID_BCM4748:
+ 	case BCMA_CHIP_ID_BCM47162:
+-		return bcma_pmu_clock(cc, BCMA_CC_PMU4716_MAINPLL_PLL0,
+-				      BCMA_CC_PMU5_MAINPLL_SSB);
++		return bcma_pmu_pll_clock(cc, BCMA_CC_PMU4716_MAINPLL_PLL0,
++					  BCMA_CC_PMU5_MAINPLL_SSB);
+ 	case BCMA_CHIP_ID_BCM5356:
+-		return bcma_pmu_clock(cc, BCMA_CC_PMU5356_MAINPLL_PLL0,
+-				      BCMA_CC_PMU5_MAINPLL_SSB);
++		return bcma_pmu_pll_clock(cc, BCMA_CC_PMU5356_MAINPLL_PLL0,
++					  BCMA_CC_PMU5_MAINPLL_SSB);
+ 	case BCMA_CHIP_ID_BCM5357:
+ 	case BCMA_CHIP_ID_BCM4749:
+-		return bcma_pmu_clock(cc, BCMA_CC_PMU5357_MAINPLL_PLL0,
+-				      BCMA_CC_PMU5_MAINPLL_SSB);
++		return bcma_pmu_pll_clock(cc, BCMA_CC_PMU5357_MAINPLL_PLL0,
++					  BCMA_CC_PMU5_MAINPLL_SSB);
+ 	case BCMA_CHIP_ID_BCM4706:
+-		return bcma_pmu_clock_bcm4706(cc, BCMA_CC_PMU4706_MAINPLL_PLL0,
+-					      BCMA_CC_PMU5_MAINPLL_SSB);
++		return bcma_pmu_pll_clock_bcm4706(cc,
++						  BCMA_CC_PMU4706_MAINPLL_PLL0,
++						  BCMA_CC_PMU5_MAINPLL_SSB);
+ 	case BCMA_CHIP_ID_BCM53572:
+ 		return 75000000;
+ 	default:
+-		bcma_warn(bus, "No backplane clock specified for %04X device, pmu rev. %d, using default %d Hz\n",
++		bcma_warn(bus, "No bus clock specified for %04X device, pmu rev. %d, using default %d Hz\n",
+ 			  bus->chipinfo.id, cc->pmu.rev, BCMA_CC_PMU_HT_CLOCK);
+ 	}
+ 	return BCMA_CC_PMU_HT_CLOCK;
+ }
+ 
+ /* query cpu clock frequency for PMU-enabled chipcommon */
+-u32 bcma_pmu_get_clockcpu(struct bcma_drv_cc *cc)
++u32 bcma_pmu_get_cpu_clock(struct bcma_drv_cc *cc)
+ {
+ 	struct bcma_bus *bus = cc->core->bus;
+ 
+ 	if (bus->chipinfo.id == BCMA_CHIP_ID_BCM53572)
+ 		return 300000000;
+ 
++	/* New PMUs can have different clock for bus and CPU */
+ 	if (cc->pmu.rev >= 5) {
+ 		u32 pll;
+ 		switch (bus->chipinfo.id) {
+ 		case BCMA_CHIP_ID_BCM4706:
+-			return bcma_pmu_clock_bcm4706(cc,
++			return bcma_pmu_pll_clock_bcm4706(cc,
+ 						BCMA_CC_PMU4706_MAINPLL_PLL0,
+ 						BCMA_CC_PMU5_MAINPLL_CPU);
+ 		case BCMA_CHIP_ID_BCM5356:
+@@ -313,10 +321,11 @@ u32 bcma_pmu_get_clockcpu(struct bcma_dr
+ 			break;
+ 		}
+ 
+-		return bcma_pmu_clock(cc, pll, BCMA_CC_PMU5_MAINPLL_CPU);
++		return bcma_pmu_pll_clock(cc, pll, BCMA_CC_PMU5_MAINPLL_CPU);
+ 	}
+ 
+-	return bcma_pmu_get_clockcontrol(cc);
++	/* On old PMUs CPU has the same clock as the bus */
++	return bcma_pmu_get_bus_clock(cc);
+ }
+ 
+ static void bcma_pmu_spuravoid_pll_write(struct bcma_drv_cc *cc, u32 offset,
 --- a/drivers/bcma/driver_chipcommon_sflash.c
 +++ b/drivers/bcma/driver_chipcommon_sflash.c
 @@ -5,15 +5,161 @@
@@ -381,6 +647,24 @@
  }
 --- a/drivers/bcma/driver_mips.c
 +++ b/drivers/bcma/driver_mips.c
+@@ -115,7 +115,7 @@ static void bcma_core_mips_set_irq(struc
+ 			    bcma_read32(mdev, BCMA_MIPS_MIPS74K_INTMASK(0)) &
+ 			    ~(1 << irqflag));
+ 	else
+-		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(irq), 0);
++		bcma_write32(mdev, BCMA_MIPS_MIPS74K_INTMASK(oldirq), 0);
+ 
+ 	/* assign the new one */
+ 	if (irq == 0) {
+@@ -171,7 +171,7 @@ u32 bcma_cpu_clock(struct bcma_drv_mips
+ 	struct bcma_bus *bus = mcore->core->bus;
+ 
+ 	if (bus->drv_cc.capabilities & BCMA_CC_CAP_PMU)
+-		return bcma_pmu_get_clockcpu(&bus->drv_cc);
++		return bcma_pmu_get_cpu_clock(&bus->drv_cc);
+ 
+ 	bcma_err(bus, "No PMU available, need this to get the cpu clock\n");
+ 	return 0;
 @@ -181,47 +181,66 @@ EXPORT_SYMBOL(bcma_cpu_clock);
  static void bcma_core_mips_flash_detect(struct bcma_drv_mips *mcore)
  {
@@ -574,6 +858,30 @@
  	register_pci_controller(&pc_host->pci_controller);
  	return;
  }
+@@ -534,7 +538,7 @@ DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_
+ static void bcma_core_pci_fixup_addresses(struct pci_dev *dev)
+ {
+ 	struct resource *res;
+-	int pos;
++	int pos, err;
+ 
+ 	if (dev->bus->ops->read != bcma_core_pci_hostmode_read_config) {
+ 		/* This is not a device on the PCI-core bridge. */
+@@ -547,8 +551,12 @@ static void bcma_core_pci_fixup_addresse
+ 
+ 	for (pos = 0; pos < 6; pos++) {
+ 		res = &dev->resource[pos];
+-		if (res->flags & (IORESOURCE_IO | IORESOURCE_MEM))
+-			pci_assign_resource(dev, pos);
++		if (res->flags & (IORESOURCE_IO | IORESOURCE_MEM)) {
++			err = pci_assign_resource(dev, pos);
++			if (err)
++				pr_err("PCI: Problem fixing up the addresses on %s\n",
++				       pci_name(dev));
++		}
+ 	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, bcma_core_pci_fixup_addresses);
 --- a/drivers/bcma/host_pci.c
 +++ b/drivers/bcma/host_pci.c
 @@ -77,8 +77,8 @@ static void bcma_host_pci_write32(struct
@@ -608,6 +916,29 @@
  	.read8		= bcma_host_pci_read8,
  	.read16		= bcma_host_pci_read16,
  	.read32		= bcma_host_pci_read32,
+@@ -237,7 +238,7 @@ static void __devexit bcma_host_pci_remo
+ 	pci_set_drvdata(dev, NULL);
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int bcma_host_pci_suspend(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -260,11 +261,11 @@ static SIMPLE_DEV_PM_OPS(bcma_pm_ops, bc
+ 			 bcma_host_pci_resume);
+ #define BCMA_PM_OPS	(&bcma_pm_ops)
+ 
+-#else /* CONFIG_PM */
++#else /* CONFIG_PM_SLEEP */
+ 
+ #define BCMA_PM_OPS     NULL
+ 
+-#endif /* CONFIG_PM */
++#endif /* CONFIG_PM_SLEEP */
+ 
+ static DEFINE_PCI_DEVICE_TABLE(bcma_pci_bridge_tbl) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x0576) },
 @@ -272,6 +273,7 @@ static DEFINE_PCI_DEVICE_TABLE(bcma_pci_
  	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
  	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4353) },
@@ -656,7 +987,7 @@
  static void bcma_release_core_dev(struct device *dev)
  {
  	struct bcma_device *core = container_of(dev, struct bcma_device, dev);
-@@ -136,6 +149,22 @@ static int bcma_register_cores(struct bc
+@@ -136,6 +149,28 @@ static int bcma_register_cores(struct bc
  		dev_id++;
  	}
  
@@ -676,10 +1007,25 @@
 +	}
 +#endif
 +
++	if (bus->hosttype == BCMA_HOSTTYPE_SOC) {
++		err = bcma_chipco_watchdog_register(&bus->drv_cc);
++		if (err)
++			bcma_err(bus, "Error registering watchdog driver\n");
++	}
++
  	return 0;
  }
  
-@@ -166,6 +195,20 @@ int __devinit bcma_bus_register(struct b
+@@ -148,6 +183,8 @@ static void bcma_unregister_cores(struct
+ 		if (core->dev_registered)
+ 			device_unregister(&core->dev);
+ 	}
++	if (bus->hosttype == BCMA_HOSTTYPE_SOC)
++		platform_device_unregister(bus->drv_cc.watchdog);
+ }
+ 
+ int __devinit bcma_bus_register(struct bcma_bus *bus)
+@@ -166,6 +203,20 @@ int __devinit bcma_bus_register(struct b
  		return -1;
  	}
  
@@ -700,7 +1046,7 @@
  	/* Init CC core */
  	core = bcma_find_core(bus, bcma_cc_core_id(bus));
  	if (core) {
-@@ -181,10 +224,17 @@ int __devinit bcma_bus_register(struct b
+@@ -181,10 +232,17 @@ int __devinit bcma_bus_register(struct b
  	}
  
  	/* Init PCIE core */
@@ -721,7 +1067,7 @@
  	}
  
  	/* Init GBIT MAC COMMON core */
-@@ -194,13 +244,6 @@ int __devinit bcma_bus_register(struct b
+@@ -194,13 +252,6 @@ int __devinit bcma_bus_register(struct b
  		bcma_core_gmac_cmn_init(&bus->drv_gmac_cmn);
  	}
  
@@ -735,7 +1081,7 @@
  	/* Register found cores */
  	bcma_register_cores(bus);
  
-@@ -211,7 +254,17 @@ int __devinit bcma_bus_register(struct b
+@@ -211,7 +262,17 @@ int __devinit bcma_bus_register(struct b
  
  void bcma_bus_unregister(struct bcma_bus *bus)
  {
@@ -753,7 +1099,7 @@
  }
  
  int __init bcma_bus_early_register(struct bcma_bus *bus,
-@@ -248,18 +301,18 @@ int __init bcma_bus_early_register(struc
+@@ -248,18 +309,18 @@ int __init bcma_bus_early_register(struc
  		return -1;
  	}
  
@@ -812,7 +1158,27 @@
  
  struct bcma_device;
  struct bcma_bus;
-@@ -251,7 +251,7 @@ struct bcma_bus {
+@@ -157,6 +157,7 @@ struct bcma_host_ops {
+ 
+ /* Chip IDs of SoCs */
+ #define BCMA_CHIP_ID_BCM4706	0x5300
++#define  BCMA_PKG_ID_BCM4706L	1
+ #define BCMA_CHIP_ID_BCM4716	0x4716
+ #define  BCMA_PKG_ID_BCM4716	8
+ #define  BCMA_PKG_ID_BCM4717	9
+@@ -166,7 +167,11 @@ struct bcma_host_ops {
+ #define BCMA_CHIP_ID_BCM4749	0x4749
+ #define BCMA_CHIP_ID_BCM5356	0x5356
+ #define BCMA_CHIP_ID_BCM5357	0x5357
++#define  BCMA_PKG_ID_BCM5358	9
++#define  BCMA_PKG_ID_BCM47186	10
++#define  BCMA_PKG_ID_BCM5357	11
+ #define BCMA_CHIP_ID_BCM53572	53572
++#define  BCMA_PKG_ID_BCM47188	9
+ 
+ struct bcma_device {
+ 	struct bcma_bus *bus;
+@@ -251,7 +256,7 @@ struct bcma_bus {
  	u8 num;
  
  	struct bcma_drv_cc drv_cc;
@@ -823,7 +1189,16 @@
  
 --- a/include/linux/bcma/bcma_driver_chipcommon.h
 +++ b/include/linux/bcma/bcma_driver_chipcommon.h
-@@ -100,6 +100,7 @@
+@@ -1,6 +1,8 @@
+ #ifndef LINUX_BCMA_DRIVER_CC_H_
+ #define LINUX_BCMA_DRIVER_CC_H_
+ 
++#include <linux/platform_device.h>
++
+ /** ChipCommon core registers. **/
+ #define BCMA_CC_ID			0x0000
+ #define  BCMA_CC_ID_ID			0x0000FFFF
+@@ -100,6 +102,7 @@
  #define  BCMA_CC_CHIPST_4706_SFLASH_TYPE	BIT(2) /* 0: 8b-p/ST-s flash, 1: 16b-p/Atmal-s flash */
  #define  BCMA_CC_CHIPST_4706_MIPS_BENDIAN	BIT(3) /* 0: little, 1: big endian */
  #define  BCMA_CC_CHIPST_4706_PCIE1_DISABLE	BIT(5) /* PCIE1 enable strap pin */
@@ -831,7 +1206,7 @@
  #define BCMA_CC_JCMD			0x0030		/* Rev >= 10 only */
  #define  BCMA_CC_JCMD_START		0x80000000
  #define  BCMA_CC_JCMD_BUSY		0x80000000
-@@ -266,6 +267,29 @@
+@@ -266,6 +269,29 @@
  #define  BCMA_CC_SROM_CONTROL_SIZE_16K	0x00000004
  #define  BCMA_CC_SROM_CONTROL_SIZE_SHIFT	1
  #define  BCMA_CC_SROM_CONTROL_PRESENT	0x00000001
@@ -861,7 +1236,7 @@
  /* 0x1E0 is defined as shared BCMA_CLKCTLST */
  #define BCMA_CC_HW_WORKAROUND		0x01E4 /* Hardware workaround (rev >= 20) */
  #define BCMA_CC_UART0_DATA		0x0300
-@@ -325,6 +349,60 @@
+@@ -325,6 +351,60 @@
  #define BCMA_CC_PLLCTL_ADDR		0x0660
  #define BCMA_CC_PLLCTL_DATA		0x0664
  #define BCMA_CC_SPROM			0x0800 /* SPROM beginning */
@@ -922,7 +1297,7 @@
  
  /* Divider allocation in 4716/47162/5356 */
  #define BCMA_CC_PMU5_MAINPLL_CPU	1
-@@ -415,6 +493,13 @@
+@@ -415,6 +495,13 @@
  /* 4313 Chip specific ChipControl register bits */
  #define BCMA_CCTRL_4313_12MA_LED_DRIVE		0x00000007	/* 12 mA drive strengh for later 4313 */
  
@@ -936,7 +1311,7 @@
  /* Data for the PMU, if available.
   * Check availability with ((struct bcma_chipcommon)->capabilities & BCMA_CC_CAP_PMU)
   */
-@@ -425,11 +510,35 @@ struct bcma_chipcommon_pmu {
+@@ -425,11 +512,35 @@ struct bcma_chipcommon_pmu {
  
  #ifdef CONFIG_BCMA_DRIVER_MIPS
  struct bcma_pflash {
@@ -972,7 +1347,7 @@
  struct bcma_serial_port {
  	void *regs;
  	unsigned long clockspeed;
-@@ -445,11 +554,18 @@ struct bcma_drv_cc {
+@@ -445,15 +556,24 @@ struct bcma_drv_cc {
  	u32 capabilities;
  	u32 capabilities_ext;
  	u8 setup_done:1;
@@ -991,7 +1366,13 @@
  
  	int nr_serial_ports;
  	struct bcma_serial_port serial_ports[4];
-@@ -470,6 +586,7 @@ struct bcma_drv_cc {
+ #endif /* CONFIG_BCMA_DRIVER_MIPS */
++	u32 ticks_per_ms;
++	struct platform_device *watchdog;
+ };
+ 
+ /* Register access */
+@@ -470,14 +590,14 @@ struct bcma_drv_cc {
  	bcma_cc_write32(cc, offset, (bcma_cc_read32(cc, offset) & (mask)) | (set))
  
  extern void bcma_core_chipcommon_init(struct bcma_drv_cc *cc);
@@ -999,7 +1380,16 @@
  
  extern void bcma_chipco_suspend(struct bcma_drv_cc *cc);
  extern void bcma_chipco_resume(struct bcma_drv_cc *cc);
-@@ -493,6 +610,7 @@ u32 bcma_chipco_gpio_polarity(struct bcm
+ 
+ void bcma_chipco_bcm4331_ext_pa_lines_ctl(struct bcma_drv_cc *cc, bool enable);
+ 
+-extern void bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc,
+-					  u32 ticks);
++extern u32 bcma_chipco_watchdog_timer_set(struct bcma_drv_cc *cc, u32 ticks);
+ 
+ void bcma_chipco_irq_mask(struct bcma_drv_cc *cc, u32 mask, u32 value);
+ 
+@@ -493,6 +613,7 @@ u32 bcma_chipco_gpio_polarity(struct bcm
  
  /* PMU support */
  extern void bcma_pmu_init(struct bcma_drv_cc *cc);
