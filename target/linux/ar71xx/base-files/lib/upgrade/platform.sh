@@ -151,6 +151,7 @@ platform_check_image() {
 	tl-mr3020 | \
 	tl-mr3040 | \
 	tl-mr3220 | \
+	tl-mr3220-v2 | \
 	tl-mr3420 | \
 	tl-wa7510n | \
 	tl-wa901nd | \
@@ -190,6 +191,13 @@ platform_check_image() {
 			return 1
 		}
 
+		return 0
+		;;
+	uap-pro)
+		[ "$magic_long" != "19852003" ] && {
+			echo "Invalid image type."
+			return 1
+		}
 		return 0
 		;;
 	wndr3700)

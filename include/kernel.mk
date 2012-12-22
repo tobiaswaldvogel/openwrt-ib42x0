@@ -35,8 +35,9 @@ else
   endif
   KERNEL_BUILD_DIR ?= $(BUILD_DIR)/linux-$(BOARD)$(if $(SUBTARGET),_$(SUBTARGET))
   LINUX_DIR ?= $(KERNEL_BUILD_DIR)/linux-$(LINUX_VERSION)
-  LINUX_UAPI_DIR=$(firstword $(wildcard $(LINUX_DIR)/include/uapi $(LINUX_DIR)/include))
-
+  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.7.0)),1)
+    LINUX_UAPI_DIR=uapi/
+  endif
   LINUX_VERMAGIC:=$(strip $(shell cat $(LINUX_DIR)/.vermagic 2>/dev/null))
   LINUX_VERMAGIC:=$(if $(LINUX_VERMAGIC),$(LINUX_VERMAGIC),unknown)
 
@@ -103,7 +104,7 @@ define ModuleAutoLoad
 		mkdir -p $(2)/CONTROL; \
 		echo "#!/bin/sh" > $(2)/CONTROL/postinst; \
 		echo "[ -z \"\$$$$$$$$IPKG_INSTROOT\" ] || exit 0" >> $(2)/CONTROL/postinst; \
-		echo ". /etc/functions.sh" >> $(2)/CONTROL/postinst; \
+		echo ". /lib/functions.sh" >> $(2)/CONTROL/postinst; \
 		echo "load_modules $$$$$$$$modules" >> $(2)/CONTROL/postinst; \
 		chmod 0755 $(2)/CONTROL/postinst; \
 	fi

@@ -106,11 +106,11 @@ endef
 
 ifeq ($(CONFIG_TARGET_lantiq_falcon),y)
 
-Image/BuildKernel/Profile/EASY98000=$(call Image/BuildKernel/Template,EASY98000)
-Image/Build/Profile/EASY98000=$(call Image/Build/$(1),$(1),EASY98000)
+Image/BuildKernel/Profile/EASY98000NOR=$(call Image/BuildKernel/Template,EASY98000NOR)
+Image/Build/Profile/EASY98000NOR=$(call Image/Build/$(1),$(1),EASY98000NOR)
 
-Image/BuildKernel/Profile/EASY98020=$(call Image/BuildKernel/Template,EASY98020)
-Image/Build/Profile/EASY98020=$(call Image/Build/$(1),$(1),EASY98020)
+Image/BuildKernel/Profile/EASY98000SFLASH=$(call Image/BuildKernel/Template,EASY98000SFLASH)
+Image/Build/Profile/EASY98000SFLASH=$(call Image/Build/$(1),$(1),EASY98000SFLASH)
 
 endif
 
@@ -160,8 +160,17 @@ Image/Build/Profile/ARV752DPW22=$(call Image/Build/$(1),$(1),ARV752DPW22)
 
 
 # AR9
-Image/BuildKernel/Profile/DGN3500B=$(call Image/BuildKernel/Template,DGN3500B)
-Image/Build/Profile/DGN3500B=$(call Image/Build/$(1),$(1),DGN3500B)
+Image/BuildKernel/Profile/DGN3500=$(call Image/BuildKernel/Template,DGN3500)
+Image/Build/Profile/DGN3500=$(call Image/Build/$(1),$(1),DGN3500)
+
+Image/BuildKernel/Profile/DGN3500B=$(call Image/BuildKernel/Template,DGN3500)
+Image/Build/Profile/DGN3500B=$(call Image/Build/$(1),$(1),DGN3500)
+
+Image/BuildKernel/Profile/WBMRA=$(call Image/BuildKernel/Template,WBMR)
+Image/Build/Profile/WBMRA=$(call Image/Build/$(1),$(1),WBMR)
+
+Image/BuildKernel/Profile/WBMRB=$(call Image/BuildKernel/Template,WBMR)
+Image/Build/Profile/WBMRB=$(call Image/Build/$(1),$(1),WBMR)
 
 Image/BuildKernel/Profile/FRITZ7320=$(call Image/BuildKernelEVA/Template,FRITZ7320)
 Image/Build/Profile/FRITZ7320=$(call Image/BuildEVA/$(1),$(1),FRITZ7320)
@@ -173,6 +182,9 @@ Image/Build/Profile/EASY80920NAND=$(call Image/Build/$(1),$(1),EASY80920NAND)
 
 Image/BuildKernel/Profile/EASY80920NOR=$(call Image/BuildKernel/Template,EASY80920NOR)
 Image/Build/Profile/EASY80920NOR=$(call Image/Build/$(1),$(1),EASY80920NOR)
+
+Image/BuildKernel/Profile/FRITZ3370=$(call Image/BuildKernelEVA/Template,FRITZ3370)
+Image/Build/Profile/FRITZ3370=$(call Image/BuildEVA/$(1),$(1),FRITZ3370)
 
 endif
 

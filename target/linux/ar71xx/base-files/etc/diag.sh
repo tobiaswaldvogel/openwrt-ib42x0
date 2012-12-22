@@ -126,6 +126,7 @@ get_status_led() {
 		status_led="tp-link:green:wps"
 		;;
 	tl-mr3220 | \
+	tl-mr3220-v2 | \
 	tl-mr3420 | \
 	tl-wa901nd | \
 	tl-wa901nd-v2 | \
@@ -148,6 +149,9 @@ get_status_led() {
 		;;
 	unifi)
 		status_led="ubnt:green:dome"
+		;;
+	uap-pro)
+		status_led="ubnt:white:dome"
 		;;
 	whr-g301n | \
 	whr-hp-g300n | \

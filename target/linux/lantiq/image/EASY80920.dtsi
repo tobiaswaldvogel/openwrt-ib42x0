@@ -254,7 +254,7 @@
 			#address-cells = <3>;
 			#size-cells = <2>;
 			#interrupt-cells = <1>;
-			compatible = "lantiq,pci-xway";
+			compatible = "lantiq,pci-xway1";
 			bus-range = <0x0 0x0>;
 			ranges = <0x2000000 0 0x8000000 0x8000000 0 0x2000000   /* pci memory */
 				0x1000000 0 0x00000000 0xAE00000 0 0x200000>; /* io space */
@@ -285,9 +285,9 @@
 		#size-cells = <0>;
 		poll-interval = <100>;
 		reset {
-			label = "Reset";
+			label = "reset";
 			gpios = <&gpio 7 1>;
-			linux,code = <0x100>;
+			linux,code = <0x198>;
 		};
 		paging {
 			label = "paging";

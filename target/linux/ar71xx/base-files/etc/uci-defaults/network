@@ -22,6 +22,13 @@ ubnt-unifi-outdoor)
 	ucidef_set_interface_lan "eth0 eth1"
 	;;
 
+ap136)
+	ucidef_set_interfaces_lan_wan "eth0" "eth1"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 4"
+	ucidef_add_switch_vlan "switch0" "2" "5 6"
+	;;
+
 db120 |\
 rb-2011l | \
 rb-2011uas-2hnd)
@@ -134,6 +141,12 @@ tl-wr841n-v8)
 	ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 4"
 	;;
 
+uap-pro)
+	ucidef_set_interface_lan "eth0"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0 1 2"
+	;;
+
 wrt160nl)
 	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "eth0" "1" "1"
@@ -194,6 +207,7 @@ rb-751 |\
 tew-632brp |\
 tew-712br |\
 tl-mr3220 |\
+tl-mr3220-v2 |\
 tl-mr3420 |\
 tl-wr741nd |\
 tl-wr741nd-v4 |\
