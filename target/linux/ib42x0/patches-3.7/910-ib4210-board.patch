@@ -1,6 +1,6 @@
 --- /dev/null	2012-02-04 12:26:34.104456216 +0100
-+++ linux-3.2.2/arch/arm/mach-gemini/board-nas4210b.c	2012-02-05 20:42:23.311051383 +0100
-@@ -0,0 +1,202 @@
++++ linux/arch/arm/mach-gemini/board-nas4210b.c	2012-02-05 20:42:23.311051383 +0100
+@@ -0,0 +1,204 @@
 +/*
 + *  Support for Raidsonic NAS-4210-B
 + *
@@ -29,8 +29,7 @@
 +#include <asm/mach/arch.h>
 +#include <asm/mach/time.h>
 +
-+#include <mach/hardware.h>
-+#include <mach/global_reg.h>
++#include <mach/system.h>
 +#include <linux/platform_data/gemini_gmac.h>
 +
 +#include "common.h"
@@ -116,53 +115,57 @@
 +{
 +	unsigned val;
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +	val &= ~(IDE_IOMUX_MASK | PFLASH_PADS_DISABLE);
 +	val |= IDE_PADS_ENABLE;
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +
 +	/* enabling ports for presence detection */
-+	writel(0x00000011, IO_ADDRESS(GEMINI_SATA_BASE) + 0x18);
-+	writel(0x00000011, IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c);
++	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
++	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
 +}
 +
 +static void __init gmac_ib4210b_init(void)
 +{
 +	unsigned int val;
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_IO_DRIVING_CTRL);
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL));
 +	val |= (0x3 << GMAC0_PADS_SHIFT) | (0x3 << GMAC1_PADS_SHIFT);
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_IO_DRIVING_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL));
 +
 +	val = (0x0 << GMAC0_RXDV_SKEW_SHIFT) | (0xf << GMAC0_RXC_SKEW_SHIFT) |
 +		(0x7 << GMAC0_TXEN_SKEW_SHIFT) | (0xb << GMAC0_TXC_SKEW_SHIFT) |
 +		(0x0 << GMAC1_RXDV_SKEW_SHIFT) | (0xf << GMAC1_RXC_SKEW_SHIFT) |
 +		(0x7 << GMAC1_TXEN_SKEW_SHIFT) | (0xa << GMAC1_TXC_SKEW_SHIFT);
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC_CTRL_SKEW_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC_CTRL_SKEW_CTRL));
 +
-+	writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC0_DATA_SKEW_CTRL);
-+	writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC1_DATA_SKEW_CTRL);
++	writel(0x77777777, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC0_DATA_SKEW_CTRL));
++	writel(0x77777777, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC1_DATA_SKEW_CTRL));
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_ARBITRATION1_CTRL) & ~BURST_LENGTH_MASK;
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL)) & ~BURST_LENGTH_MASK;
 +	val |= (0x20 << BURST_LENGTH_SHIFT) | GMAC0_HIGH_PRIO | GMAC1_HIGH_PRIO;
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_ARBITRATION1_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL));
 +}
 +
 +static void __init usb_ib4210b_init(void)
 +{
 +	unsigned int val;
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +	val &= ~(USB0_PLUG_MINIB | USB1_PLUG_MINIB);
 +	val |= USB0_VBUS_ON | USB1_VBUS_ON;
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +}
 +
 +static void __init ib4210b_init(void)
@@ -176,9 +179,7 @@
 +	platform_device_register(&ib4210b_led_device);
 +	platform_device_register(&ib4210b_key_device);
 +	platform_register_rtc();
-+//	platform_register_pwc();
 +	platform_register_pata(0);
-+//	platform_register_pata(1);
 +	platform_register_watchdog();
 +	platform_device_register (&ib4210b_phy_device);
 +	platform_register_ethernet (&ib4210b_gmac_data);
@@ -202,4 +203,5 @@
 +	.timer		= &ib4210b_timer,
 +	.fixup		= ib4210b_fixup,
 +	.init_machine	= ib4210b_init,
++	.restart	= arch_reset,
 +MACHINE_END

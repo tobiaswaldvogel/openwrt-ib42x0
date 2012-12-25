@@ -32,8 +32,8 @@ DEFAULT_PACKAGES += \
   usbutils xfs-tools blkid uuidgen lualdap luaspcdns \
   samba36-server-ads ca-cert-digicert wget
 
-#LINUX_VERSION=3.6.4
-LINUX_VERSION=3.2.18
+LINUX_VERSION=3.7.1
+#LINUX_VERSION=3.3.8
 CONFIG_VERSION_REPO=https://github.com/tobiaswaldvogel/openwrt-packages-bin/raw/master
 
 include $(INCLUDE_DIR)/target.mk

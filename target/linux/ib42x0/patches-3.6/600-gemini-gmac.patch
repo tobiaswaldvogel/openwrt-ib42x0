@@ -1,5 +1,5 @@
 --- /dev/null
-+++ linux/drivers/net/ethernet/gemini/sl351x_hw.h
++++ b/drivers/net/ethernet/gemini/sl351x_hw.h
 @@ -0,0 +1,1436 @@
 +/*
 + *  Register definitions for Gemini LEPUS GMAC Ethernet device driver.
@@ -1461,8 +1461,8 @@
 +};
 +
 +#endif /* __NET_GEMINI_PLATFORM_H__ */
---- linux/arch/arm/mach-gemini/mm.c.orig	2011-04-24 17:00:45.235458032 +0200
-+++ linux/arch/arm/mach-gemini/mm.c		2011-04-24 17:13:06.399591165 +0200
+--- a/arch/arm/mach-gemini/mm.c	2011-04-24 17:00:45.235458032 +0200
++++ b/arch/arm/mach-gemini/mm.c	2011-04-24 17:13:06.399591165 +0200
 @@ -24,6 +24,11 @@
  		.length		= SZ_512K,
  		.type 		= MT_DEVICE,
@@ -1475,8 +1475,8 @@
  		.virtual	= IO_ADDRESS(GEMINI_SATA_BASE),
  		.pfn		= __phys_to_pfn(GEMINI_SATA_BASE),
  		.length		= SZ_512K,
---- linux/arch/arm/mach-gemini/board-nas4220b.c.orig	2011-04-21 13:19:09.878432930 +0200
-+++ linux/arch/arm/mach-gemini/board-nas4220b.c		2011-04-21 13:30:37.555082365 +0200
+--- a/arch/arm/mach-gemini/board-nas4220b.c	2011-04-21 13:19:09.878432930 +0200
++++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-04-21 13:30:37.555082365 +0200
 @@ -28,9 +28,27 @@
  
  #include <mach/hardware.h>
@@ -1555,8 +1555,8 @@
  }
  
  MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
---- linux/arch/arm/mach-gemini/common.h.orig	2011-04-19 03:05:29.446367900 +0200
-+++ linux/arch/arm/mach-gemini/common.h		2011-04-19 03:07:02.191154293 +0200
+--- a/arch/arm/mach-gemini/common.h		2011-04-19 03:05:29.446367900 +0200
++++ b/arch/arm/mach-gemini/common.h		2011-04-19 03:07:02.191154293 +0200
 @@ -13,6 +13,7 @@
  #define __GEMINI_COMMON_H__
  
@@ -1572,7 +1572,7 @@
 +extern int platform_register_ethernet(struct gemini_gmac_platform_data *pdata);
  
  #endif /* __GEMINI_COMMON_H__ */
---- a/arch/arm/mach-gemini/devices.c.orig	2011-04-21 13:01:53.578121892 +0200
+--- a/arch/arm/mach-gemini/devices.c	2011-04-21 13:01:53.578121892 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-21 13:14:27.643158445 +0200
 @@ -17,6 +17,7 @@
  #include <mach/irqs.h>

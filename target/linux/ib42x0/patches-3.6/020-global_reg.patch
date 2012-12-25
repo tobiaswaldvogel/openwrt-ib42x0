@@ -1,0 +1,17 @@
+--- a/arch/arm/mach-gemini/include/mach/global_reg.h	2010-11-01 12:54:12.000000000 +0100
++++ b/arch/arm/mach-gemini/include/mach/global_reg.h	2010-11-17 12:36:54.000000000 +0100
+@@ -227,7 +227,13 @@
+ #define USB0_PLUG_MINIB			(1 << 29)
+ #define GMAC_GMII			(1 << 28)
+ #define GMAC_1_ENABLE			(1 << 27)
+-/* TODO: define ATA/SATA bits */
++/* 011 - ata0 <-> sata0, sata1; bring out ata1
++ * 010 - ata1 <-> sata1, sata0; bring out ata0
++ * 001 - ata0 <-> sata0, ata1 <-> sata1; bring out ata1
++ * 000 - ata0 <-> sata0, ata1 <-> sata1; bring out ata0 */
++#define IDE_IOMUX_MASK			(7 << 24)
++#define IDE_IOMUX_SATA1_SATA0	(2 << 24)
++#define IDE_IOMUX_SATA0_SATA1	(3 << 24)
+ #define USB1_VBUS_ON			(1 << 23)
+ #define USB0_VBUS_ON			(1 << 22)
+ #define APB_CLKOUT_ENABLE		(1 << 21)

@@ -1,5 +1,5 @@
 --- /dev/null	2012-01-23 21:36:48.249769447 +0100
-+++ linux-3.2/drivers/net/ethernet/gemini/sl351x.c	2012-01-27 17:09:51.000000000 +0100
++++ b/drivers/net/ethernet/gemini/sl351x.c	2012-01-27 17:09:51.000000000 +0100
 @@ -0,0 +1,2326 @@
 +/*
 + *  Ethernet device driver for Gemini SoC (SL351x GMAC).

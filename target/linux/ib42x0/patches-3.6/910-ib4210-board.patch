@@ -1,5 +1,5 @@
---- /dev/null	2012-02-04 12:26:34.104456216 +0100
-+++ linux-3.2.2/arch/arm/mach-gemini/board-nas4210b.c	2012-02-05 20:42:23.311051383 +0100
+--- /dev/null					2012-02-04 12:26:34.104456216 +0100
++++ b/arch/arm/mach-gemini/board-nas4210b.c	2012-02-05 20:42:23.311051383 +0100
 @@ -0,0 +1,202 @@
 +/*
 + *  Support for Raidsonic NAS-4210-B

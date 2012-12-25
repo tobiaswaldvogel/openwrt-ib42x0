@@ -1,5 +1,5 @@
---- linux-3.2.2/arch/arm/tools/mach-types.orig	2012-01-30 15:54:16.319801409 +0100
-+++ linux-3.2.2/arch/arm/tools/mach-types	2012-01-30 15:53:46.446802426 +0100
+--- a/arch/arm/tools/mach-types	2012-01-30 15:54:16.319801409 +0100
++++ b/arch/arm/tools/mach-types	2012-01-30 15:53:46.446802426 +0100
 @@ -20,6 +20,7 @@
  #
  # machine_is_xxx	CONFIG_xxxx		MACH_TYPE_xxx		number

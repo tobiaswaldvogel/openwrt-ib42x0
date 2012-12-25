@@ -1461,8 +1461,8 @@
 +};
 +
 +#endif /* __NET_GEMINI_PLATFORM_H__ */
---- linux/arch/arm/mach-gemini/mm.c.orig	2011-04-24 17:00:45.235458032 +0200
-+++ linux/arch/arm/mach-gemini/mm.c		2011-04-24 17:13:06.399591165 +0200
+--- a/arch/arm/mach-gemini/mm.c		2011-04-24 17:00:45.235458032 +0200
++++ b/arch/arm/mach-gemini/mm.c		2011-04-24 17:13:06.399591165 +0200
 @@ -24,6 +24,11 @@
  		.length		= SZ_512K,
  		.type 		= MT_DEVICE,
@@ -1475,8 +1475,8 @@
  		.virtual	= IO_ADDRESS(GEMINI_SATA_BASE),
  		.pfn		= __phys_to_pfn(GEMINI_SATA_BASE),
  		.length		= SZ_512K,
---- linux/arch/arm/mach-gemini/board-nas4220b.c.orig	2011-04-21 13:19:09.878432930 +0200
-+++ linux/arch/arm/mach-gemini/board-nas4220b.c		2011-04-21 13:30:37.555082365 +0200
+--- a/arch/arm/mach-gemini/board-nas4220b.c		2011-04-21 13:19:09.878432930 +0200
++++ b/arch/arm/mach-gemini/board-nas4220b.c		2011-04-21 13:30:37.555082365 +0200
 @@ -28,9 +28,27 @@
  
  #include <mach/hardware.h>
@@ -1505,37 +1505,37 @@
  static struct sys_timer ib4220b_timer = {
  	.init	= gemini_timer_init,
  };
-@@ -105,10 +123,40 @@
- 	writel(0x00000011, IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c);
+@@ -107,10 +125,40 @@
+ 	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
  }
  
 +static void __init gmac_ib4220b_init(void)
 +{
 +	unsigned int val;
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_IO_DRIVING_CTRL);
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL));
 +	val |= (0x3 << GMAC0_PADS_SHIFT) | (0x3 << GMAC1_PADS_SHIFT);
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_IO_DRIVING_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL));
 +
 +	val = (0x0 << GMAC0_RXDV_SKEW_SHIFT) | (0xf << GMAC0_RXC_SKEW_SHIFT) |
 +		(0x7 << GMAC0_TXEN_SKEW_SHIFT) | (0xb << GMAC0_TXC_SKEW_SHIFT) |
 +		(0x0 << GMAC1_RXDV_SKEW_SHIFT) | (0xf << GMAC1_RXC_SKEW_SHIFT) |
 +		(0x7 << GMAC1_TXEN_SKEW_SHIFT) | (0xa << GMAC1_TXC_SKEW_SHIFT);
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC_CTRL_SKEW_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC_CTRL_SKEW_CTRL));
 +
-+	writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC0_DATA_SKEW_CTRL);
-+	writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_GMAC1_DATA_SKEW_CTRL);
++	writel(0x77777777, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC0_DATA_SKEW_CTRL));
++	writel(0x77777777, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC1_DATA_SKEW_CTRL));
 +
-+	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_ARBITRATION1_CTRL) & ~BURST_LENGTH_MASK;
++	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL)) & ~BURST_LENGTH_MASK;
 +	val |= (0x20 << BURST_LENGTH_SHIFT) | GMAC0_HIGH_PRIO | GMAC1_HIGH_PRIO;
-+	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_ARBITRATION1_CTRL);
++	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL));
 +}
 +
  static void __init ib4220b_init(void)
@@ -1546,7 +1546,7 @@
  	platform_register_uart();
  	platform_register_pflash(SZ_16M, NULL, 0);
  	platform_device_register(&ib4220b_led_device);
-@@ -118,6 +166,8 @@
+@@ -120,6 +168,8 @@
  	platform_register_pata(0);
  	platform_register_pata(1);
  	platform_register_watchdog();
@@ -1555,8 +1555,8 @@
  }
  
  MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
---- linux/arch/arm/mach-gemini/common.h.orig	2011-04-19 03:05:29.446367900 +0200
-+++ linux/arch/arm/mach-gemini/common.h		2011-04-19 03:07:02.191154293 +0200
+--- a/arch/arm/mach-gemini/common.h	2011-04-19 03:05:29.446367900 +0200
++++ b/arch/arm/mach-gemini/common.h	2011-04-19 03:07:02.191154293 +0200
 @@ -13,6 +13,7 @@
  #define __GEMINI_COMMON_H__
  
@@ -1572,7 +1572,7 @@
 +extern int platform_register_ethernet(struct gemini_gmac_platform_data *pdata);
  
  #endif /* __GEMINI_COMMON_H__ */
---- a/arch/arm/mach-gemini/devices.c.orig	2011-04-21 13:01:53.578121892 +0200
+--- a/arch/arm/mach-gemini/devices.c	2011-04-21 13:01:53.578121892 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-21 13:14:27.643158445 +0200
 @@ -17,6 +17,7 @@
  #include <mach/irqs.h>
@@ -1582,7 +1582,7 @@
  
  static struct plat_serial8250_port serial_platform_data[] = {
  	{
-@@ -226,3 +226,54 @@
+@@ -226,3 +226,56 @@
  	return platform_device_register(&wdt_device);
  }
  
@@ -1621,7 +1621,8 @@
 +{
 +	unsigned int reg;
 +
-+	reg  = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	reg = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +
 +	reg &= ~(GMAC_GMII | GMAC_1_ENABLE);
 +
@@ -1630,7 +1631,8 @@
 +	else if (pdata->interface[0] == PHY_INTERFACE_MODE_GMII)
 +		reg |= GMAC_GMII;
 +
-+	writel(reg, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	writel(reg, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_MISC_CTRL));
 +
 +	ethernet_device.dev.platform_data = pdata;
 +

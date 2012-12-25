@@ -1,6 +1,6 @@
 --- a/drivers/usb/host/ehci-fotg2xx.c	2012-12-21 14:56:33.093439491 +0100
 +++ b/drivers/usb/host/ehci-fotg2xx.c	2012-12-24 17:30:48.051307000 +0100
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,235 @@
 +/*
 + *  EHCI Host Controller driver
 + *
@@ -53,9 +53,14 @@
 +#define OTGC_INT_A_TYPE		(OTGC_INT_ASRPDET|OTGC_INT_AVBUSERR|OTGC_INT_OVC|OTGC_INT_RLCHG|OTGC_INT_IDCHG|OTGC_INT_APLGRMV)
 +#define OTGC_INT_B_TYPE		(OTGC_INT_AVBUSERR|OTGC_INT_OVC|OTGC_INT_RLCHG|OTGC_INT_IDCHG)
 +
-+static void fotg2xx_otgc_init(struct usb_hcd *hcd)
++static void fotg2xx_otg_init(struct usb_hcd *hcd)
 +{
-+	unsigned int val;
++	u32 val;
++
++	val = readl(hcd->regs + GLOBAL_ICR);
++	val |= GLOBAL_INT_MASK_HC   | GLOBAL_INT_POLARITY |
++	       GLOBAL_INT_MASK_OTG  | GLOBAL_INT_MASK_DEV;
++	writel(val, hcd->regs + GLOBAL_ICR);
 +
 +	val = readl(hcd->regs + OTGC_SCR);
 +	val &= ~(OTGC_SCR_A_SRP_RESP_TYPE | OTGC_SCR_A_SRP_DET_EN);
@@ -68,10 +73,6 @@
 +	val |= OTGC_INT_A_TYPE;
 +	writel(val, hcd->regs + OTGC_INT_EN);
 +
-+	val = readl(hcd->regs + GLOBAL_ICR);
-+	val &= ~(GLOBAL_INT_MASK_OTG | GLOBAL_INT_MASK_HC);
-+	writel(val, hcd->regs + GLOBAL_ICR);
-+
 +	/* setup MISC register, fixes timing problems */
 +	val = readl(hcd->regs + HCD_MISC);
 +	val |= 0xD;
@@ -81,35 +82,16 @@
 +static int fotg2xx_ehci_run(struct usb_hcd *hcd)
 +{
 +	int retval;
++	u32 val;
 +
 +	retval = ehci_run(hcd);
 +	if (retval)
 +		return retval;
 +
-+	fotg2xx_otgc_init(hcd);
-+	return 0;
-+}
-+
-+static int fotg2xx_ehci_hc_reset(struct usb_hcd *hcd)
-+{
-+	struct ehci_hcd *ehci = hcd_to_ehci (hcd);
-+	int result;
-+	u32 val;
-+
-+	/* Disable interrupts */
 +	val = readl(hcd->regs + GLOBAL_ICR);
-+	val |= GLOBAL_INT_MASK_HC | GLOBAL_INT_POLARITY;
++	val &= ~(GLOBAL_INT_MASK_OTG | GLOBAL_INT_MASK_HC);
 +	writel(val, hcd->regs + GLOBAL_ICR);
-+	
-+	ehci->caps = hcd->regs;
-+	hcd->has_tt = 1;
-+
-+	result = ehci_setup(hcd);
-+	if (result)
-+		return result;
-+
-+	ehci_port_power(ehci, 0);
-+	return result;
++	return 0;
 +}
 +
 +static irqreturn_t fotg2xx_ehci_irq(struct usb_hcd *hcd)
@@ -150,7 +132,7 @@
 +	.hcd_priv_size		= sizeof(struct ehci_hcd),
 +	.irq			= fotg2xx_ehci_irq,
 +	.flags			= HCD_MEMORY | HCD_USB2,
-+	.reset			= fotg2xx_ehci_hc_reset,
++	.reset			= ehci_setup,
 +	.start			= fotg2xx_ehci_run,
 +	.stop			= ehci_stop,
 +	.shutdown		= ehci_shutdown,
@@ -174,66 +156,61 @@
 +
 +static int __devinit fotg2xx_ehci_probe(struct platform_device *pdev)
 +{
-+	const struct hc_driver *driver = &fotg2xx_ehci_hc_driver;
 +	struct usb_hcd *hcd;
 +	struct resource *res;
-+	int irq , retval;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Found HC with no IRQ. Check %s setup!\n",
-+			dev_name(&pdev->dev));
-+		return -ENODEV;
-+	}
-+
-+	irq = res->start;
-+	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
-+	if (!hcd) {
-+		retval = -ENOMEM;
-+		goto err1;
++	int irq , err;
++	
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		pr_err("no irq provided");
++		return irq;
 +	}
 +
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +	if (!res) {
-+		dev_err(&pdev->dev,
-+			"Found HC with no register addr. Check %s setup!\n",
-+			dev_name(&pdev->dev));
-+		retval = -ENODEV;
-+		goto err2;
++		pr_err("no memory resource provided");
++		return -ENXIO;
 +	}
++
++	hcd = usb_create_hcd(&fotg2xx_ehci_hc_driver, &pdev->dev,
++			     dev_name(&pdev->dev));
++	if (!hcd)
++		return -ENOMEM;
 +
 +	hcd->rsrc_start = res->start;
 +	hcd->rsrc_len = resource_size(res);
-+	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
-+				driver->description)) {
-+		dev_dbg(&pdev->dev, "controller already in use\n");
-+		retval = -EBUSY;
-+		goto err2;
++
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
++		pr_err("controller already in use\n");
++		err = -EBUSY;
++		goto err_put_hcd;
 +	}
 +
 +	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
-+	if (hcd->regs == NULL) {
-+		dev_dbg(&pdev->dev, "error mapping memory\n");
-+		retval = -EFAULT;
-+		goto err3;
++	if (!hcd->regs) {
++		err = -ENOMEM;
++		goto err_release_region;
 +	}
 +
-+	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-+	if (retval)
-+		goto err4;
++	hcd->has_tt = 1;
++	hcd_to_ehci(hcd)->caps = hcd->regs;
++
++	fotg2xx_otg_init(hcd);
++	
++	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
++	if (err)
++		goto err_iounmap;
 +	
 +	platform_set_drvdata(pdev, hcd);
 +	return 0;
 +
-+err4:
++err_iounmap:
 +	iounmap(hcd->regs);
-+err3:
++err_release_region:
 +	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+err2:
++err_put_hcd:
 +	usb_put_hcd(hcd);
-+err1:
-+	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev), retval);
-+	return retval;
++	return err;
 +}
 +
 +static int __devexit fotg2xx_ehci_remove(struct platform_device *pdev)
@@ -249,6 +226,9 @@
 +	return 0;
 +}
 +
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_DESCRIPTION("USB driver for Gemini SoC");
++
 +static struct platform_driver fotg2xx_ehci_driver = {
 +	.probe = fotg2xx_ehci_probe,
 +	.remove = __devexit_p(fotg2xx_ehci_remove),
@@ -256,6 +236,3 @@
 +		.name = DRV_NAME,
 +	},
 +};
-+
-+MODULE_ALIAS("platform:" DRV_NAME);
-+MODULE_DESCRIPTION("USB driver for Gemini SoC");

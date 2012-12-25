@@ -7,19 +7,23 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
-define Image/Prepare
+#define Image/Prepare
 # NAS4210: mach id 8191 (0x1FFF)
-	echo -en "\x1f\x1c\xa0\xe3\xff\x10\x81\xe3" > $(KDIR)/nas4210-zImage
-	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(KDIR)/nas4210-zImage
+#	echo -en "\x1f\x1c\xa0\xe3\xff\x10\x81\xe3" > $(KDIR)/nas4210-zImage
+#	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(KDIR)/nas4210-zImage
 # NAS4220: mach id 2038 (0x7F6)
-	echo -en "\x00\x00\xa0\xe1\x00\x00\xa0\xe1\x00\x00\xa0\xe1\x00\x00\xa0\xe1" > $(KDIR)/nas4220-zImage
-	echo -en "\x07\x1c\xa0\xe3\xf6\x10\x81\xe3" >> $(KDIR)/nas4220-zImage
-	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(KDIR)/nas4220-zImage
-endef
+#	echo -en "\x00\x00\xa0\xe1\x00\x00\xa0\xe1\x00\x00\xa0\xe1\x00\x00\xa0\xe1" > $(KDIR)/nas4220-zImage
+#	echo -en "\x07\x1c\xa0\xe3\xf6\x10\x81\xe3" >> $(KDIR)/nas4220-zImage
+#	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(KDIR)/nas4220-zImage
+#endef
 
 define Image/BuildKernel
-	cp $(KDIR)/nas4210-zImage $(BIN_DIR)/nas4210-zImage
-	cp $(KDIR)/nas4220-zImage $(BIN_DIR)/nas4220-zImage
+# NAS4210: mach id 8191 (0x1FFF)
+	echo -en "\x1f\x1c\xa0\xe3\xff\x10\x81\xe3" > $(BIN_DIR)/nas4210-zImage
+	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(BIN_DIR)/nas4210-zImage
+# NAS4220: mach id 2038 (0x7F6)
+	echo -en "\x07\x1c\xa0\xe3\xf6\x10\x81\xe3" > $(BIN_DIR)/nas4220-zImage
+	cat $(LINUX_DIR)/arch/arm/boot/zImage >> $(BIN_DIR)/nas4220-zImage
 endef
 
 define Image/Build/jffs2-64k
