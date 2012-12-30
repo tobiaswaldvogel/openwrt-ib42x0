@@ -29,7 +29,7 @@
  obj-$(CONFIG_S3C2410_WATCHDOG) += s3c2410_wdt.o
 --- /dev/null
 +++ b/drivers/watchdog/gemini_wdt.c
-@@ -0,0 +1,389 @@
+@@ -0,0 +1,387 @@
 +/*
 + *  Watchdog driver for Cortina Systems Gemini SoC
 + *
@@ -384,10 +384,8 @@
 +	.shutdown	= gemini_wdt_shutdown,
 +	.suspend	= gemini_wdt_suspend,
 +	.resume		= gemini_wdt_resume,
-+	.driver		= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+	},
++	.driver.name	= DRV_NAME,
++	.driver.owner	= THIS_MODULE,
 +};
 +
 +static int __init gemini_wdt_init(void)
@@ -396,7 +394,7 @@
 +
 +	retval = platform_driver_probe(&gemini_wdt_driver, gemini_wdt_probe);
 +	if (retval == 0)
-+		pr_info("%s: registered successful", DRV_NAME);
++		pr_info(DRV_NAME ": registered successfully");
 +	return retval;
 +}
 +
@@ -414,11 +412,11 @@
 +module_param(nowayout, int, 0);
 +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
 +
-+MODULE_AUTHOR("Paulius Zaleckas");
 +MODULE_DESCRIPTION("Watchdog driver for Gemini");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
 +MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++MODULE_AUTHOR("Paulius Zaleckas");
++MODULE_LICENSE("GPL");
 --- a/arch/arm/mach-gemini/devices.c	2011-04-21 02:28:17.181064247 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-21 02:33:29.493466642 +0200
 @@ -208,3 +208,21 @@

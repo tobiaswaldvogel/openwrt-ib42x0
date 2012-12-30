@@ -29,7 +29,7 @@
 	smb passwd file = /etc/samba/smbpasswd
 	socket options = TCP_NODELAY IPTOS_LOWDELAY
 	syslog = 2
-	use sendfile = no
+	use sendfile = yes
 	writeable = yes
 	
 

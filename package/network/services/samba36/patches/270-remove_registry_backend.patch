@@ -39,5 +39,5 @@
  		exit(1);
 +#endif
  
- #ifdef PRINTER_SUPPORT
- 	if (!print_backend_init(smbd_messaging_context()))
+ 	/* Open the share_info.tdb here, so we don't have to open
+ 	   after the fork on every single connection.  This is a small

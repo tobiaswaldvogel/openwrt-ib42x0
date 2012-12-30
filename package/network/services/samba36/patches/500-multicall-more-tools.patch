@@ -1,5 +1,5 @@
---- samba/source3/multi.c.orig	2012-05-22 07:14:03.232322032 +0200
-+++ samba/source3/multi.c	2012-05-22 07:31:12.115599838 +0200
+--- a/source3/multi.c	2012-05-22 07:14:03.232322032 +0200
++++ b/source3/multi.c	2012-05-22 07:31:12.115599838 +0200
 @@ -4,6 +4,13 @@
  extern int smbd_main(int argc, char **argv);
  extern int nmbd_main(int argc, char **argv);
@@ -28,9 +28,9 @@
  };
  
  #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
---- samba/source3/Makefile.in.orig	2012-05-24 06:52:08.932549605 +0200
-+++ samba/source3/Makefile.in		2012-05-24 06:54:32.290184007 +0200
-@@ -1795,12 +1795,69 @@
+--- a/source3/Makefile.in	2012-05-24 06:52:08.932549605 +0200
++++ b/source3/Makefile.in	2012-05-24 06:54:32.290184007 +0200
+@@ -1796,12 +1796,69 @@
  		echo "$(COMPILE_CC_PATH)" 1>&2;\
  		$(COMPILE_CC_PATH) >/dev/null 2>&1
  

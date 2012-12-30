@@ -1,6 +1,6 @@
 --- a/source3/param/loadparm.c	2012-07-29 02:30:28.218743520 +0200
 +++ b/source3/param/loadparm.c	2012-07-29 02:42:44.818657559 +0200
-@@ -10319,6 +10319,20 @@
+@@ -10323,6 +10323,20 @@
  	string_set(&Globals.szPassdbBackend, backend);
  }
  
@@ -23,7 +23,7 @@
   This helper function always verify the validity of wide links,
 --- a/source3/include/proto.h	2012-07-29 02:35:21.862507371 +0200
 +++ b/source3/include/proto.h	2012-07-29 02:40:03.926243521 +0200
-@@ -1825,6 +1825,8 @@
+@@ -1824,6 +1824,8 @@
  int lp_min_receive_file_size(void);
  char* lp_perfcount_module(void);
  void lp_set_passdb_backend(const char *backend);

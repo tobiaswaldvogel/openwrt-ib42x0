@@ -110,7 +110,7 @@
    check for data leaks from the server by looking for non-zero pad bytes
 --- a/librpc/ndr/ndr_string.c
 +++ b/librpc/ndr/ndr_string.c
-@@ -588,6 +588,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_stri
+@@ -604,6 +604,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_stri
  	return NDR_ERR_SUCCESS;
  }
  

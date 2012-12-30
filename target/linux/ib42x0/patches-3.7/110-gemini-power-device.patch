@@ -30,7 +30,7 @@
  obj-$(CONFIG_BMP085_SPI)	+= bmp085-spi.o
 --- a/drivers/misc/gemini-pwc.c	1970-01-01 01:00:00.000000000 +0100
 +++ b/drivers/misc/gemini-pwc.c	2010-11-04 17:39:32.000000000 +0100
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,204 @@
 +/*
 + *  Gemini Power Control driver
 + *
@@ -63,7 +63,6 @@
 +#include <mach/hardware.h>
 +
 +#define	DRV_NAME	"pwc-gemini"
-+#define	DRV_VERSION	"0.21"
 +
 +#define	GEMINI_PWC_ID		0x00010500
 +#define	GEMINI_POWERBUTTON	0x40
@@ -86,7 +85,7 @@
 +static void gemini_power_off(void)
 +{
 +	unsigned int reg;
-+	printk("%s %s: power off\n", DRV_NAME, DRV_VERSION);
++	pr_info(DRV_NAME ": power off\n");
 +	reg = readl(GEMINI_PWC_CTRLREG(IO_ADDRESS(GEMINI_POWER_CTRL_BASE)));
 +	writel(reg | BIT(2) | BIT(1),
 +		GEMINI_PWC_CTRLREG(IO_ADDRESS(GEMINI_POWER_CTRL_BASE)));
@@ -115,7 +114,7 @@
 +	src &= 0x70;
 +	if ((src == GEMINI_POWERBUTTON) && (!pwc_poweroff_issued))
 +	{
-+		printk("%s %s: shutting down machine\n", DRV_NAME, DRV_VERSION);
++		pr_info(DRV_NAME ": shutting down machine\n");
 +		orderly_poweroff(1);
 +		pwc_poweroff_issued = 1;
 +	}
@@ -186,7 +185,7 @@
 +	return 0;
 +
 +wrongid:
-+	printk("%s %s: wrong PWC id\n", DRV_NAME, DRV_VERSION);
++	pr_err(DRV_NAME ": wrong pwc id\n");
 +err:
 +	kfree(pwc);
 +	return ret;
@@ -220,7 +219,7 @@
 +
 +	retval = platform_driver_probe(&gemini_pwc_driver, &gemini_pwc_probe);
 +	if (retval == 0)
-+		pr_info("%s %s: registered successfully\n", DRV_NAME, DRV_VERSION);
++		pr_info(DRV_NAME ": registered successfully\n");
 +	return retval;
 +}
 +
@@ -232,10 +231,9 @@
 +module_init(gemini_pwc_init);
 +module_exit(gemini_pwc_exit);
 +
-+MODULE_AUTHOR("Janos Laube <janos....@gmail.com>");
-+MODULE_ALIAS("platform:" DRV_NAME);
 +MODULE_DESCRIPTION("Driver for the Gemini Power Control device");
-+MODULE_VERSION(DRV_VERSION);
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_AUTHOR("Janos Laube <janos....@gmail.com>");
 +MODULE_LICENSE("GPL");
 --- a/arch/arm/mach-gemini/devices.c	2011-04-15 12:23:13.229248601 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-19 02:11:30.079146026 +0200

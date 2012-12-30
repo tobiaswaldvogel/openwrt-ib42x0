@@ -28,7 +28,7 @@
  obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
 --- /dev/null
 +++ b/drivers/rtc/rtc-gemini.c
-@@ -0,0 +1,223 @@
+@@ -0,0 +1,221 @@
 +/*
 + *  Gemini OnChip RTC
 + *
@@ -65,7 +65,6 @@
 +#include <mach/hardware.h>
 +
 +#define DRV_NAME        "rtc-gemini"
-+#define DRV_VERSION     "0.2"
 +
 +struct gemini_rtc {
 +	struct rtc_device	*rtc_dev;
@@ -246,11 +245,10 @@
 +module_init(gemini_rtc_init);
 +module_exit(gemini_rtc_exit);
 +
-+MODULE_AUTHOR("Hans Ulli Kroll <ulli.kroll@googlemail.com>");
 +MODULE_DESCRIPTION("RTC driver for Gemini SoC");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(DRV_VERSION);
 +MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_AUTHOR("Hans Ulli Kroll <ulli.kroll@googlemail.com>");
++MODULE_LICENSE("GPL");
 +
 -- 
 1.7.3.4
