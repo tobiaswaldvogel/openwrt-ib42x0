@@ -62,6 +62,7 @@ enum ramips_mach_type {
 	RAMIPS_MACH_WL351,		/* Sitecom WL-351 v1 002 */
 	RAMIPS_MACH_WR512_3GN,		/* SH-WR512NU/WS-WR512N1-like 3GN*/
 	RAMIPS_MACH_WR6202,		/* Accton WR6202 */
+	RAMIPS_MACH_MZKW300NH2,		/* Planex MZK-W300NH2 Router */
 	RAMIPS_MACH_XDXRN502J,          /* unknown XDX-RN502J */
 	RAMIPS_MACH_UR_336UN,		/* UPVEL ROUTER */
 
@@ -75,5 +76,8 @@ enum ramips_mach_type {
 
 	/* RT3883 based machines */
 	RAMIPS_MACH_TEW_691GR,		/* TRENDnet TEW-691GR */
-	RAMIPS_MACH_TEW_692GR		/* TRENDnet TEW-692GR */
+	RAMIPS_MACH_TEW_692GR,		/* TRENDnet TEW-692GR */
+
+	/* RT5350 based machines */
+	RAMIPS_MACH_AIR3GII,		/* AirLive Air3GII */
 };

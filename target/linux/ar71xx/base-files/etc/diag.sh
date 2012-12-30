@@ -36,8 +36,12 @@ get_status_led() {
 	all0305)
 		status_led="eap7660d:green:ds4"
 		;;
-	ap136)
+	ap136-010|\
+	ap136-020)
 		status_led="ap136:green:status"
+		;;
+	ap135-020)
+		status_led="ap135:green:status"
 		;;
 	ap81)
 		status_led="ap81:green:status"

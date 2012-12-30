@@ -15,11 +15,11 @@ resolve_network network "$device"
 
 # Announce prefixes
 for prefix in $PREFIXES; do
-	announce_prefix "$prefix" "$network"
+	announce_prefix "$prefix" "$network" "$device"
 done
 
 for prefix in $PREFIXES_LOST; do
-	announce_prefix "$prefix" "$network" delprefix
+	announce_prefix "$prefix" "$network" "$device" delprefix
 done
 
 
@@ -33,7 +33,7 @@ setup_prefix_fallback "$fallback" "$network" "$device"
 [ "$state" == "timeout" || "$state" == "unbound" ] && exit 0
 
 local peerdns
-config_get_bool peerdns "$network" peerdns 0
+config_get_bool peerdns "$network" peerdns 1
 [ "$peerdns" -eq "1" ] && {
 	proto_init_update "*" 1
 	proto_set_keep 1
