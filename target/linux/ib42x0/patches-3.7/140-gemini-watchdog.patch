@@ -1,3 +1,46 @@
+--- a/arch/arm/mach-gemini/devices.c	2011-04-21 02:28:17.181064247 +0200
++++ b/arch/arm/mach-gemini/devices.c	2011-04-21 02:33:29.493466642 +0200
+@@ -208,3 +208,21 @@
+ 	return platform_device_register(&gemini_pata_devices[i]);
+ }
+ 
++static struct resource wdt_resource = {
++	.start	= GEMINI_WAQTCHDOG_BASE,
++	.end	= GEMINI_WAQTCHDOG_BASE + 0x18,
++	.flags	= IORESOURCE_MEM,
++};
++
++static struct platform_device wdt_device = {
++	.name		= "wdt-gemini",
++	.id		= 0,
++	.resource	= &wdt_resource,
++	.num_resources	= 1,
++};
++
++int __init platform_register_watchdog(void)
++{
++	return platform_device_register(&wdt_device);
++}
++
+--- a/arch/arm/mach-gemini/common.h	2011-04-19 03:05:29.446367900 +0200
++++ b/arch/arm/mach-gemini/common.h	2011-04-19 03:07:02.191154293 +0200
+@@ -27,5 +27,6 @@
+ 				    unsigned int nr_parts);
+ extern int platform_register_pwc(void);
+ extern int platform_register_pata(unsigned int i);
++extern int platform_register_watchdog(void);
+ 
+ #endif /* __GEMINI_COMMON_H__ */
+--- a/arch/arm/mach-gemini/board-nas4220b.c	2011-04-19 02:49:10.691486103 +0200
++++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-04-19 02:47:58.956362077 +0200
+@@ -119,6 +119,7 @@
+ 	platform_register_pwc();
+	platform_register_pata(0);
+ 	platform_register_pata(1);
++	platform_register_watchdog();
+ }
+ 
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
 --- a/drivers/watchdog/Kconfig
 +++ b/drivers/watchdog/Kconfig
 @@ -142,6 +142,16 @@ config 977_WATCHDOG
@@ -74,6 +117,18 @@
 +
 +static unsigned int timeout = WDT_DEFAULT_TIMEOUT;
 +static int nowayout = WATCHDOG_NOWAYOUT;
++
++module_param(timeout, uint, 0);
++MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds");
++
++module_param(nowayout, int, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
++
++MODULE_DESCRIPTION("Watchdog driver for Gemini");
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++MODULE_AUTHOR("Paulius Zaleckas");
++MODULE_LICENSE("GPL");
 +
 +static DEFINE_SPINLOCK(gemini_wdt_lock);
 +
@@ -405,58 +460,3 @@
 +
 +module_init(gemini_wdt_init);
 +module_exit(gemini_wdt_exit);
-+
-+module_param(timeout, uint, 0);
-+MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds");
-+
-+module_param(nowayout, int, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
-+
-+MODULE_DESCRIPTION("Watchdog driver for Gemini");
-+MODULE_ALIAS("platform:" DRV_NAME);
-+MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-+MODULE_AUTHOR("Paulius Zaleckas");
-+MODULE_LICENSE("GPL");
---- a/arch/arm/mach-gemini/devices.c	2011-04-21 02:28:17.181064247 +0200
-+++ b/arch/arm/mach-gemini/devices.c	2011-04-21 02:33:29.493466642 +0200
-@@ -208,3 +208,21 @@
- 	return platform_device_register(&gemini_pata_devices[i]);
- }
- 
-+static struct resource wdt_resource = {
-+	.start	= GEMINI_WAQTCHDOG_BASE,
-+	.end	= GEMINI_WAQTCHDOG_BASE + 0x18,
-+	.flags	= IORESOURCE_MEM,
-+};
-+
-+static struct platform_device wdt_device = {
-+	.name		= "wdt-gemini",
-+	.id		= 0,
-+	.resource	= &wdt_resource,
-+	.num_resources	= 1,
-+};
-+
-+int __init platform_register_watchdog(void)
-+{
-+	return platform_device_register(&wdt_device);
-+}
-+
---- a/arch/arm/mach-gemini/common.h	2011-04-19 03:05:29.446367900 +0200
-+++ b/arch/arm/mach-gemini/common.h	2011-04-19 03:07:02.191154293 +0200
-@@ -27,5 +27,6 @@
- 				    unsigned int nr_parts);
- extern int platform_register_pwc(void);
- extern int platform_register_pata(unsigned int i);
-+extern int platform_register_watchdog(void);
- 
- #endif /* __GEMINI_COMMON_H__ */
---- a/arch/arm/mach-gemini/board-nas4220b.c	2011-04-19 02:49:10.691486103 +0200
-+++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-04-19 02:47:58.956362077 +0200
-@@ -119,6 +119,7 @@
- 	platform_register_pwc();
-	platform_register_pata(0);
- 	platform_register_pata(1);
-+	platform_register_watchdog();
- }
- 
- MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
