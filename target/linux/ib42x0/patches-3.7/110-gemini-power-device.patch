@@ -144,7 +144,6 @@
 +
 +static void gemini_power_off(void)
 +{
-+	unsigned int	ctl;
 +	void __iomem*	ctl_reg = GEMINI_PWC_CTRLREG(pwc_gemini_priv->base);
 +	
 +	printk(DRV_NAME ": power off\n");

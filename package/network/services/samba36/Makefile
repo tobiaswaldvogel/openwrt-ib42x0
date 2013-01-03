@@ -137,7 +137,7 @@ CONFIGURE_ARGS += \
 	--without-libaddns \
 	--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_winbind,auth_wbc,auth_domain,vfs
 
-MAKE_FLAGS += DYNEXP= PICFLAG= MODULES=
+MAKE_FLAGS += DYNEXP= PICFLAG= MODULES=bin/dirsort.so
 
 ifeq ($(BUILD_VARIANT),samba36-server-ads)
 	TARGET_CFLAGS += \
@@ -195,6 +195,8 @@ define Package/samba36-server/install
 	ln -sf ../sbin/samba_multicall $(1)/usr/bin/smbcacls
 	ln -sf ../sbin/samba_multicall $(1)/usr/bin/nmblookup
 	ln -sf ../sbin/samba_multicall $(1)/usr/bin/testparm
+	$(INSTALL_DIR) $(1)/usr/lib/vfs
+	$(CP) $(PKG_BUILD_BIN)/dirsort.so $(1)/usr/lib/vfs
 endef
 
 define Package/samba36-server-ads/install
