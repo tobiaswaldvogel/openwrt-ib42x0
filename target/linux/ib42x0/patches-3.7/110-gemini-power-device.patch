@@ -82,7 +82,7 @@
  obj-$(CONFIG_BMP085_SPI)	+= bmp085-spi.o
 --- a/drivers/misc/gemini-pwc.c	1970-01-01 01:00:00.000000000 +0100
 +++ b/drivers/misc/gemini-pwc.c	2010-11-04 17:39:32.000000000 +0100
-@@ -0,0 +1,183 @@
+@@ -0,0 +1,182 @@
 +/*
 + *  Gemini Power Control driver
 + *
