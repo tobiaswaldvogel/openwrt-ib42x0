@@ -58,7 +58,8 @@ define KernelPackage/fs-cifs
     +kmod-crypto-md5 \
     +kmod-crypto-md4 \
     +kmod-crypto-des \
-    +kmod-crypto-ecb
+    +kmod-crypto-ecb \
+    +!LINUX_3_3&&!LINUX_3_6:kmod-crypto-sha256
 endef
 
 define KernelPackage/fs-cifs/description
@@ -66,6 +67,22 @@ define KernelPackage/fs-cifs/description
 endef
 
 $(eval $(call KernelPackage,fs-cifs))
+
+
+define KernelPackage/fs-configfs
+  SUBMENU:=$(FS_MENU)
+  TITLE:=Configuration filesystem support
+  KCONFIG:= \
+	CONFIG_CONFIGFS_FS
+  FILES:=$(LINUX_DIR)/fs/configfs/configfs.ko
+  AUTOLOAD:=$(call AutoLoad,30,configfs)
+endef
+
+define KernelPackage/fs-configfs/description
+ Kernel module for configfs support
+endef
+
+$(eval $(call KernelPackage,fs-configfs))
 
 
 define KernelPackage/fs-exportfs
@@ -121,7 +138,7 @@ $(eval $(call KernelPackage,fuse))
 
 define KernelPackage/fs-hfs
   SUBMENU:=$(FS_MENU)
-  TITLE:=HFS+ filesystem support
+  TITLE:=HFS filesystem support
   KCONFIG:=CONFIG_HFS_FS
   FILES:=$(LINUX_DIR)/fs/hfs/hfs.ko
   AUTOLOAD:=$(call AutoLoad,30,hfs)

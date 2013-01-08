@@ -539,6 +539,23 @@ endef
 $(eval $(call KernelPackage,pwm-gpio))
 
 
+define KernelPackage/rtc-isl1208
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Intersil ISL1208 RTC support
+  $(call AddDepends/rtc)
+  DEPENDS+=+kmod-i2c-core
+  KCONFIG:=CONFIG_RTC_DRV_ISL1208
+  FILES:=$(LINUX_DIR)/drivers/rtc/rtc-isl1208.ko
+  AUTOLOAD:=$(call AutoLoad,60,rtc-isl1208)
+endef
+
+define KernelPackage/rtc-isl1208/description
+ Kernel module for Intersil ISL1208 RTC.
+endef
+
+$(eval $(call KernelPackage,rtc-isl1208))
+
+
 define KernelPackage/rtc-marvell
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Marvell SoC built-in RTC support
@@ -698,12 +715,16 @@ $(eval $(call KernelPackage,acpi-button))
 define KernelPackage/regmap
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Generic register map support
-  KCONFIG:=CONFIG_REGMAP=y \
+  DEPENDS:=+kmod-lib-lzo +kmod-i2c-core
+  KCONFIG:=CONFIG_REGMAP \
 	   CONFIG_REGMAP_SPI \
-	   CONFIG_REGMAP_I2C
-  FILES:=$(LINUX_DIR)/drivers/base/regmap/regmap-i2c.ko \
-	 $(LINUX_DIR)/drivers/base/regmap/regmap-spi.ko
-  AUTOLOAD:=$(call AutoLoad,10,regmap-i2c regmap-spi)
+	   CONFIG_REGMAP_I2C \
+	   CONFIG_SPI=y
+  FILES:= \
+	$(LINUX_DIR)/drivers/base/regmap/regmap-core.ko \
+	$(LINUX_DIR)/drivers/base/regmap/regmap-i2c.ko \
+	$(LINUX_DIR)/drivers/base/regmap/regmap-spi.ko
+  AUTOLOAD:=$(call AutoLoad,10,regmap-core regmap-i2c regmap-spi)
 endef
 
 define KernelPackage/regmap/description
@@ -726,3 +747,24 @@ define KernelPackage/ikconfig/description
 endef
 
 $(eval $(call KernelPackage,ikconfig))
+
+
+define KernelPackage/zram
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=ZRAM
+  DEPENDS:=@!LINUX_3_3 +kmod-lib-lzo
+  KCONFIG:= \
+	CONFIG_ZSMALLOC \
+	CONFIG_ZRAM \
+	CONFIG_ZRAM_DEBUG=n
+  FILES:= \
+	$(LINUX_DIR)/drivers/staging/zsmalloc/zsmalloc.ko \
+	$(LINUX_DIR)/drivers/staging/zram/zram.ko	
+  AUTOLOAD:=$(call AutoLoad,20,zsmalloc zram)
+endef
+
+define KernelPackage/zram/description
+ Compressed RAM block device support
+endef
+
+$(eval $(call KernelPackage,zram))

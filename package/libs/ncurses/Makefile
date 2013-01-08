@@ -66,7 +66,7 @@ CONFIGURE_ARGS += \
 	--enable-widec \
 	--with-build-cppflags=-D_GNU_SOURCE
 
-ifneq ($(INSTALL_LIBSTDCPP),y)
+ifneq ($(CONFIG_INSTALL_LIBSTDCPP),y)
 CONFIGURE_ARGS += \
 	--without-cxx-binding
 endif

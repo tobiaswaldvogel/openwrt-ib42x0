@@ -35,7 +35,7 @@
 #include "etc53xx.h"
 
 #ifdef CONFIG_BCM47XX
-#include <nvram.h>
+#include <bcm47xx_nvram.h>
 #endif
 
 #define DRIVER_NAME		"bcm53xx"
@@ -72,6 +72,7 @@ struct robo_switch {
 	char *device;			/* The device name string (ethX) */
 	u16 devid;			/* ROBO_DEVICE_ID_53xx */
 	bool is_5350;
+	u8 gmii;			/* gigabit mii */
 	struct ifreq ifr;
 	struct net_device *dev;
 	unsigned char port[6];
@@ -103,8 +104,7 @@ static u16 mdio_read(__u16 phy_id, __u8 reg)
 
 	err = do_ioctl(SIOCGMIIREG);
 	if (err < 0) {
-		printk(KERN_ERR PFX
-		       "[%s:%d] SIOCGMIIREG failed! err: %i\n", __FILE__, __LINE__, err);
+		printk(KERN_ERR PFX "failed to read mdio reg %i with err %i.\n", reg, err);
 
 		return 0xffff;
 	}
@@ -123,8 +123,7 @@ static void mdio_write(__u16 phy_id, __u8 reg, __u16 val)
 
 	err = do_ioctl(SIOCSMIIREG);
 	if (err < 0) {
-		printk(KERN_ERR PFX
-		       "[%s:%d] SIOCSMIIREG failed! err: %i\n", __FILE__, __LINE__, err);
+		printk(KERN_ERR PFX "failed to write mdio reg: %i with err %i.\n", reg, err);
 		return;
 	}
 }
@@ -147,9 +146,9 @@ static int robo_reg(__u8 page, __u8 reg, __u8 op)
 			return 0;
 	}
 
-	printk(KERN_ERR PFX "[%s:%d] timeout in robo_reg!\n", __FILE__, __LINE__);
+	printk(KERN_ERR PFX "timeout in robo_reg on page %i and reg %i with op %i.\n", page, reg, op);
 
-	return 0;
+	return 1;
 }
 
 /*
@@ -175,7 +174,7 @@ static __u32 robo_read32(__u8 page, __u8 reg)
 {
 	robo_reg(page, reg, REG_MII_ADDR_READ);
 
-	return mdio_read(ROBO_PHY_ADDR, REG_MII_DATA0) +
+	return mdio_read(ROBO_PHY_ADDR, REG_MII_DATA0) |
 		(mdio_read(ROBO_PHY_ADDR, REG_MII_DATA0 + 1) << 16);
 }
 
@@ -190,21 +189,40 @@ static void robo_write16(__u8 page, __u8 reg, __u16 val16)
 static void robo_write32(__u8 page, __u8 reg, __u32 val32)
 {
 	/* write data */
-	mdio_write(ROBO_PHY_ADDR, REG_MII_DATA0, val32 & 65535);
+	mdio_write(ROBO_PHY_ADDR, REG_MII_DATA0, val32 & 0xFFFF);
 	mdio_write(ROBO_PHY_ADDR, REG_MII_DATA0 + 1, val32 >> 16);
 
 	robo_reg(page, reg, REG_MII_ADDR_WRITE);
 }
 
-/* checks that attached switch is 5325E/5350 */
-static int robo_vlan5350(void)
+/* checks that attached switch is 5325/5352/5354/5356/5357/53115 */
+static int robo_vlan5350(__u32 phyid)
 {
 	/* set vlan access id to 15 and read it back */
 	__u16 val16 = 15;
 	robo_write16(ROBO_VLAN_PAGE, ROBO_VLAN_TABLE_ACCESS_5350, val16);
 
 	/* 5365 will refuse this as it does not have this reg */
-	return (robo_read16(ROBO_VLAN_PAGE, ROBO_VLAN_TABLE_ACCESS_5350) == val16);
+	if (robo_read16(ROBO_VLAN_PAGE, ROBO_VLAN_TABLE_ACCESS_5350) != val16)
+		return 0;
+	/* gigabit ? */
+	if (mdio_read(0, ROBO_MII_STAT) & 0x0100)
+		robo.gmii = ((mdio_read(0, 0x0f) & 0xf000) != 0);
+	/* 53115 ? */
+	if (robo.gmii && robo_read32(ROBO_STAT_PAGE, ROBO_LSA_IM_PORT) != 0) {
+		robo_write16(ROBO_ARLIO_PAGE, ROBO_VTBL_INDX_5395, val16);
+		robo_write16(ROBO_ARLIO_PAGE, ROBO_VTBL_ACCESS_5395,
+					 (1 << 7) /* start */ | 1 /* read */);
+		if (robo_read16(ROBO_ARLIO_PAGE, ROBO_VTBL_ACCESS_5395) == 1 &&
+		    robo_read16(ROBO_ARLIO_PAGE, ROBO_VTBL_INDX_5395) == val16)
+			return 4;
+	}
+	/* dirty trick for 5356/5357 */
+	if ((phyid & 0xfff0ffff ) == 0x5da00362 ||
+	    (phyid & 0xfff0ffff ) == 0x5e000362)
+		return 3;
+	/* 5325/5352/5354*/
+	return 1;
 }
 
 static int robo_switch_enable(void)
@@ -224,7 +242,7 @@ static int robo_switch_enable(void)
 		robo_write16(ROBO_CTRL_PAGE, ROBO_SWITCH_MODE, val);
 		val = robo_read16(ROBO_CTRL_PAGE, ROBO_SWITCH_MODE);
 		if (!(val & (1 << 1))) {
-			printk("Failed to enable switch\n");
+			printk(KERN_ERR PFX "Failed to enable switch\n");
 			return -EBUSY;
 		}
 
@@ -236,7 +254,7 @@ static int robo_switch_enable(void)
 
 #ifdef CONFIG_BCM47XX
 	/* WAN port LED, except for Netgear WGT634U */
-	if (nvram_getenv("nvram_type", buf, sizeof(buf)) >= 0) {
+	if (bcm47xx_nvram_getenv("nvram_type", buf, sizeof(buf)) >= 0) {
 		if (strcmp(buf, "cfe") != 0)
 			robo_write16(ROBO_CTRL_PAGE, 0x16, 0x1F);
 	}
@@ -261,16 +279,17 @@ static int robo_probe(char *devname)
 	__u32 phyid;
 	unsigned int i;
 	int err = 1;
+	struct mii_ioctl_data *mii;
 
-	printk(KERN_INFO PFX "Probing device %s: ", devname);
+	printk(KERN_INFO PFX "Probing device '%s'\n", devname);
 	strcpy(robo.ifr.ifr_name, devname);
 
 	if ((robo.dev = dev_get_by_name(&init_net, devname)) == NULL) {
-		printk("No such device\n");
+		printk(KERN_ERR PFX "No such device\n");
 		return 1;
 	}
 	if (!robo.dev->netdev_ops || !robo.dev->netdev_ops->ndo_do_ioctl) {
-		printk("ndo_do_ioctl not implemented in ethernet driver\n");
+		printk(KERN_ERR PFX "ndo_do_ioctl not implemented in ethernet driver\n");
 		return 1;
 	}
 
@@ -280,17 +299,18 @@ static int robo_probe(char *devname)
 	robo.port[5] = 8;
 
 	/* try access using MII ioctls - get phy address */
-	if (do_ioctl(SIOCGMIIPHY) < 0) {
-		printk("error while accessing MII phy registers with ioctls\n");
+	err = do_ioctl(SIOCGMIIPHY);
+	if (err < 0) {
+		printk(KERN_ERR PFX "error (%i) while accessing MII phy registers with ioctls\n", err);
 		goto done;
 	}
 
 	/* got phy address check for robo address */
-	struct mii_ioctl_data *mii = if_mii(&robo.ifr);
+	mii = if_mii(&robo.ifr);
 	if ((mii->phy_id != ROBO_PHY_ADDR) &&
 	    (mii->phy_id != ROBO_PHY_ADDR_BCM63XX) &&
 	    (mii->phy_id != ROBO_PHY_ADDR_TG3)) {
-		printk("Invalid phy address (%d)\n", mii->phy_id);
+		printk(KERN_ERR PFX "Invalid phy address (%d)\n", mii->phy_id);
 		goto done;
 	}
 
@@ -298,7 +318,7 @@ static int robo_probe(char *devname)
 		(mdio_read(ROBO_PHY_ADDR, 0x3) << 16);
 
 	if (phyid == 0xffffffff || phyid == 0x55210022) {
-		printk("No Robo switch in managed mode found, phy_id = 0x%08x\n", phyid);
+		printk(KERN_ERR PFX "No Robo switch in managed mode found, phy_id = 0x%08x\n", phyid);
 		goto done;
 	}
 
@@ -311,7 +331,7 @@ static int robo_probe(char *devname)
 	}
 	if (!robo.devid)
 		robo.devid = ROBO_DEVICE_ID_5325; /* Fake it */
-	robo.is_5350 = robo_vlan5350();
+	robo.is_5350 = robo_vlan5350(phyid);
 
 	robo_switch_reset();
 	err = robo_switch_enable();
@@ -319,8 +339,8 @@ static int robo_probe(char *devname)
 		goto done;
 	err = 0;
 
-	printk("found a 5%s%x!%s\n", robo.devid & 0xff00 ? "" : "3", robo.devid,
-		robo.is_5350 ? " It's a 5350." : "");
+	printk(KERN_INFO PFX "found a 5%s%x!%s at %s\n", robo.devid & 0xff00 ? "" : "3", robo.devid,
+		robo.is_5350 ? " It's a 5350." : "", devname);
 
 done:
 	if (err) {
@@ -446,6 +466,80 @@ static int handle_enable_write(void *driver, char *buf, int nr)
 	return 0;
 }
 
+static int handle_port_enable_read(void *driver, char *buf, int nr)
+{
+	return sprintf(buf, "%d\n", ((robo_read16(ROBO_CTRL_PAGE, robo.port[nr]) & 3) == 3 ? 0 : 1));
+}
+
+static int handle_port_enable_write(void *driver, char *buf, int nr)
+{
+	u16 val16;
+
+	if (buf[0] == '0')
+		val16 = 3; /* disabled */
+	else if (buf[0] == '1')
+		val16 = 0; /* enabled */
+	else
+		return -EINVAL;
+
+	robo_write16(ROBO_CTRL_PAGE, robo.port[nr],
+		(robo_read16(ROBO_CTRL_PAGE, robo.port[nr]) & ~3) | val16);
+
+	return 0;
+}
+
+static int handle_port_media_read(void *driver, char *buf, int nr)
+{
+	u16 bmcr = mdio_read(robo.port[nr], MII_BMCR);
+	int media, len;
+
+	if (bmcr & BMCR_ANENABLE)
+		media = SWITCH_MEDIA_AUTO;
+	else {
+		if (bmcr & BMCR_SPEED1000)
+			media = SWITCH_MEDIA_1000;
+		else if (bmcr & BMCR_SPEED100)
+			media = SWITCH_MEDIA_100;
+		else
+			media = 0;
+
+		if (bmcr & BMCR_FULLDPLX)
+			media |= SWITCH_MEDIA_FD;
+	}
+
+	len = switch_print_media(buf, media);
+	return len + sprintf(buf + len, "\n");
+}
+
+static int handle_port_media_write(void *driver, char *buf, int nr)
+{
+	int media = switch_parse_media(buf);
+	u16 bmcr, bmcr_mask;
+
+	if (media & SWITCH_MEDIA_AUTO)
+		bmcr = BMCR_ANENABLE | BMCR_ANRESTART;
+	else {
+		if (media & SWITCH_MEDIA_1000) {
+			if (!robo.gmii)
+				return -EINVAL;
+			bmcr = BMCR_SPEED1000;
+		}
+		else if (media & SWITCH_MEDIA_100)
+			bmcr = BMCR_SPEED100;
+		else
+			bmcr = 0;
+
+		if (media & SWITCH_MEDIA_FD)
+			bmcr |= BMCR_FULLDPLX;
+	}
+
+	bmcr_mask = ~(BMCR_SPEED1000 | BMCR_SPEED100 | BMCR_FULLDPLX | BMCR_ANENABLE | BMCR_ANRESTART);
+	mdio_write(robo.port[nr], MII_BMCR, 
+		(mdio_read(robo.port[nr], MII_BMCR) & bmcr_mask) | bmcr);
+
+	return 0;
+}
+
 static int handle_enable_vlan_read(void *driver, char *buf, int nr)
 {
 	return sprintf(buf, "%d\n", (((robo_read16(ROBO_VLAN_PAGE, ROBO_VLAN_CTRL0) & (1 << 7)) == (1 << 7)) ? 1 : 0));
@@ -540,6 +634,17 @@ static int __init robo_init(void)
 				.write	= handle_reset
 			}, { NULL, },
 		};
+		static const switch_config port[] = {
+			{
+				.name	= "enable",
+				.read	= handle_port_enable_read,
+				.write	= handle_port_enable_write
+			}, {
+				.name	= "media",
+				.read	= handle_port_media_read,
+				.write	= handle_port_media_write
+			}, { NULL, },
+		};
 		static const switch_config vlan[] = {
 			{
 				.name	= "ports",
@@ -555,7 +660,7 @@ static int __init robo_init(void)
 			.ports			= 6,
 			.vlans			= 16,
 			.driver_handlers	= cfg,
-			.port_handlers		= NULL,
+			.port_handlers		= port,
 			.vlan_handlers		= vlan,
 		};
 		if (robo.devid != ROBO_DEVICE_ID_5325) {

@@ -84,12 +84,11 @@ define KernelPackage/mac80211/config
 
 	config PACKAGE_MAC80211_DEBUGFS
 		bool "Export mac80211 internals in DebugFS"
+		select KERNEL_DEBUG_FS
 		default y
 		help
 		  Select this to see extensive information about
 		  the internal state of mac80211 in debugfs.
-
-		  Say N unless you know you need this.
 
 	config PACKAGE_MAC80211_MESH
 		bool "Enable 802.11s mesh support"
@@ -953,7 +952,7 @@ define KernelPackage/b43/config
 	config B43_FW_SQUASH_COREREVS
 		string "Core revisions to include"
 		depends on B43_FW_SQUASH
-		default "5,6,7,8,9,10,11,13,14,15,16"
+		default "5,6,7,8,9,10,11,13,15,16,29"
 		help
 		  This is a comma seperated list of core revision numbers.
 
@@ -966,7 +965,7 @@ define KernelPackage/b43/config
 	config B43_FW_SQUASH_PHYTYPES
 		string "PHY types to include"
 		depends on B43_FW_SQUASH
-		default "G,LP,N"
+		default "G,LP,N,HT"
 		help
 		  This is a comma seperated list of PHY types:
 		    A  => A-PHY
@@ -1005,7 +1004,9 @@ define KernelPackage/b43/config
 		bool "Enable support for N-PHYs"
 		default y
 		help
-		  Enable support for BCM4321 and BCM4322.
+		  Enable support for N-PHY. This includes support for the following devices:
+		  PCI: BCM4321, BCM4322, BCM43222, BCM43224, BCM43225
+		  SoC: BCM4716, BCM4717, BCM4718
 
 		  Currently only 11g speed is available.
 
@@ -1013,11 +1014,14 @@ define KernelPackage/b43/config
 
 	config PACKAGE_B43_PHY_HT
 		bool "Enable support for HT-PHYs"
-		default n
+		default y
 		help
-		  Currently broken.
+		  Enable support for HT-PHY. This includes support for the following devices:
+		  PCI: BCM4331
 
-		  If unsure, say N.
+		  Currently only 11g speed is available.
+
+		  If unsure, say Y.
 
 	config PACKAGE_B43_PHY_LCN
 		bool "Enable support for LCN-PHYs"
@@ -1430,11 +1434,11 @@ define Build/InstallDev
 endef
 
 define KernelPackage/libertas-usb/install
-	$(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DIR) $(1)/lib/firmware/libertas
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/libertas/usb8388_v9.bin \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/libertas/usb8682.bin \
-		$(1)/lib/firmware/
+		$(1)/lib/firmware/libertas/
 endef
 
 define KernelPackage/libertas-sd/install

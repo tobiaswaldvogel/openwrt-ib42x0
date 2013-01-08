@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libiwinfo
-PKG_RELEASE:=36
+PKG_RELEASE:=38
 
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
 PKG_CONFIG_DEPENDS := \
@@ -39,7 +39,7 @@ define Package/libiwinfo-lua
   SECTION:=lang
   CATEGORY:=Languages
   TITLE:=libiwinfo Lua binding
-  DEPENDS:=+libiwinfo +liblua +lua
+  DEPENDS:=+libiwinfo +liblua
   MAINTAINER:=Jo-Philipp Wich <xm@subsignal.org>
 endef
 
