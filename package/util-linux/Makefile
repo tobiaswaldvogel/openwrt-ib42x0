@@ -163,6 +163,12 @@ define Package/dmesg/description
  dmesg  is used to examine or control the kernel ring buffer
 endef
 
+define Package/fallocate
+$(call Package/util-linux/Default)
+  TITLE:=allocate an empty file
+  SUBMENU:=disc
+endef
+
 define Package/fdisk
 $(call Package/util-linux/Default)
   TITLE:=manipulate disk partition table
@@ -443,6 +449,11 @@ define Package/cfdisk/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fdisk/.libs/cfdisk $(1)/usr/sbin/
 endef
 
+define Package/fallocate/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/fallocate $(1)/usr/bin/
+endef
+
 define Package/fdisk/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fdisk/.libs/fdisk $(1)/usr/sbin/
@@ -570,7 +581,8 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{blkid,uuid}.{a,so*} $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{blkid,uuid}.a $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/lib/lib{blkid,uuid}.so* $(1)/usr/lib/	
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/blkid.pc
 	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/uuid.pc
@@ -585,6 +597,7 @@ $(eval $(call BuildPackage,blkid))
 $(eval $(call BuildPackage,cal))
 $(eval $(call BuildPackage,cfdisk))
 $(eval $(call BuildPackage,dmesg))
+$(eval $(call BuildPackage,fallocate))
 $(eval $(call BuildPackage,fdisk))
 $(eval $(call BuildPackage,findfs))
 $(eval $(call BuildPackage,flock))

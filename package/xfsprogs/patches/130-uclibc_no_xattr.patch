@@ -18,7 +18,7 @@ index 40c2e6f..4f54059 100644
  
  
  #ifndef XFS_XFLAG_NODEFRAG
-@@ -990,6 +992,7 @@ fsr_setup_attr_fork(
+@@ -1019,6 +1021,7 @@ fsr_setup_attr_fork(
  	int		tfd,
  	xfs_bstat_t	*bstatp)
  {
@@ -26,7 +26,7 @@ index 40c2e6f..4f54059 100644
  	struct stat64	tstatbuf;
  	int		i;
  	int		last_forkoff = 0;
-@@ -1108,6 +1111,7 @@ fsr_setup_attr_fork(
+@@ -1137,6 +1140,7 @@ fsr_setup_attr_fork(
  out:
  	if (dflag)
  		fsrprintf(_("set temp attr\n"));

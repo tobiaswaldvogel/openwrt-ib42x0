@@ -9,11 +9,14 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xfsprogs
 PKG_RELEASE:=1
-PKG_VERSION:=3.1.7
-PKG_SOURCE_URL:=ftp://oss.sgi.com/projects/xfs/previous/
-PKG_MD5SUM:=049cf9873794ea49d0bb3f12d45748a4
-
+PKG_VERSION:=3.1.10
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=git://oss.sgi.com/xfs/cmds/xfsprogs
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_MD5SUM:=
+
 PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
 
@@ -61,39 +64,39 @@ MAKE_FLAGS += \
 	DEBUG= Q= \
 	PCFLAGS="-Wall" \
 	PKG_PLATFORM=linux \
-	ENABLE_GETTEXT=no \
-	prefix=$(PKG_INSTALL_DIR)/usr \
-	exec_prefix=$(PKG_INSTALL_DIR)/usr \
-	PKG_SBIN_DIR=$(PKG_INSTALL_DIR)/usr/sbin \
-	PKG_ROOT_SBIN_DIR=$(PKG_INSTALL_DIR)/sbin \
-	PKG_MAN_DIR=$(PKG_INSTALL_DIR)/usr/man \
-	PKG_LOCALE_DIR=$(PKG_INSTALL_DIR)/usr/share/locale \
-	PKG_ROOT_LIB_DIR=$(PKG_INSTALL_DIR)/lib \
-	PKG_DOC_DIR=$(PKG_INSTALL_DIR)/usr/share/doc/xfsprogs
+	ENABLE_GETTEXT=no
+
+define Build/Configure
+	cp $(PKG_BUILD_DIR)/include/install-sh   $(PKG_BUILD_DIR)
+	ln -sf $(STAGING_DIR)/host/share/libtool/config/config.guess $(PKG_BUILD_DIR)/config.guess
+	ln -sf $(STAGING_DIR)/host/share/libtool/config/config.sub   $(PKG_BUILD_DIR)/config.sub
+	$(call Build/Configure/Default)
+endef
 
 define Package/xfs-mkfs/install
-	mkdir -p $(1)/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/mkfs.xfs $(1)/sbin
+	mkdir -p $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/mkfs.xfs $(1)/usr/sbin
 endef
 
 define Package/xfs-fsck/install
-	mkdir -p $(1)/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/xfs_repair $(1)/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xfs_db $(1)/sbin
+	mkdir -p $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/xfs_repair $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xfs_db $(1)/usr/sbin
 endef
 
 define Package/xfs-growfs/install
-	mkdir -p $(1)/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xfs_growfs $(1)/sbin
+	mkdir -p $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xfs_growfs $(1)/usr/sbin
 endef
 
 define Package/xfs-tools/install
-	mkdir -p $(1)/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/xfs_tools $(1)/sbin
-	ln -sf xfs_tools $(1)/sbin/xfs_repair
-	ln -sf xfs_tools $(1)/sbin/xfs_db
-	ln -sf xfs_tools $(1)/sbin/xfs_growfs
-	ln -sf xfs_tools $(1)/sbin/mkfs.xfs
+	mkdir -p $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/sbin/xfs_tools $(1)/usr/sbin
+	ln -sf xfs_tools $(1)/usr/sbin/xfs_repair
+	ln -sf xfs_tools $(1)/usr/sbin/fsck.xfs
+	ln -sf xfs_tools $(1)/usr/sbin/xfs_db
+	ln -sf xfs_tools $(1)/usr/sbin/xfs_growfs
+	ln -sf xfs_tools $(1)/usr/sbin/mkfs.xfs
 endef
 
 $(eval $(call BuildPackage,xfs-mkfs))
