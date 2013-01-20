@@ -250,7 +250,7 @@
 +obj-$(CONFIG_GEMINI_SL351X) += sl351x.o
 --- /dev/null					2012-01-23 21:36:48.249769447 +0100
 +++ b/drivers/net/ethernet/gemini/sl351x.c	2012-01-27 17:09:51.000000000 +0100
-@@ -0,0 +1,2326 @@
+@@ -0,0 +1,2329 @@
 +/*
 + *  Ethernet device driver for Gemini SoC (SL351x GMAC).
 + *
@@ -299,7 +299,7 @@
 +#define DRV_NAME		"gmac-gemini"
 +#define DRV_VERSION		"1.0"
 +
-+#define HSIZE_8		0b00
++#define HSIZE_8			0b00
 +#define HSIZE_16		0b01
 +#define HSIZE_32		0b10
 +
@@ -372,6 +372,7 @@
 +	unsigned int		rxq_order;
 +
 +	struct napi_struct	napi;
++	unsigned int		freeq_refill;
 +	struct gmac_txq		txq[TX_QUEUE_NUM];
 +	unsigned int		txq_order;
 +	unsigned int		irq_every_tx_packets;
@@ -1440,6 +1441,9 @@
 +	GMAC_RXDESC_3_T word3;
 +
 +	rw.bits32 = readl(ptr_reg);
++	/* Reset interrupt as all packages until here are taken into account */
++	writel(DEFAULT_Q0_INT_BIT << dev->dev_id,
++		toe->iomem + GLOBAL_INTERRUPT_STATUS_1_REG);
 +	r = rw.bits.rptr;
 +	w = rw.bits.wptr;
 +
@@ -1561,8 +1565,8 @@
 +	unsigned val, mask;
 +
 +	spin_lock_irqsave(&toe->irq_lock, flags);
-+
 +	mask = DEFAULT_Q0_INT_BIT << dev->dev_id;
++
 +	val = readl(toe->iomem + GLOBAL_INTERRUPT_ENABLE_1_REG);
 +	val = enable ? (val | mask) : (val & ~mask);
 +	writel(val, toe->iomem + GLOBAL_INTERRUPT_ENABLE_1_REG);
@@ -1570,34 +1574,32 @@
 +	spin_unlock_irqrestore(&toe->irq_lock, flags);
 +}
 +
-+static int gmac_napi_poll(struct napi_struct *napi, int max_work)
++static int gmac_napi_poll(struct napi_struct *napi, int budget)
 +{
 +	struct gmac_private *gmac = netdev_priv(napi->dev);
 +	struct toe_private *toe = gmac->toe;
-+	unsigned work_left;
++	unsigned rx;
++	unsigned freeq_threshold = 1 << (toe->freeq_order - 1);
 +
-+	work_left = gmac_rx(napi->dev, max_work);
++	rx = budget - gmac_rx(napi->dev, budget);
 +
-+	if (work_left != max_work) {
-+		if (likely(work_left)) {
-+			/* we've cleared the queue, ack rx interrupt;
-+			 * on next poll the interrupt will be enabled
-+			 * if the queue stays empty
-+			 */
-+			writel(DEFAULT_Q0_INT_BIT << napi->dev->dev_id,
-+				toe->iomem + GLOBAL_INTERRUPT_STATUS_1_REG);
-+		}
-+		return max_work - work_left;
++	if (rx < budget) {
++		napi_gro_flush(napi, false);
++		__napi_complete(napi);
++		gmac_enable_rx_irq(napi->dev, 1);
++
++		u64_stats_update_begin(&gmac->rx_stats_syncp);
++		++gmac->rx_napi_exits;
++		u64_stats_update_end(&gmac->rx_stats_syncp);
 +	}
 +
-+	napi_complete(napi);
-+	u64_stats_update_begin(&gmac->rx_stats_syncp);
-+	++gmac->rx_napi_exits;
-+	u64_stats_update_end(&gmac->rx_stats_syncp);
-+	gmac_enable_rx_irq(napi->dev, 1);
++	gmac->freeq_refill += rx;
++	if (gmac->freeq_refill > freeq_threshold) {
++		gmac->freeq_refill -= freeq_threshold;
++		toe_fill_freeq(toe, 0);
++	}
 +
-+	toe_fill_freeq(toe, 0);
-+	return 0;
++	return rx;
 +}
 +
 +static void gmac_dump_dma_state(struct net_device *dev)
@@ -2291,8 +2293,9 @@
 +	gmac_clear_hw_stats(dev);
 +
 +	dev->hw_features = GMAC_OFFLOAD_FEATURES;
-+	dev->features |= GMAC_OFFLOAD_FEATURES;
++	dev->features |= GMAC_OFFLOAD_FEATURES | NETIF_F_GRO;
 +
++	gmac->freeq_refill = 0;
 +	netif_napi_add(dev, &gmac->napi, gmac_napi_poll, DEFAULT_NAPI_WEIGHT);
 +
 +	if (is_valid_ether_addr((void *)toe->mac_addr[num]))
