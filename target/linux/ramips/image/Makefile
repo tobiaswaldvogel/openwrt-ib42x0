@@ -83,7 +83,8 @@ define CatFiles
 endef
 
 define Sysupgrade/KRuImage
-	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,$(3),$(KDIR)/root.$(1),$(4),$(call sysupname,$(1),$(2)))
+	$(eval output_name=$(if $(5),$(call imgname,$(1),$(2))-$(5),$(call sysupname,$(1),$(2))))
+	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,$(3),$(KDIR)/root.$(1),$(4),$(output_name))
 endef
 
 define mkmtd
@@ -109,7 +110,7 @@ endef
 
 define BuildFirmware/Generic
 	$(call MkImageLzma,$(2),$(3),$(6))
-	$(call Sysupgrade/KRuImage,$(1),$(2),$(4),$(5))
+	$(call Sysupgrade/KRuImage,$(1),$(2),$(4),$(5),$(7))
 endef
 
 define BuildFirmware/Generic/initramfs
@@ -119,7 +120,7 @@ endef
 
 mtdlayout_4M=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,896k(kernel),2880k(rootfs),3776k@0x50000(firmware)
 define BuildFirmware/GENERIC_4M
-	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_4M)),917504,2949120)
+	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_4M)),917504,2949120,$(7),$(8))
 endef
 
 define BuildFirmware/GENERIC_4M/initramfs
@@ -130,7 +131,7 @@ mtdlayout_8M=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,896k(kernel),6976k(
 kernel_size_8M=917504
 rootfs_size_8M=7143424
 define BuildFirmware/GENERIC_8M
-	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_8M)),$(kernel_size_8M),$(rootfs_size_8M))
+	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_8M)),$(kernel_size_8M),$(rootfs_size_8M),$(7),$(8))
 endef
 
 define BuildFirmware/GENERIC_8M/initramfs
@@ -167,11 +168,8 @@ mtdlayout_broadway=192k(bootloader)ro,64k(config)ro,64k(factory)ro,1024k(kernel)
 mtd_broadway_kernel_part_size=1048576
 mtd_broadway_rootfs_part_size=6881280
 define BuildFirmware/BROADWAY
+	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_broadway)),$(mtd_broadway_kernel_part_size),$(mtd_broadway_rootfs_part_size),Broadway Kernel Image,factory.bin)
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_broadway)),$(mtd_broadway_kernel_part_size),$(mtd_broadway_rootfs_part_size))
-	mkimage -A mips -O linux -T kernel -C lzma $(call kernel_entry)\
-	 -n 'Broadway Kernel Image' \
-	 -d $(KDIR)/vmlinux-$(2).bin.lzma $(KDIR)/vmlinux-$(2).uImage
-	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,$(mtd_broadway_kernel_part_size),$(KDIR)/root.$(1),$(mtd_broadway_rootfs_part_size),$(call imgname,$(1),$(2))-factory.bin)
 endef
 
 define BuildFirmware/BROADWAY/initramfs
@@ -206,7 +204,7 @@ mtd_dir300b1_kernel_part_size=917504
 mtd_dir300b1_rootfs_part_size=2949120
 define BuildFirmware/DIR300B1
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),ttyS1,57600) $(call mkmtd/phys,$(mtdlayout_dir300b1)),$(mtd_dir300b1_kernel_part_size),$(mtd_dir300b1_rootfs_part_size))
-	mkwrgimg -s $(4) -d /dev/mtdblock/2 \
+	-mkwrgimg -s $(4) -d /dev/mtdblock/2 \
 		-i $(call sysupname,$(1),$(2)) \
 		-o $(call imgname,$(1),$(2))-factory.bin
 endef
@@ -218,7 +216,7 @@ endef
 mtdlayout_dir615h1=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,896k(kernel),2880k(rootfs),3776k@0x50000(firmware)
 define BuildFirmware/DIR615H1
         $(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_dir615h1)),917504,2949120)
-	mkdir615h1 -e $(call sysupname,$(1),$(2)) \
+	-mkdir615h1 -e $(call sysupname,$(1),$(2)) \
 		-o $(call imgname,$(1),$(2))-factory.bin
 endef
 
@@ -231,7 +229,7 @@ mtd_dap1350_kernel_part_size=1114112
 mtd_dap1350_rootfs_part_size=6553600
 define BuildFirmware/DAP1350
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),ttyS1,115200) $(call mkmtd/phys,$(mtdlayout_dap1350)),$(mtd_dap1350_kernel_part_size),$(mtd_dap1350_rootfs_part_size))
-	mkdapimg -s $(4) \
+	-mkdapimg -s $(4) \
 		-i $(call sysupname,$(1),$(2)) \
 		-o $(call imgname,$(1),$(2))-factory.bin
 endef
@@ -289,13 +287,8 @@ kernel_size_nw718=917504
 rootfs_size_nw718=2883584
 cmdline_nw718=$(call mkcmdline,NW718,ttyS1,57600) $(call mkmtd/spi,$(mtdlayout_nw718))
 define BuildFirmware/NW718
+	$(call BuildFirmware/Generic,$(1),$(2),$(cmdline_nw718),$(kernel_size_nw718),$(rootfs_size_nw718),ARA1B4NCRNW718;1,factory.bin)
 	$(call BuildFirmware/Generic,$(1),$(2),$(cmdline_nw718),$(kernel_size_nw718),$(rootfs_size_nw718))
-	$(call PatchKernelLzma,$(2),$(cmdline_nw718))
-	mkimage -A mips -O linux -T kernel -C lzma $(call kernel_entry) \
-		-n "ARA1B4NCRNW718;1" \
-		-d "$(KDIR)/vmlinux-$(2).bin.lzma" \
-		"$(KDIR)/vmlinux-$(2).uImage"
-	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,$(kernel_size_nw718),$(KDIR)/root.$(1),$(rootfs_size_nw718),$(call imgname,$(1),$(2))-factory.bin)
 endef
 
 mtdlayout_rtg32b1=192k(u-boot)ro,64k(devdata)ro,64k(devconf)ro,896k(kernel),2880k(rootfs),3776k@0x50000(firmware)
@@ -365,18 +358,6 @@ define BuildFirmware/UMedia/initramfs
 	$(call BuildFirmware/GENERIC_8M/initramfs,$(1),$(2),$(3),ttyS1,57600,phys)
 endef
 
-define BuildFirmware/W306R_4M
-	$(call BuildFirmware/w306r,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_4M)),917504,2949120)
-endef
-
-define BuildFirmware/w306r
-	$(call PatchKernelLzma,$(2),$(3))
-	mkimage -A mips -O linux -T kernel -C lzma $(call kernel_entry)\
-	 -n 'linkn Kernel Image' \
-	 -d $(KDIR)/vmlinux-$(2).bin.lzma $(KDIR)/vmlinux-$(2).uImage
-	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,$(4),$(KDIR)/root.$(1),$(5),$(call imgname,$(1),$(2))-factory.bin)
-endef
-
 mtdlayout_whrg300n=192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,960k(kernel),2752k(rootfs),64k(user)ro,3712k@0x50000(firmware)
 define BuildFirmware/WHRG300N
 	$(call Image/Build/Template/GENERIC_4M,$(1),whr-g300n,WHR-G300N,ttyS1,57600,phys)
@@ -421,7 +402,7 @@ rootfs_size_mzkw300nh2=2883584
 define BuildFirmware/MZKW300NH2
 	$(call BuildFirmware/Generic,$(1),$(2),$(call mkcmdline,$(3),$(4),$(5)) $(call mkmtd/$(6),$(mtdlayout_mzkw300nh2)),$(kernel_size_mzkw300nh2),$(rootfs_size_mzkw300nh2))
 	$(call CatFiles,$(KDIR)/vmlinux-$(2).uImage,`expr $(kernel_size_mzkw300nh2) - 20`,$(KDIR)/root.$(1),$(rootfs_size_mzkw300nh2),$(call imgname,$(1),$(2))-factory.bin)
-	mkedimaximg -i $(call imgname,$(1),$(2))-factory.bin \
+	-mkedimaximg -i $(call imgname,$(1),$(2))-factory.bin \
 		-o $(call imgname,$(1),$(2))-factory.bin \
 		-s CSYS -m RN52 -f 0x50000 -S 0xc0000;
 endef
@@ -479,6 +460,11 @@ endif
 #
 define Image/Build/Profile/3G6200N
 	$(call Image/Build/Template/$(fs_squash)/$(1),3G6200N,3g-6200n,3G-6200N,ttyS1,57600,phys)
+endef
+
+define Image/Build/Profile/3G300M
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,3g300m,3G300M,ttyS1,57600,spi,3G150M_SPI Kernel Image,factory.bin)
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,3g300m,3G300M,ttyS1,57600,spi)
 endef
 
 define Image/Build/Profile/AIR3GII
@@ -599,8 +585,8 @@ define Image/Build/Profile/V22RW2X2
 endef
 
 define Image/Build/Profile/W306R_V20
+	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,w306r-v20,W306R_V20,ttyS1,57600,phys,linkn Kernel Image,factory.bin)
 	$(call Image/Build/Template/$(fs_squash)/$(1),GENERIC_4M,w306r-v20,W306R_V20,ttyS1,57600,phys)
-	$(call Image/Build/Template/$(fs_squash)/$(1),W306R_4M,w306r-v20,W306R_V20,ttyS1,57600,phys)
 endef
 
 define Image/Build/Profile/W502U
@@ -652,6 +638,7 @@ endef
 ifeq ($(CONFIG_RALINK_RT305X),y)
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/3G6200N,$(1))
+	$(call Image/Build/Profile/3G300M,$(1))
 	$(call Image/Build/Profile/AIR3GII,$(1))
 	$(call Image/Build/Profile/ALL02393G,$(1))
 	$(call Image/Build/Profile/ALL0256N,$(1))
