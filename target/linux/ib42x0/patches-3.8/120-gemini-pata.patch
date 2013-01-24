@@ -161,7 +161,7 @@
  obj-$(CONFIG_PATA_HPT3X2N)	+= pata_hpt3x2n.o
 --- /dev/null			2012-01-23 21:36:48.249769447 +0100
 +++ b/drivers/ata/pata_gemini.c	2012-01-26 03:53:18.277201430 +0100
-@@ -0,0 +1,302 @@
+@@ -0,0 +1,307 @@
 +/*
 + *  Support for Gemini PATA
 + *
@@ -373,6 +373,11 @@
 +			ap->ops->sff_check_status(ap);
 +	}
 +	spin_unlock_irqrestore(&host->lock, flags);
++
++	if (!handled) {
++		pr_err(DRV_NAME ": Unexpected interrupt\n");
++		handled = IRQ_HANDLED;
++	}
 +
 +	return IRQ_RETVAL(handled);
 +}

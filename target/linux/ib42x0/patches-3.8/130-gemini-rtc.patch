@@ -163,7 +163,7 @@
 +	.set_time      = gemini_rtc_set_time,
 +};
 +
-+static int __devinit gemini_rtc_probe(struct platform_device *pdev)
++static int gemini_rtc_probe(struct platform_device *pdev)
 +{
 +	struct gemini_rtc *rtc;
 +	struct device *dev = &pdev->dev;
@@ -210,7 +210,7 @@
 +	return ret;
 +}
 +
-+static int __devexit gemini_rtc_remove(struct platform_device *pdev)
++static int gemini_rtc_remove(struct platform_device *pdev)
 +{
 +	struct gemini_rtc *rtc = platform_get_drvdata(pdev);
 +	struct device *dev = &pdev->dev;
@@ -229,7 +229,7 @@
 +		.owner	= THIS_MODULE,
 +	},
 +	.probe		= gemini_rtc_probe,
-+	.remove		= __devexit_p(gemini_rtc_remove),
++	.remove		= gemini_rtc_remove,
 +};
 +
 +static int __init gemini_rtc_init(void)

@@ -14,7 +14,7 @@
 === modified file 'drivers/net/tun.c'
 --- old/drivers/net/tun.c	2012-12-17 19:41:04 +0000
 +++ new/drivers/net/tun.c	2012-12-17 23:03:50 +0000
-@@ -991,7 +991,7 @@ static int zerocopy_sg_from_iovec(struct
+@@ -993,7 +993,7 @@ static int zerocopy_sg_from_iovec(struct
  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
  		if (num_pages != size) {
  			for (i = 0; i < num_pages; i++)

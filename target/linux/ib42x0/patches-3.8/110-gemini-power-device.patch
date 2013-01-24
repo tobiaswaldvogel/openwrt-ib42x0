@@ -175,7 +175,7 @@
 +	return retval;
 +}
 +
-+static int __devinit pwc_gemini_probe(struct platform_device *pdev)
++static int pwc_gemini_probe(struct platform_device *pdev)
 +{
 +	struct pwc_gemini *pwc;
 +	struct resource *res;
@@ -233,7 +233,7 @@
 +	return ret;
 +}
 +
-+static int __devexit pwc_gemini_remove(struct platform_device *pdev)
++static int pwc_gemini_remove(struct platform_device *pdev)
 +{
 +	struct pwc_gemini *pwc = platform_get_drvdata(pdev);
 +	struct device *dev = &pdev->dev;
@@ -250,7 +250,7 @@
 +	.driver.owner	= THIS_MODULE,
 +	.driver.name	= DRV_NAME,
 +	.probe		= pwc_gemini_probe,
-+	.remove		= __devexit_p(pwc_gemini_remove),
++	.remove		= pwc_gemini_remove,
 +};
 +
 +static int __init pwc_gemini_init(void)

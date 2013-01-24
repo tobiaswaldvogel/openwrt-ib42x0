@@ -111,9 +111,9 @@
  MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
 --- a/drivers/usb/Kconfig
 +++ b/drivers/usb/Kconfig
-@@ -38,6 +38,7 @@ config USB_ARCH_HAS_EHCI
- 	default y if ARCH_AT91
+@@ -39,6 +39,7 @@ config USB_ARCH_HAS_EHCI
  	default y if ARCH_MXC
+ 	default y if ARCH_MXS
  	default y if ARCH_OMAP3
 +	default y if ARCH_GEMINI
  	default y if ARCH_CNS3XXX
@@ -428,7 +428,7 @@
 +	return retval;
 +}
 +
-+static int __devinit fotg2_ehci_probe(struct platform_device *pdev)
++static int fotg2_ehci_probe(struct platform_device *pdev)
 +{
 +	struct usb_hcd *hcd;
 +	struct resource *res;
@@ -481,7 +481,7 @@
 +	return err;
 +}
 +
-+static int __devexit fotg2_ehci_remove(struct platform_device *pdev)
++static int fotg2_ehci_remove(struct platform_device *pdev)
 +{
 +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 +
@@ -499,7 +499,7 @@
 +
 +static struct platform_driver ehci_fotg2_driver = {
 +	.probe		= fotg2_ehci_probe,
-+	.remove		= __devexit_p(fotg2_ehci_remove),
++	.remove		= fotg2_ehci_remove,
 +	.driver.owner	= THIS_MODULE,
 +	.driver.name 	= DRV_NAME,
 +};
