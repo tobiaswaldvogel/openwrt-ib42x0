@@ -8,20 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=uhttpd
-PKG_VERSION:=2013-01-19
+PKG_VERSION:=2013-01-22
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git://nbd.name/uhttpd2.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=56278d4af64256e703a6c4cf3d854aac689c391c
+PKG_SOURCE_VERSION:=14e3971c37e6feb0ec5eda0988e07d8a786ba9f9
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
 
-PKG_CONFIG_DEPENDS = CONFIG_PACKAGE_uhttpd-mod-tls
+PKG_BUILD_DEPENDS = ustream-ssl
+
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
-
 
 define Package/uhttpd/default
   SECTION:=net
@@ -102,7 +102,7 @@ endef
 
 TARGET_LDFLAGS += -lcrypt
 
-CMAKE_OPTIONS = -DTLS_SUPPORT=$(if $(CONFIG_PACKAGE_uhttpd-mod-tls),on,off)
+CMAKE_OPTIONS = -DTLS_SUPPORT=on
 
 define Package/uhttpd/install
 	$(INSTALL_DIR) $(1)/etc/init.d

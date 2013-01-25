@@ -1,8 +1,6 @@
 #!/bin/sh /etc/rc.common
 # Copyright (c) 2011-2012 OpenWrt.org
 START=80
-. /lib/functions/network.sh
-. /lib/functions/service.sh
 
 start_6relayd() {
 	local cfg="$1"
@@ -39,6 +37,7 @@ start_6relayd() {
 			master="$slave"
 		else
 			[ -n "$slave" ] && append slaves "$slave"
+			echo 1 > "/proc/sys/net/ipv6/conf/$slave/forwarding"
 		fi
 	done
 
@@ -106,6 +105,8 @@ restart_affected_6relayd() {
 }
 
 restart_affected() {
+	. /lib/functions/service.sh
+	. /lib/functions/network.sh
 	local net="$1"
 	config_load 6relayd
 	config_foreach restart_affected_6relayd server "$net"
@@ -113,6 +114,7 @@ restart_affected() {
 }
 
 stop() {
+	. /lib/functions/service.sh
 	for pid in /var/run/6relayd-*.pid; do
 		SERVICE_PID_FILE="$pid"
 		service_stop /usr/sbin/6relayd
@@ -121,6 +123,8 @@ stop() {
 }
 
 start() {
+	. /lib/functions/service.sh
+	. /lib/functions/network.sh
 	config_load 6relayd
 	config_foreach start_6relayd server
 	config_foreach start_6relayd relay relay
