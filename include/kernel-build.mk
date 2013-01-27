@@ -81,27 +81,19 @@ define BuildKernel
 	( \
 		echo '#define SYMTAB_KEEP \'; \
 		cat $(KERNEL_BUILD_DIR)/sym_include.txt | \
-			awk '{print "*(__ksymtab." $$$$1 ") \\" }'; \
+			awk '{print "KEEP(*(___ksymtab+" $$$$1 ")) \\" }'; \
 		echo; \
 		echo '#define SYMTAB_KEEP_GPL \'; \
 		cat $(KERNEL_BUILD_DIR)/sym_include.txt | \
-			awk '{print "*(__ksymtab_gpl." $$$$1 ") \\" }'; \
-		echo; \
-		echo '#define SYMTAB_KEEP_STR \'; \
-		cat $(KERNEL_BUILD_DIR)/sym_include.txt | \
-			awk '{print "*(__ksymtab_strings." $$$$1 ") \\" }'; \
+			awk '{print "KEEP(*(___ksymtab_gpl+" $$$$1 ")) \\" }'; \
 		echo; \
 		echo '#define SYMTAB_DISCARD \'; \
 		cat $(KERNEL_BUILD_DIR)/sym_exclude.txt | \
-			awk '{print "*(__ksymtab." $$$$1 ") \\" }'; \
+			awk '{print "*(___ksymtab+" $$$$1 ") \\" }'; \
 		echo; \
 		echo '#define SYMTAB_DISCARD_GPL \'; \
 		cat $(KERNEL_BUILD_DIR)/sym_exclude.txt | \
-			awk '{print "*(__ksymtab_gpl." $$$$1 ") \\" }'; \
-		echo; \
-		echo '#define SYMTAB_DISCARD_STR \'; \
-		cat $(KERNEL_BUILD_DIR)/sym_exclude.txt | \
-			awk '{print "*(__ksymtab_strings." $$$$1 ") \\" }'; \
+			awk '{print "*(___ksymtab_gpl+" $$$$1 ") \\" }'; \
 		echo; \
 	) > $$@
 
