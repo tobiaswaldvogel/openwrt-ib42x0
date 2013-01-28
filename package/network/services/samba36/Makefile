@@ -123,6 +123,7 @@ CONFIGURE_ARGS += \
 	--with-piddir=/var/run \
 	--with-privatedir=/etc/samba \
 	--with-sendfile-support \
+	--with-aio-support \
 	--without-cluster-support \
 	--without-ads \
 	--without-krb5 \
@@ -137,7 +138,7 @@ CONFIGURE_ARGS += \
 	--without-libaddns \
 	--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_winbind,auth_wbc,auth_domain,vfs
 
-MAKE_FLAGS += DYNEXP= PICFLAG= MODULES=bin/dirsort.so
+MAKE_FLAGS += DYNEXP= PICFLAG= MODULES="bin/dirsort.so bin/aio_pthread.so bin/aio_fork.so"
 
 ifeq ($(BUILD_VARIANT),samba36-server-ads)
 	TARGET_CFLAGS += \
