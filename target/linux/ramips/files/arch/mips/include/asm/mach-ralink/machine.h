@@ -41,6 +41,7 @@ enum ramips_mach_type {
 	RAMIPS_MACH_ALL0239_3G,		/* ALL0239-3G */
 	RAMIPS_MACH_ARGUS_ATP52B,	/* Argus ATP-52B */
 	RAMIPS_MACH_BC2,		/* NexAira BC2 */
+	RAMIPS_MACH_BR6425,		/* Edimax BR-6425 */
 	RAMIPS_MACH_BROADWAY,		/* Hauppauge Broadway */
 	RAMIPS_MACH_DAP_1350,		/* D-Link DAP-1350 */
 	RAMIPS_MACH_ESR_9753,		/* Senao / EnGenius ESR-9753*/
@@ -74,6 +75,7 @@ enum ramips_mach_type {
 
 	/* RT3662 based machines */
 	RAMIPS_MACH_DIR_645,		/* D-Link DIR-645 */
+	RAMIPS_MACH_OMNI_EMB_HPM,	/* Omnima EMB HPM */
 	RAMIPS_MACH_RT_N56U,		/* Asus RT-N56U */
 
 	/* RT3883 based machines */

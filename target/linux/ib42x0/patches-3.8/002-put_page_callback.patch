@@ -14,7 +14,7 @@
 === modified file 'drivers/net/tun.c'
 --- old/drivers/net/tun.c	2012-12-17 19:41:04 +0000
 +++ new/drivers/net/tun.c	2012-12-17 23:03:50 +0000
-@@ -993,7 +993,7 @@ static int zerocopy_sg_from_iovec(struct
+@@ -1012,7 +1012,7 @@ static int zerocopy_sg_from_iovec(struct
  		num_pages = get_user_pages_fast(base, size, 0, &page[i]);
  		if (num_pages != size) {
  			for (i = 0; i < num_pages; i++)
@@ -27,7 +27,7 @@
 === modified file 'drivers/net/vmxnet3/vmxnet3_drv.c'
 --- old/drivers/net/vmxnet3/vmxnet3_drv.c	2012-12-17 19:41:04 +0000
 +++ new/drivers/net/vmxnet3/vmxnet3_drv.c	2012-12-17 23:03:50 +0000
-@@ -1370,7 +1370,7 @@ vmxnet3_rq_cleanup(struct vmxnet3_rx_que
+@@ -1368,7 +1368,7 @@ vmxnet3_rq_cleanup(struct vmxnet3_rx_que
  					rq->buf_info[ring_idx][i].page) {
  				pci_unmap_page(adapter->pdev, rxd->addr,
  					       rxd->len, PCI_DMA_FROMDEVICE);
@@ -40,16 +40,16 @@
 === modified file 'drivers/net/xen-netback/netback.c'
 --- old/drivers/net/xen-netback/netback.c	2012-12-17 19:41:04 +0000
 +++ new/drivers/net/xen-netback/netback.c	2012-12-17 23:03:50 +0000
-@@ -1081,7 +1081,7 @@ static void xen_netbk_fill_frags(struct
+@@ -1090,7 +1090,7 @@ static void xen_netbk_fill_frags(struct
  		skb->truesize += txp->size;
  
  		/* Take an extra reference to offset xen_netbk_idx_release */
 -		get_page(netbk->mmap_pages[pending_idx]);
 +		net_get_page(netbk->mmap_pages[pending_idx]);
- 		xen_netbk_idx_release(netbk, pending_idx);
+ 		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_OKAY);
  	}
  }
-@@ -1522,7 +1522,7 @@ static void xen_netbk_idx_release(struct
+@@ -1549,7 +1549,7 @@ static void xen_netbk_idx_release(struct
  	xenvif_put(vif);
  
  	netbk->mmap_pages[pending_idx]->mapping = 0;

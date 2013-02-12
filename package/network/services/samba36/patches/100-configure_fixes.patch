@@ -1,6 +1,6 @@
---- a/source3/configure	2012-12-30 20:35:33.727515216 +0100
-+++ b/source3/configure	2012-12-30 20:36:33.365798707 +0100
-@@ -13270,10 +13270,7 @@
+--- a/source3/configure
++++ b/source3/configure
+@@ -13318,10 +13318,7 @@ if test x"$libreplace_cv_HAVE_GETADDRINF
  	# see bug 5910, use our replacements if we detect
  	# a broken system.
  	if test "$cross_compiling" = yes; then :

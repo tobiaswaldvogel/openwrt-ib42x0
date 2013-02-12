@@ -195,7 +195,7 @@
  		/* get per-port change detect bits */
  		if (ehci->has_ppcd)
  			ppcd = status >> 16;
-@@ -1345,6 +1351,7 @@
+@@ -1346,6 +1352,7 @@
  	!IS_ENABLED(CONFIG_USB_EHCI_HCD_PLATFORM) && \
  	!IS_ENABLED(CONFIG_USB_CHIPIDEA_HOST) && \
  	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
@@ -205,7 +205,7 @@
  	!defined(OF_PLATFORM_DRIVER) && \
 --- a/drivers/usb/host/ehci-timer.c	2012-12-24 18:35:19.695560879 +0100
 +++ b/drivers/usb/host/ehci-timer.c	2012-12-24 18:39:39.813308000 +0100
-@@ -207,7 +207,9 @@
+@@ -208,7 +208,9 @@
  
  	/* Clean up the mess */
  	ehci->rh_state = EHCI_RH_HALTED;
@@ -233,7 +233,7 @@
  		case 1:
 --- a/drivers/usb/host/ehci-hub.c
 +++ b/drivers/usb/host/ehci-hub.c
-@@ -906,6 +906,11 @@ static int ehci_hub_control (
+@@ -912,6 +912,11 @@ static int ehci_hub_control (
  			/* see what we found out */
  			temp = check_reset_complete (ehci, wIndex, status_reg,
  					ehci_readl(ehci, status_reg));

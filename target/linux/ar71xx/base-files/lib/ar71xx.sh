@@ -87,6 +87,9 @@ tplink_board_detect() {
 	"074300"*)
 		model="TP-Link TL-WR743N/ND"
 		;;
+	"080100"*)
+		model="TP-Link TL-WA801N/ND"
+		;;
 	"084100"*)
 		model="TP-Link TL-WR841N/ND"
 		;;
@@ -122,6 +125,9 @@ tplink_board_detect() {
 		;;
 	"342000"*)
 		model="TP-Link TL-MR3420"
+		;;
+	"350000"*)
+		model="TP-Link TL-WDR3500"
 		;;
 	"360000"*)
 		model="TP-Link TL-WDR3600"
@@ -174,6 +180,9 @@ ar71xx_board_detect() {
 	*AP121-MINI)
 		name="ap121-mini"
 		;;
+	*"AP132 reference board")
+		name="ap132"
+		;;
 	*"AP136-010 reference board")
 		name="ap136-010"
 		;;
@@ -210,6 +219,9 @@ ar71xx_board_detect() {
 	*"DIR-825 rev. B1")
 		name="dir-825-b1"
 		;;
+	*"DIR-825 rev. C1")
+		name="dir-825-c1"
+		;;
 	*EAP7660D)
 		name="eap7660d"
 		;;
@@ -233,6 +245,9 @@ ar71xx_board_detect() {
 		;;
 	*LS-SR71)
 		name="ls-sr71"
+		;;
+	*MR600v2)
+		name="mr600v2"
 		;;
 	*MR600)
 		name="mr600"
@@ -365,6 +380,9 @@ ar71xx_board_detect() {
 		;;
 	*"TL-WA901ND v2")
 		name="tl-wa901nd-v2"
+		;;
+	*"TL-WDR3500")
+		name="tl-wdr3500"
 		;;
 	*"TL-WDR3600/4300/4310")
 		name="tl-wdr4300"

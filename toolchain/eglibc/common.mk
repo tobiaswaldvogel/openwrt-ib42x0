@@ -25,7 +25,6 @@ ifneq ($(CONFIG_EGLIBC_VERSION_2_17),)
   PKG_SOURCE_URL:=svn://svn.eglibc.org/branches/eglibc-2_17
 endif
 
-
 PATCH_DIR:=$(PATH_PREFIX)/patches/$(PKG_VERSION)
 
 HOST_BUILD_DIR:=$(BUILD_DIR_TOOLCHAIN)/$(PKG_SOURCE_SUBDIR)
@@ -80,15 +79,13 @@ define Host/Configure
 	);
 endef
 
-ifeq ($(CONFIG_EGLIBC_VERSION_2_17),)
-  LN_PORTS:=ln -sf ../ports $(HOST_BUILD_DIR)/libc/
-endif
-
 define Host/Prepare
 	$(call Host/Prepare/Default)
 	ln -snf $(PKG_SOURCE_SUBDIR) $(BUILD_DIR_TOOLCHAIN)/$(PKG_NAME)
 	$(SED) 's,y,n,' $(HOST_BUILD_DIR)/libc/option-groups.defaults
-	$(LN_PORTS)
+ifneq ($(CONFIG_EGLIBC_VERSION_2_17),y)
+	ln -sf ../ports $(HOST_BUILD_DIR)/libc/
+endif
 endef
 
 define Host/Clean

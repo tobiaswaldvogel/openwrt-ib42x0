@@ -332,14 +332,22 @@
  	 * this requires a winreg pipe.
  	 */
 +#ifdef PRINTER_SUPPORT
+<<<<<<< HEAD
 	if (!print_backend_init(smbd_messaging_context()))
 		exit(1);
  
 @@ -1262,6 +1267,7 @@ extern void build_options(bool screen);
+=======
+ 	if (!print_backend_init(smbd_messaging_context()))
+ 		exit(1);
+ 
+@@ -1262,7 +1265,7 @@ extern void build_options(bool screen);
+>>>>>>> openwrt/master
  				       smbd_messaging_context());
  		}
  	}
+-
 +#endif
- 
  	if (!is_daemon) {
  		/* inetd mode */
+ 		TALLOC_FREE(frame);

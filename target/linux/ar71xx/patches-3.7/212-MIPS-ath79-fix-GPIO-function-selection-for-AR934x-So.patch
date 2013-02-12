@@ -19,7 +19,7 @@ Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
 
 --- a/arch/mips/ath79/gpio.c
 +++ b/arch/mips/ath79/gpio.c
-@@ -137,47 +137,61 @@ static struct gpio_chip ath79_gpio_chip 
+@@ -137,47 +137,61 @@ static struct gpio_chip ath79_gpio_chip
  	.base			= 0,
  };
  
@@ -95,7 +95,7 @@ Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
  }
 --- a/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
 +++ b/arch/mips/include/asm/mach-ath79/ar71xx_regs.h
-@@ -520,6 +520,8 @@
+@@ -521,6 +521,8 @@
  #define AR71XX_GPIO_REG_INT_ENABLE	0x24
  #define AR71XX_GPIO_REG_FUNC		0x28
  

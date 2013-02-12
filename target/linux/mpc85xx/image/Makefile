@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
-DTS_TARGETS = mpc8548cds
+DTS_TARGETS = mpc8548cds_32b p1010rdb
 
 define Image/Prepare
 	cp $(LINUX_DIR)/arch/powerpc/boot/zImage $(KDIR)/zImage
@@ -15,7 +15,9 @@ endef
 
 define Image/BuildKernel
 	cp $(KDIR)/zImage $(BIN_DIR)/$(IMG_PREFIX)-zImage
-	$(foreach dts,$(DTS_TARGETS),$(LINUX_DIR)/scripts/dtc/dtc -I dts -O dtb $(LINUX_DIR)/arch/powerpc/boot/dts/$(dts).dts > $(BIN_DIR)/$(IMG_PREFIX)-$(dts).fdt)
+	$(foreach dts,$(DTS_TARGETS),
+		$(LINUX_DIR)/scripts/dtc/dtc -I dts -O dtb $(LINUX_DIR)/arch/powerpc/boot/dts/$(dts).dts > $(BIN_DIR)/$(IMG_PREFIX)-$(dts).fdt
+	)
 endef
 
 define Image/Build/ext2

@@ -56,6 +56,9 @@ ramips_board_name() {
 	*"AirLive Air3GII")
 		name="air3gii"
 		;;
+	*"Edimax BR-6425")
+		name="br6425"
+		;;
 	*"Allnet ALL0239-3G")
 		name="all0239-3g"
 		;;
@@ -136,6 +139,9 @@ ramips_board_name() {
 		;;
 	*"NW718")
 		name="nw718"
+		;;
+	*"Omnima EMB HPM")
+		name="omni-emb-hpm"
 		;;
 	*"Omnima MiniEMBWiFi")
 		name="omni-emb"

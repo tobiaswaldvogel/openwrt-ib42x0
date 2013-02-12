@@ -473,7 +473,7 @@ $(eval $(call KernelPackage,pcnet32))
 define KernelPackage/tg3
   TITLE:=Broadcom Tigon3 Gigabit Ethernet
   KCONFIG:=CONFIG_TIGON3
-  DEPENDS:=+!TARGET_brcm47xx:kmod-libphy +!LINUX_3_3:kmod-hwmon-core
+  DEPENDS:=+!TARGET_brcm47xx:kmod-libphy +!LINUX_3_3:kmod-hwmon-core +LINUX_3_8:kmod-ptp
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   FILES:=$(LINUX_DIR)/drivers/net/ethernet/broadcom/tg3.ko
   AUTOLOAD:=$(call AutoLoad,50,tg3)
@@ -663,3 +663,18 @@ define KernelPackage/dm9000/description
 endef
 
 $(eval $(call KernelPackage,dm9000))
+
+define KernelPackage/forcedeth
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=nForce Ethernet support
+  DEPENDS:=@PCI_SUPPORT
+  KCONFIG:=CONFIG_FORCEDETH
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/nvidia/forcedeth.ko
+  AUTOLOAD:=$(call AutoLoad,50,forcedeth)
+endef
+
+define KernelPackage/forcedeth/description
+ Kernel driver for Nvidia Ethernet support
+endef
+
+$(eval $(call KernelPackage,forcedeth))

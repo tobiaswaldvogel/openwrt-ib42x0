@@ -72,7 +72,9 @@
 				reg = <0 0x7f0400 0x800
 					0 0x7f0016 0x6>;
 				ath,mac-increment = <1>;
+				ath,pci-slot = <14>;
 				ath,eep-swap;
+				ath,eep-csum;
 			};
 		};
 
@@ -112,7 +114,7 @@
 
 		ifxhcd@E101000 {
 			status = "okay";
-			gpio-reset = <&gpio 14 1>;
+			gpios = <&gpio 14 0>;
 		};
 
 		pci@E105400 {

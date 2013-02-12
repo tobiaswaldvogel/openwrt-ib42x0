@@ -59,6 +59,7 @@ case "$FIRMWARE" in
 	all5002 | \
 	argus-atp52b | \
 	bc2 | \
+	br6425 | \
 	broadway | \
 	br6524n | \
 	carambola | \
@@ -74,6 +75,7 @@ case "$FIRMWARE" in
 	nbg-419n | \
 	nw718 | \
 	omni-emb | \
+	omni-emb-hpm | \
 	psr-680w | \
 	rt-n15 | \
 	rt-n56u | \
