@@ -13,13 +13,13 @@ SUBTARGETS:=rt288x rt305x rt3883
 CFLAGS:=-Os -pipe -mips32r2 -mtune=mips32r2 -fno-caller-saves -mno-branch-likely
 FEATURES:=squashfs
 
-LINUX_VERSION:=3.7.7
+LINUX_VERSION:=3.7.8
 
 include $(INCLUDE_DIR)/target.mk
 DEFAULT_PACKAGES+=\
 	kmod-leds-gpio kmod-input-core kmod-input-polldev \
 	kmod-input-gpio-keys-polled kmod-button-hotplug \
-	kmod-rt2800-pci wpad-mini maccalc swconfig
+	kmod-rt2800-pci wpad-mini swconfig
 
 define Target/Description
 	Build firmware images for Ralink RT288x/RT3xxx based boards.
