@@ -96,9 +96,9 @@
 +	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
 +		GLOBAL_MISC_CTRL));
 +
-+	/* enabling ports for presence detection */
-+	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
-+	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
++	/* enabling ports for presence detection, master only */
++	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
++	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
 +}
 +
  static void __init ib4220b_init(void)
@@ -159,9 +159,9 @@
  obj-$(CONFIG_PATA_HPT366)	+= pata_hpt366.o
  obj-$(CONFIG_PATA_HPT37X)	+= pata_hpt37x.o
  obj-$(CONFIG_PATA_HPT3X2N)	+= pata_hpt3x2n.o
---- /dev/null			2012-01-23 21:36:48.249769447 +0100
-+++ b/drivers/ata/pata_gemini.c	2012-01-26 03:53:18.277201430 +0100
-@@ -0,0 +1,307 @@
+--- a/drivers/ata/pata_gemini.c	2013-02-17 20:50:21.408675278 +0100
++++ b/drivers/ata/pata_gemini.c	2013-02-19 14:03:28.972150090 +0100
+@@ -0,0 +1,234 @@
 +/*
 + *  Support for Gemini PATA
 + *
@@ -231,19 +231,6 @@
 +#define SATA_ENABLE_SDEV_PM		0x20
 +#define SATA_ENABLE_SDEV_ADDED		0x40
 +#define SATA_ENABLE_SDEV_REMOVED	0x80
-+
-+static int iomux = 0;
-+module_param(iomux, int, 0600);
-+MODULE_PARM_DESC(iomux, "SATA to PATA IOMUX");
-+static int mode_sata0 = SATA_ENABLE_PDEV_MASK;
-+module_param(mode_sata0, int, 0600);
-+MODULE_PARM_DESC(mode_sata0, "Mode for SATA0");
-+static int mode_sata1 = SATA_ENABLE_PDEV_MASK;
-+module_param(mode_sata1, int, 0600);
-+MODULE_PARM_DESC(mode_sata1, "Mode for SATA1");
-+static int enable_slave = 0;
-+module_param(enable_slave, int, 0600);
-+MODULE_PARM_DESC(enable_slave, "Enable slave device");
 +
 +MODULE_AUTHOR("Janos Laube <janos.dev@gmail.com>");
 +MODULE_LICENSE("GPL");
@@ -342,70 +329,12 @@
 +
 +static const struct ata_port_info *pata_gemini_ports = &pata_gemini_portinfo;
 +
-+static struct ata_port_info pata_gemini_portinfo_slave = {
-+	.flags		= ATA_FLAG_SLAVE_POSS,
-+	.udma_mask	= ATA_UDMA6,
-+	.pio_mask	= ATA_PIO4,
-+	.port_ops	= &pata_gemini_port_ops,
-+};
-+
-+static const struct ata_port_info *pata_gemini_ports_slave =
-+				&pata_gemini_portinfo_slave;
-+
-+static irqreturn_t pata_gemini_interrupt(int irq, void *dev)
-+{
-+	struct ata_host *host = dev;
-+	unsigned int i, handled = 0;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+	for (i = 0; i < host->n_ports; i++) {
-+		struct ata_port *ap = host->ports[i];
-+		struct ata_queued_cmd *qc;
-+		qc = ata_qc_from_tag(ap, ap->link.active_tag);
-+
-+		if (qc && (qc->tf.ctl & ATA_NIEN))
-+			ap->ops->sff_check_status(ap);
-+		else if (qc && (!(qc->tf.flags & ATA_TFLAG_POLLING)) &&
-+				(qc->flags & ATA_QCFLAG_ACTIVE))
-+			handled |= ata_bmdma_port_intr(ap, qc);
-+		else
-+			ap->ops->sff_check_status(ap);
-+	}
-+	spin_unlock_irqrestore(&host->lock, flags);
-+
-+	if (!handled) {
-+		pr_err(DRV_NAME ": Unexpected interrupt\n");
-+		handled = IRQ_HANDLED;
-+	}
-+
-+	return IRQ_RETVAL(handled);
-+}
-+
-+static void __init pata_gemini_sata_iomux(void)
-+{
-+	unsigned long reg;
-+
-+	reg = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
-+	reg &= ~IDE_IOMUX_MASK;
-+	reg |= iomux << 24;
-+	writel(reg, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
-+
-+	/* enabling ports for presence detection */
-+	writel(mode_sata0, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
-+	writel(mode_sata1, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
-+}
-+
 +static int pata_gemini_probe(struct platform_device *pdev)
 +{
 +	struct ata_host *host;
 +	struct resource *res;
 +	unsigned int irq, i;
 +	void __iomem *mmio_base;
-+
-+	pata_gemini_sata_iomux();
 +
 +	/* standard bdma init */
 +	irq = platform_get_irq(pdev, 0);
@@ -420,9 +349,7 @@
 +
 +	mmio_base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
 +
-+	host = ata_host_alloc_pinfo(&pdev->dev,
-+		enable_slave ?  &pata_gemini_ports_slave : &pata_gemini_ports,
-+		1);
++	host = ata_host_alloc_pinfo(&pdev->dev, &pata_gemini_ports, 1);
 +	if (!host)
 +		return -ENOMEM;
 +
@@ -432,13 +359,13 @@
 +
 +		ioaddr->bmdma_addr		= mmio_base;
 +		ioaddr->cmd_addr		= mmio_base + 0x20;
-+		ioaddr->altstatus_addr	=
 +		ioaddr->ctl_addr		= mmio_base + 0x36;
++		ioaddr->altstatus_addr		= ioaddr->ctl_addr;
 +		ata_sff_std_ports(ioaddr);
 +		host->ports[i]->cbl = ATA_CBL_SATA;
 +	}
 +
-+	return ata_host_activate(host, irq, pata_gemini_interrupt,
++	return ata_host_activate(host, irq, ata_bmdma_interrupt,
 +		IRQF_SHARED, &pata_gemini_sht);
 +}
 +

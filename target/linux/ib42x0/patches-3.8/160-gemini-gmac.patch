@@ -53,7 +53,7 @@
  	.init	= gemini_timer_init,
  };
 @@ -107,10 +125,40 @@
- 	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
+ 	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
  }
  
 +static void __init gmac_ib4220b_init(void)
@@ -1455,7 +1455,7 @@
 +	unsigned short r, w;
 +	unsigned short m = (1 << gmac->rxq_order) -1;
 +	GMAC_RXDESC_T *rx = NULL;
-+	struct page* page;
++	struct page* page = NULL;
 +	unsigned page_offs;
 +	unsigned int frame_len, frag_len;
 +	int frag_nr = 0;

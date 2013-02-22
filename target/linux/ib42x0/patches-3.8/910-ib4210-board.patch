@@ -123,8 +123,8 @@
 +		GLOBAL_MISC_CTRL));
 +
 +	/* enabling ports for presence detection */
-+	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
-+	writel(0x00000011, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
++	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
++	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
 +}
 +
 +static void __init gmac_ib4210b_init(void)
