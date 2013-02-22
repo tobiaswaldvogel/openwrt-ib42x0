@@ -244,10 +244,9 @@ static void b53_enable_vlan(struct b53_device *dev, int enable)
 		b53_read8(dev, B53_VLAN_PAGE, B53_VLAN_CTRL5, &vc5);
 	}
 
-	if (enable) {
-		if (!is63xx(dev))
-			mgmt |= SM_SW_FWD_MODE;
+	mgmt &= ~SM_SW_FWD_MODE;
 
+	if (enable) {
 		vc0 |= VC0_VLAN_EN | VC0_VID_CHK_EN | VC0_VID_HASH_VID;
 		vc1 |= VC1_RX_MCST_UNTAG_EN | VC1_RX_MCST_FWD_EN;
 		vc4 &= ~VC4_ING_VID_CHECK_MASK;
@@ -267,7 +266,6 @@ static void b53_enable_vlan(struct b53_device *dev, int enable)
 				vc5 &= ~VC5_VID_FFF_EN;
 		}
 	} else {
-		mgmt &= ~SM_SW_FWD_MODE;
 		vc0 &= ~(VC0_VLAN_EN | VC0_VID_CHK_EN | VC0_VID_HASH_VID);
 		vc1 &= ~(VC1_RX_MCST_UNTAG_EN | VC1_RX_MCST_FWD_EN);
 		vc4 &= ~VC4_ING_VID_CHECK_MASK;
@@ -362,7 +360,7 @@ static void b53_enable_ports(struct b53_device *dev)
 		u8 port_ctrl;
 		u16 pvlan_mask;
 
-		/* 
+		/*
 		 * prevent leaking packets between wan and lan in unmanaged
 		 * mode through port vlans.
 		 */
@@ -371,7 +369,7 @@ static void b53_enable_ports(struct b53_device *dev)
 		else if (is531x5(dev))
 			/* BCM53115 may use a different port as cpu port */
 			pvlan_mask = BIT(dev->sw_dev.cpu_port);
-		else 
+		else
 			pvlan_mask = BIT(B53_CPU_PORT);
 
 		/* BCM5325 CPU port is at 8 */

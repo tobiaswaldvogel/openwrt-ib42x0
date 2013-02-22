@@ -8,9 +8,12 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
 DTS_TARGETS = mpc8548cds_32b p1010rdb
+BOOT_IMAGES:=zImage
 
 define Image/Prepare
-	cp $(LINUX_DIR)/arch/powerpc/boot/zImage $(KDIR)/zImage
+	$(foreach image,$(BOOT_IMAGES),
+		cp $(LINUX_DIR)/arch/powerpc/boot/$(image) $(KDIR)/$(image)
+	)
 endef
 
 define Image/BuildKernel
@@ -22,6 +25,11 @@ endef
 
 define Image/Build/ext2
 	cp $(KDIR)/root.$(1) $(BIN_DIR)/$(IMG_PREFIX)-ext2.img
+endef
+
+define Image/Build/squashfs
+	$(call prepare_generic_squashfs,$(KDIR)/root.squashfs)
+	cp $(KDIR)/root.squashfs $(BIN_DIR)/$(IMG_PREFIX)-root.squashfs
 endef
 
 define Image/Build
