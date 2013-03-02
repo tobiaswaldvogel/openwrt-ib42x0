@@ -7,7 +7,9 @@
 /.config.old
 /bin
 /build_dir
+/build_dir_comp
 /staging_dir
+/staging_dir_comp
 /tmp
 /logs
 /feeds
