@@ -250,7 +250,7 @@
 +obj-$(CONFIG_GEMINI_SL351X) += sl351x.o
 --- /dev/null					2012-01-23 21:36:48.249769447 +0100
 +++ b/drivers/net/ethernet/gemini/sl351x.c	2012-01-27 17:09:51.000000000 +0100
-@@ -0,0 +1,2327 @@
+@@ -0,0 +1,2340 @@
 +/*
 + *  Ethernet device driver for Gemini SoC (SL351x GMAC).
 + *
@@ -258,6 +258,7 @@
 + *
 + *  Based on work by Michał Mirosław <mirq-linux@rere.qmqm.pl> and
 + *  Paulius Zaleckas <paulius.zaleckas@gmail.com> and
++ *  Giuseppe De Robertis <Giuseppe.DeRobertis@ba.infn.it> and
 + *  GPLd spaghetti code from Raidsonic and other Gemini-based NAS vendors.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -533,6 +534,7 @@
 +	void __iomem *status_reg = gmac->ctl_iomem + GMAC_STATUS;
 +	struct phy_device *phydev = dev->phydev;
 +	GMAC_STATUS_T status, old_status;
++	int pause_tx=0, pause_rx=0;
 +
 +	old_status.bits32 = status.bits32 = readl(status_reg);
 +
@@ -560,8 +562,18 @@
 +			phydev->speed);
 +	}
 +
-+	gmac_set_flow_control(dev, phydev->pause,
-+		phydev->pause ^ phydev->asym_pause);
++	if (phydev->duplex == DUPLEX_FULL) {
++		u16 lcladv = phy_read(phydev, MII_ADVERTISE);
++		u16 rmtadv = phy_read(phydev, MII_LPA);
++		u8 cap = mii_resolve_flowctrl_fdx(lcladv, rmtadv);
++
++		if (cap & FLOW_CTRL_RX)
++			pause_rx=1;
++		if (cap & FLOW_CTRL_TX)
++			pause_tx=1;
++	} 
++
++	gmac_set_flow_control(dev, pause_tx, pause_rx);
 +
 +	if (old_status.bits32 == status.bits32)
 +		return;
@@ -597,7 +609,8 @@
 +		return err;
 +	}
 +
-+	dev->phydev->supported &= PHY_GBIT_FEATURES|SUPPORTED_Pause;
++	dev->phydev->supported &= PHY_GBIT_FEATURES;
++	dev->phydev->supported |= SUPPORTED_Asym_Pause | SUPPORTED_Pause;
 +	dev->phydev->advertising = dev->phydev->supported;
 +
 +	/* set PHY interface type */
