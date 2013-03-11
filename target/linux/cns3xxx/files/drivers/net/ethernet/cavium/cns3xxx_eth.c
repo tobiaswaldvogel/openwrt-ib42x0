@@ -26,7 +26,7 @@
 
 #define DRV_NAME "cns3xxx_eth"
 
-#define RX_DESCS 128
+#define RX_DESCS 256
 #define TX_DESCS 128
 #define TX_DESC_RESERVE	20
 
@@ -38,7 +38,7 @@
 #define RX_BUFFER_ALIGN_MASK (~(RX_BUFFER_ALIGN - 1))
 
 #define SKB_HEAD_ALIGN (((PAGE_SIZE - NET_SKB_PAD) % RX_BUFFER_ALIGN) + NET_SKB_PAD + NET_IP_ALIGN)
-#define RX_SEGMENT_ALLOC_SIZE 4096
+#define RX_SEGMENT_ALLOC_SIZE 2048
 #define RX_SEGMENT_BUFSIZE (SKB_WITH_OVERHEAD(RX_SEGMENT_ALLOC_SIZE))
 #define RX_SEGMENT_MRU (((RX_SEGMENT_BUFSIZE - SKB_HEAD_ALIGN) & RX_BUFFER_ALIGN_MASK) - NET_IP_ALIGN)
 #define MAX_MTU	9500
@@ -286,8 +286,8 @@ struct sw {
 	struct switch_regs __iomem *regs;
 	struct napi_struct napi;
 	struct cns3xxx_plat_info *plat;
-	struct _tx_ring *tx_ring;
-	struct _rx_ring *rx_ring;
+	struct _tx_ring tx_ring;
+	struct _rx_ring rx_ring;
 	struct sk_buff *frag_first;
 	struct sk_buff *frag_last;
 };
@@ -436,14 +436,20 @@ static void cns3xxx_adjust_link(struct net_device *dev)
 	       dev->name, port->speed, port->duplex ? "full" : "half");
 }
 
+static void eth_schedule_poll(struct sw *sw)
+{
+	if (unlikely(!napi_schedule_prep(&sw->napi)))
+		return;
+
+	disable_irq_nosync(IRQ_CNS3XXX_SW_R0RXC);
+	__napi_schedule(&sw->napi);
+}
+
 irqreturn_t eth_rx_irq(int irq, void *pdev)
 {
 	struct net_device *dev = pdev;
 	struct sw *sw = netdev_priv(dev);
-	if (likely(napi_schedule_prep(&sw->napi))) {
-		disable_irq_nosync(IRQ_CNS3XXX_SW_R0RXC);
-		__napi_schedule(&sw->napi);
-	}
+	eth_schedule_poll(sw);
 	return (IRQ_HANDLED);
 }
 
@@ -507,26 +513,28 @@ irqreturn_t eth_stat_irq(int irq, void *pdev)
 
 static void cns3xxx_alloc_rx_buf(struct sw *sw, int received)
 {
-	struct _rx_ring *rx_ring = sw->rx_ring;
+	struct _rx_ring *rx_ring = &sw->rx_ring;
 	unsigned int i = rx_ring->alloc_index;
 	struct rx_desc *desc = &(rx_ring)->desc[i];
 	void *buf;
 	unsigned int phys;
 
 	for (received += rx_ring->alloc_count; received > 0; received--) {
-		buf = kzalloc(RX_SEGMENT_ALLOC_SIZE, GFP_ATOMIC);
+		buf = kmalloc(RX_SEGMENT_ALLOC_SIZE, GFP_ATOMIC);
 		if (!buf)
-			goto out;
+			break;
 
 		phys = dma_map_single(NULL, buf + SKB_HEAD_ALIGN,
 				      RX_SEGMENT_MRU, DMA_FROM_DEVICE);
 		if (dma_mapping_error(NULL, phys)) {
 			kfree(buf);
-			goto out;
+			break;
 		}
 
 		desc->sdl = RX_SEGMENT_MRU;
 		desc->sdp = phys;
+
+		wmb();
 
 		/* put the new buffer on RX-free queue */
 		rx_ring->buff_tab[i] = buf;
@@ -543,7 +551,7 @@ static void cns3xxx_alloc_rx_buf(struct sw *sw, int received)
 			desc++;
 		}
 	}
-out:
+
 	rx_ring->alloc_count = received;
 	rx_ring->alloc_index = i;
 }
@@ -577,7 +585,7 @@ static void eth_check_num_used(struct _tx_ring *tx_ring)
 
 static void eth_complete_tx(struct sw *sw)
 {
-	struct _tx_ring *tx_ring = sw->tx_ring;
+	struct _tx_ring *tx_ring = &sw->tx_ring;
 	struct tx_desc *desc;
 	int i;
 	int index;
@@ -612,13 +620,14 @@ static void eth_complete_tx(struct sw *sw)
 static int eth_poll(struct napi_struct *napi, int budget)
 {
 	struct sw *sw = container_of(napi, struct sw, napi);
-	struct _rx_ring *rx_ring = sw->rx_ring;
+	struct _rx_ring *rx_ring = &sw->rx_ring;
 	int received = 0;
 	unsigned int length;
 	unsigned int i = rx_ring->cur_index;
 	struct rx_desc *desc = &(rx_ring)->desc[i];
+	unsigned int alloc_count = rx_ring->alloc_count;
 
-	while (desc->cown) {
+	while (desc->cown && alloc_count + received < RX_DESCS - 1) {
 		struct sk_buff *skb;
 		int reserve = SKB_HEAD_ALIGN;
 
@@ -629,7 +638,7 @@ static int eth_poll(struct napi_struct *napi, int budget)
 		dma_unmap_single(NULL, rx_ring->phys_tab[i],
 				 RX_SEGMENT_MRU, DMA_FROM_DEVICE);
 
-		skb = build_skb(rx_ring->buff_tab[i]);
+		skb = build_skb(rx_ring->buff_tab[i], 0);
 		if (!skb)
 			break;
 
@@ -704,20 +713,21 @@ static int eth_poll(struct napi_struct *napi, int budget)
 		}
 	}
 
-	cns3xxx_alloc_rx_buf(sw, received);
-
-	rx_ring->cur_index = i;
-
-	if (received != budget) {
+	if (!received) {
 		napi_complete(napi);
 		enable_irq(IRQ_CNS3XXX_SW_R0RXC);
 	}
 
-	enable_rx_dma(sw);
-
 	spin_lock_bh(&tx_lock);
 	eth_complete_tx(sw);
 	spin_unlock_bh(&tx_lock);
+
+	cns3xxx_alloc_rx_buf(sw, received);
+
+	rx_ring->cur_index = i;
+
+	wmb();
+	enable_rx_dma(sw);
 
 	return received;
 }
@@ -739,7 +749,7 @@ static void eth_set_desc(struct _tx_ring *tx_ring, int index, int index_last,
 	if (index == index_last)
 		config0 |= LAST_SEGMENT;
 
-	mb();
+	wmb();
 	tx_desc->config0 = config0;
 }
 
@@ -747,7 +757,7 @@ static int eth_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct port *port = netdev_priv(dev);
 	struct sw *sw = port->sw;
-	struct _tx_ring *tx_ring = sw->tx_ring;
+	struct _tx_ring *tx_ring = &sw->tx_ring;
 	struct sk_buff *skb1;
 	char pmap = (1 << port->id);
 	int nr_frags = skb_shinfo(skb)->nr_frags;
@@ -763,9 +773,8 @@ static int eth_xmit(struct sk_buff *skb, struct net_device *dev)
 	skb_walk_frags(skb, skb1)
 		nr_desc++;
 
+	eth_schedule_poll(sw);
 	spin_lock_bh(&tx_lock);
-
-	eth_complete_tx(sw);
 	if ((tx_ring->num_used + nr_desc + 1) >= TX_DESCS) {
 		spin_unlock_bh(&tx_lock);
 		return NETDEV_TX_BUSY;
@@ -812,7 +821,7 @@ static int eth_xmit(struct sk_buff *skb, struct net_device *dev)
 	eth_set_desc(tx_ring, index0, index_last, skb->data, len0,
 		     config0 | FIRST_SEGMENT, pmap);
 
-	mb();
+	wmb();
 
 	spin_lock(&tx_lock);
 	tx_ring->num_used += nr_desc + 1;
@@ -874,8 +883,8 @@ static struct ethtool_ops cns3xxx_ethtool_ops = {
 static int init_rings(struct sw *sw)
 {
 	int i;
-	struct _rx_ring *rx_ring = sw->rx_ring;
-	struct _tx_ring *tx_ring = sw->tx_ring;
+	struct _rx_ring *rx_ring = &sw->rx_ring;
+	struct _tx_ring *tx_ring = &sw->tx_ring;
 
 	__raw_writel(0, &sw->regs->fs_dma_ctrl0);
 	__raw_writel(TS_SUSPEND | FS_SUSPEND, &sw->regs->dma_auto_poll_cfg);
@@ -947,11 +956,11 @@ static int init_rings(struct sw *sw)
 static void destroy_rings(struct sw *sw)
 {
 	int i;
-	if (sw->rx_ring->desc) {
+	if (sw->rx_ring.desc) {
 		for (i = 0; i < RX_DESCS; i++) {
-			struct _rx_ring *rx_ring = sw->rx_ring;
+			struct _rx_ring *rx_ring = &sw->rx_ring;
 			struct rx_desc *desc = &(rx_ring)->desc[i];
-			struct sk_buff *skb = sw->rx_ring->buff_tab[i];
+			struct sk_buff *skb = sw->rx_ring.buff_tab[i];
 
 			if (!skb)
 				continue;
@@ -960,26 +969,26 @@ static void destroy_rings(struct sw *sw)
 					 DMA_FROM_DEVICE);
 			dev_kfree_skb(skb);
 		}
-		dma_pool_free(rx_dma_pool, sw->rx_ring->desc, sw->rx_ring->phys_addr);
+		dma_pool_free(rx_dma_pool, sw->rx_ring.desc, sw->rx_ring.phys_addr);
 		dma_pool_destroy(rx_dma_pool);
 		rx_dma_pool = 0;
-		sw->rx_ring->desc = 0;
+		sw->rx_ring.desc = 0;
 	}
-	if (sw->tx_ring->desc) {
+	if (sw->tx_ring.desc) {
 		for (i = 0; i < TX_DESCS; i++) {
-			struct _tx_ring *tx_ring = sw->tx_ring;
+			struct _tx_ring *tx_ring = &sw->tx_ring;
 			struct tx_desc *desc = &(tx_ring)->desc[i];
-			struct sk_buff *skb = sw->tx_ring->buff_tab[i];
+			struct sk_buff *skb = sw->tx_ring.buff_tab[i];
 			if (skb) {
 				dma_unmap_single(NULL, desc->sdp,
 					skb->len, DMA_TO_DEVICE);
 				dev_kfree_skb(skb);
 			}
 		}
-		dma_pool_free(tx_dma_pool, sw->tx_ring->desc, sw->tx_ring->phys_addr);
+		dma_pool_free(tx_dma_pool, sw->tx_ring.desc, sw->tx_ring.phys_addr);
 		dma_pool_destroy(tx_dma_pool);
 		tx_dma_pool = 0;
-		sw->tx_ring->desc = 0;
+		sw->tx_ring.desc = 0;
 	}
 }
 
@@ -1153,7 +1162,7 @@ static const struct net_device_ops cns3xxx_netdev_ops = {
 	.ndo_validate_addr = eth_validate_addr,
 };
 
-static int __devinit eth_init_one(struct platform_device *pdev)
+static int eth_init_one(struct platform_device *pdev)
 {
 	int i;
 	struct port *port;
@@ -1201,22 +1210,10 @@ static int __devinit eth_init_one(struct platform_device *pdev)
 	__raw_writel(UNKNOWN_VLAN_TO_CPU |
 		     CRC_STRIPPING, &sw->regs->mac_glob_cfg);
 
-	if (!(sw->rx_ring = kmalloc(sizeof(struct _rx_ring), GFP_KERNEL))) {
-		err = -ENOMEM;
-		goto err_free;
-	}
-	memset(sw->rx_ring, 0, sizeof(struct _rx_ring));
-
-	if (!(sw->tx_ring = kmalloc(sizeof(struct _tx_ring), GFP_KERNEL))) {
-		err = -ENOMEM;
-		goto err_free_rx;
-	}
-	memset(sw->tx_ring, 0, sizeof(struct _tx_ring));
-
 	if ((err = init_rings(sw)) != 0) {
 		destroy_rings(sw);
 		err = -ENOMEM;
-		goto err_free_rings;
+		goto err_free;
 	}
 	platform_set_drvdata(pdev, napi_dev);
 
@@ -1288,16 +1285,12 @@ free_ports:
 			free_netdev(dev);
 		}
 	}
-err_free_rings:
-	kfree(sw->tx_ring);
-err_free_rx:
-	kfree(sw->rx_ring);
 err_free:
 	free_netdev(napi_dev);
 	return err;
 }
 
-static int __devexit eth_remove_one(struct platform_device *pdev)
+static int eth_remove_one(struct platform_device *pdev)
 {
 	struct net_device *dev = platform_get_drvdata(pdev);
 	struct sw *sw = netdev_priv(dev);

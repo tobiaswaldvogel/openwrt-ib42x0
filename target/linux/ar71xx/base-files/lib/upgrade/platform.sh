@@ -109,6 +109,7 @@ platform_check_image() {
 	dir-615-c1 | \
 	dir-615-e4 | \
 	dir-825-c1 | \
+	dir-835-a1 | \
 	ew-dorin | \
 	ew-dorin-router | \
 	mzk-w04nu | \
@@ -158,6 +159,7 @@ platform_check_image() {
 	tl-mr3220 | \
 	tl-mr3220-v2 | \
 	tl-mr3420 | \
+	tl-mr3420-v2 | \
 	tl-wa7510n | \
 	tl-wa901nd | \
 	tl-wa901nd-v2 | \

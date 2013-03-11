@@ -50,7 +50,8 @@ get_status_led() {
 	dir-615-c1)
 		status_led="d-link:green:status"
 		;;
-	dir-825-b1)
+	dir-825-b1 |\
+	dir-835-a1)
 		status_led="d-link:orange:power"
 		;;
 	dir-825-c1)
@@ -117,6 +118,7 @@ get_status_led() {
 	tl-mr3220 | \
 	tl-mr3220-v2 | \
 	tl-mr3420 | \
+	tl-mr3420-v2 | \
 	tl-wa901nd | \
 	tl-wa901nd-v2 | \
 	tl-wr1041n-v2 | \
