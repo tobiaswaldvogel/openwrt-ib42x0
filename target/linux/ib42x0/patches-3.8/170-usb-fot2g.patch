@@ -146,11 +146,11 @@
  obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
 --- a/drivers/usb/host/ehci-hcd.c
 +++ b/drivers/usb/host/ehci-hcd.c
-@@ -339,12 +339,13 @@ static void ehci_silence_controller(struct ehci_hcd *ehci)
+@@ -339,12 +339,14 @@ static void ehci_silence_controller(struct ehci_hcd *ehci)
  	spin_lock_irq(&ehci->lock);
  	ehci->rh_state = EHCI_RH_HALTED;
  	ehci_turn_off_all_ports(ehci);
--
+
 +#ifndef CONFIG_ARCH_GEMINI
  	/* make BIOS/etc use companion controller during reboot */
  	ehci_writel(ehci, 0, &ehci->regs->configured_flag);

@@ -19,6 +19,8 @@ PKG_MD5SUM:=9c0cae5a0379228e7b55e5b29528df8e
 
 PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBRPC:librpc
 PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBTIRPC:libtirpc 
+PKG_CONFIG_DEPENDS:=CONFIG_PROCD_INIT
+#PKG_BUILD_DEPENDS:=BUSYBOX_CONFIG_FEATURE_HAVE_RPC:librpc
 PKG_BUILD_PARALLEL:=1
 
 PKG_LICENSE:=GPLv2 BSD-4c
@@ -128,6 +130,7 @@ define Package/busybox/install
 
 	touch  $(1)/etc/busybox.conf
 	chmod u+s $(1)/bin/busybox
+	$(if $(CONFIG_PROCD_INIT),rm -f $(1)/sbin/init $(1)/sbin/logread)
 endef
 
 $(eval $(call BuildPackage,busybox))
