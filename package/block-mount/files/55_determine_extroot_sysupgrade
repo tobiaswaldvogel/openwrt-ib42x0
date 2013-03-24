@@ -15,7 +15,7 @@ check_set_md5sum() {
 	fi
 
 	local er_extroot_md5sum
-	if [ -f $md5sum_file ]; then
+	if [ -f $er_md5sum_file ]; then
 		er_extroot_md5sum="$(cat $er_md5sum_file)"
 	fi
 
