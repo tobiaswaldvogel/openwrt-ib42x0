@@ -1,6 +1,10 @@
 src-git packages git://github.com/tobiaswaldvogel/openwrt-packages.git
 src-svn xwrt http://x-wrt.googlecode.com/svn/trunk/package
+<<<<<<< HEAD
 src-git luci git://github.com/tobiaswaldvogel/luci.git
+=======
+src-git luci git://nbd.name/luci.git
+>>>>>>> openwrt/master
 #src-svn phone svn://svn.openwrt.org/openwrt/feeds/phone
 #src-svn efl svn://svn.openwrt.org/openwrt/feeds/efl
 #src-svn xorg svn://svn.openwrt.org/openwrt/feeds/xorg
