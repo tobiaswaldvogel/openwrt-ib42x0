@@ -3,7 +3,7 @@
 RAM_ROOT=/tmp/root
 
 ldd() { LD_TRACE_LOADED_OBJECTS=1 $*; }
-libs() { ldd $* | awk '{print $3}'; }
+libs() { ldd $* | awk '{print $3 != "" ? $3 : $1 }'; }
 
 install_file() { # <file> [ <file> ... ]
 	for file in "$@"; do
@@ -21,12 +21,7 @@ install_bin() { # <file> [ <symlink> ... ]
 	files=$1
 	[ -x "$src" ] && files="$src $(libs $src)"
 	install_file $files
-	[ -e /lib/ld.so.1 ] && {
-		install_file /lib/ld.so.1
-	}
-	[ -e /lib/ld.so.1 ] && {
-		install_file /lib/ld.so.1
-	}
+
 	shift
 	for link in "$@"; do {
 		dest="$RAM_ROOT/$link"

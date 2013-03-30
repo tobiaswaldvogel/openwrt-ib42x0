@@ -2,7 +2,7 @@ add /usr/lib to default search path for the dynamic linker
 
 --- a/libc/Makeconfig
 +++ b/libc/Makeconfig
-@@ -483,6 +483,9 @@
+@@ -539,6 +539,9 @@
  default-rpath = $(libdir)
  endif
  
