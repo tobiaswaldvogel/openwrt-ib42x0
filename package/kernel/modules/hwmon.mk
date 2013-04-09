@@ -60,6 +60,21 @@ endef
 $(eval $(call KernelPackage,hwmon-adt7475))
 
 
+define KernelPackage/hwmon-ina2xx
+  TITLE:=INA2XX monitoring support
+  KCONFIG:=CONFIG_SENSORS_INA2XX
+  FILES:=$(LINUX_DIR)/drivers/hwmon/ina2xx.ko
+  AUTOLOAD:=$(call AutoLoad,60,ina2xx)
+  $(call AddDepends/hwmon,+kmod-i2c-core)
+endef
+
+define KernelPackage/hwmon-ina2xx/description
+ Kernel module for ina2xx dc current monitor chips
+endef
+
+$(eval $(call KernelPackage,hwmon-ina2xx))
+
+
 define KernelPackage/hwmon-lm63
   TITLE:=LM63/64 monitoring support
   KCONFIG:=CONFIG_SENSORS_LM63
@@ -133,6 +148,20 @@ define KernelPackage/hwmon-lm90/description
 endef
 
 $(eval $(call KernelPackage,hwmon-lm90))
+
+define KernelPackage/hwmon-lm92
+  TITLE:=LM92 monitoring support
+  KCONFIG:=CONFIG_SENSORS_LM92
+  FILES:=$(LINUX_DIR)/drivers/hwmon/lm92.ko
+  AUTOLOAD:=$(call AutoLoad,60,lm92)
+  $(call AddDepends/hwmon,+kmod-i2c-core)
+endef
+
+define KernelPackage/hwmon-lm92/description
+ Kernel module for LM92 thermal monitor chip
+endef
+
+$(eval $(call KernelPackage,hwmon-lm92))
 
 define KernelPackage/hwmon-lm95241
   TITLE:=LM95241 monitoring support

@@ -52,6 +52,7 @@ case "$FIRMWARE" in
 		;;
 
 	3g-6200n | \
+	3g-6200nl | \
 	3g300m | \
 	air3gii | \
 	all0239-3g | \
@@ -63,6 +64,7 @@ case "$FIRMWARE" in
 	broadway | \
 	br6524n | \
 	carambola | \
+	d105 | \
 	dir-615-h1 | \
 	dir-620-a1 | \
 	esr-9753 | \
@@ -83,6 +85,7 @@ case "$FIRMWARE" in
 	v11st-fe | \
 	v22rw-2x2 | \
 	w306r-v20 | \
+	w150m | \
 	w502u | \
 	wcr-150gn | \
 	whr-g300n | \

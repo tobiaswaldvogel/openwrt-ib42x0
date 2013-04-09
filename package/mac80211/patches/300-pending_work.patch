@@ -158,6 +158,15 @@
  			    TEST(TDLS_PEER_AUTH), TEST(4ADDR_EVENT),
 --- a/net/mac80211/iface.c
 +++ b/net/mac80211/iface.c
+@@ -78,7 +78,7 @@ void ieee80211_recalc_txpower(struct iee
+ 		ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_TXPOWER);
+ }
+ 
+-static u32 ieee80211_idle_off(struct ieee80211_local *local)
++u32 ieee80211_idle_off(struct ieee80211_local *local)
+ {
+ 	if (!(local->hw.conf.flags & IEEE80211_CONF_IDLE))
+ 		return 0;
 @@ -107,7 +107,7 @@ void ieee80211_recalc_idle(struct ieee80
  
  	lockdep_assert_held(&local->mtx);
@@ -300,7 +309,7 @@
  static void ieee80211_iface_work(struct work_struct *work)
  {
  	struct ieee80211_sub_if_data *sdata =
-@@ -1126,6 +1175,9 @@ static void ieee80211_iface_work(struct
+@@ -1126,6 +1175,9 @@ static void ieee80211_iface_work(struct 
  				break;
  			ieee80211_mesh_rx_queued_mgmt(sdata, skb);
  			break;
@@ -961,3 +970,143 @@
  	sta->dead = true;
  
  	local->num_sta--;
+--- a/net/mac80211/chan.c
++++ b/net/mac80211/chan.c
+@@ -63,6 +63,7 @@ ieee80211_new_chanctx(struct ieee80211_l
+ 		      enum ieee80211_chanctx_mode mode)
+ {
+ 	struct ieee80211_chanctx *ctx;
++	u32 changed;
+ 	int err;
+ 
+ 	lockdep_assert_held(&local->chanctx_mtx);
+@@ -76,6 +77,13 @@ ieee80211_new_chanctx(struct ieee80211_l
+ 	ctx->conf.rx_chains_dynamic = 1;
+ 	ctx->mode = mode;
+ 
++	/* acquire mutex to prevent idle from changing */
++	mutex_lock(&local->mtx);
++	/* turn idle off *before* setting channel -- some drivers need that */
++	changed = ieee80211_idle_off(local);
++	if (changed)
++		ieee80211_hw_config(local, changed);
++
+ 	if (!local->use_chanctx) {
+ 		local->_oper_channel_type =
+ 			cfg80211_get_chandef_type(chandef);
+@@ -85,14 +93,17 @@ ieee80211_new_chanctx(struct ieee80211_l
+ 		err = drv_add_chanctx(local, ctx);
+ 		if (err) {
+ 			kfree(ctx);
+-			return ERR_PTR(err);
++			ctx = ERR_PTR(err);
++
++			ieee80211_recalc_idle(local);
++			goto out;
+ 		}
+ 	}
+ 
++	/* and keep the mutex held until the new chanctx is on the list */
+ 	list_add_rcu(&ctx->list, &local->chanctx_list);
+ 
+-	mutex_lock(&local->mtx);
+-	ieee80211_recalc_idle(local);
++ out:
+ 	mutex_unlock(&local->mtx);
+ 
+ 	return ctx;
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1366,6 +1366,7 @@ int ieee80211_if_change_type(struct ieee
+ 			     enum nl80211_iftype type);
+ void ieee80211_if_remove(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_remove_interfaces(struct ieee80211_local *local);
++u32 ieee80211_idle_off(struct ieee80211_local *local);
+ void ieee80211_recalc_idle(struct ieee80211_local *local);
+ void ieee80211_adjust_monitor_flags(struct ieee80211_sub_if_data *sdata,
+ 				    const int offset);
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -799,7 +799,7 @@ static int ath9k_init_firmware_version(s
+ 	 * required version.
+ 	 */
+ 	if (priv->fw_version_major != MAJOR_VERSION_REQ ||
+-	    priv->fw_version_minor != MINOR_VERSION_REQ) {
++	    priv->fw_version_minor < MINOR_VERSION_REQ) {
+ 		dev_err(priv->dev, "ath9k_htc: Please upgrade to FW version %d.%d\n",
+ 			MAJOR_VERSION_REQ, MINOR_VERSION_REQ);
+ 		return -EINVAL;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -516,8 +516,7 @@ static void ath_tx_complete_aggr(struct 
+ 		 * not a holding desc.
+ 		 */
+ 		INIT_LIST_HEAD(&bf_head);
+-		if ((sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) ||
+-		    bf_next != NULL || !bf_last->bf_stale)
++		if (bf_next != NULL || !bf_last->bf_stale)
+ 			list_move_tail(&bf->list, &bf_head);
+ 
+ 		if (!txpending || (tid->state & AGGR_CLEANUP)) {
+@@ -537,8 +536,7 @@ static void ath_tx_complete_aggr(struct 
+ 				!txfail);
+ 		} else {
+ 			/* retry the un-acked ones */
+-			if (!(sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_EDMA) &&
+-			    bf->bf_next == NULL && bf_last->bf_stale) {
++			if (bf->bf_next == NULL && bf_last->bf_stale) {
+ 				struct ath_buf *tbf;
+ 
+ 				tbf = ath_clone_txbuf(sc, bf_last);
+@@ -2264,6 +2262,7 @@ void ath_tx_edma_tasklet(struct ath_soft
+ 	struct ath_txq *txq;
+ 	struct ath_buf *bf, *lastbf;
+ 	struct list_head bf_head;
++	struct list_head *fifo_list;
+ 	int status;
+ 
+ 	for (;;) {
+@@ -2291,20 +2290,24 @@ void ath_tx_edma_tasklet(struct ath_soft
+ 
+ 		TX_STAT_INC(txq->axq_qnum, txprocdesc);
+ 
+-		if (list_empty(&txq->txq_fifo[txq->txq_tailidx])) {
++		fifo_list = &txq->txq_fifo[txq->txq_tailidx];
++		if (list_empty(fifo_list)) {
+ 			ath_txq_unlock(sc, txq);
+ 			return;
+ 		}
+ 
+-		bf = list_first_entry(&txq->txq_fifo[txq->txq_tailidx],
+-				      struct ath_buf, list);
++		bf = list_first_entry(fifo_list, struct ath_buf, list);
++		if (bf->bf_stale) {
++			list_del(&bf->list);
++			ath_tx_return_buffer(sc, bf);
++			bf = list_first_entry(fifo_list, struct ath_buf, list);
++		}
++
+ 		lastbf = bf->bf_lastbf;
+ 
+ 		INIT_LIST_HEAD(&bf_head);
+-		list_cut_position(&bf_head, &txq->txq_fifo[txq->txq_tailidx],
+-				  &lastbf->list);
+-
+-		if (list_empty(&txq->txq_fifo[txq->txq_tailidx])) {
++		if (list_is_last(&lastbf->list, fifo_list)) {
++			list_splice_tail_init(fifo_list, &bf_head);
+ 			INCR(txq->txq_tailidx, ATH_TXFIFO_DEPTH);
+ 
+ 			if (!list_empty(&txq->axq_q)) {
+@@ -2315,6 +2318,11 @@ void ath_tx_edma_tasklet(struct ath_soft
+ 				list_splice_tail_init(&txq->axq_q, &bf_q);
+ 				ath_tx_txqaddbuf(sc, txq, &bf_q, true);
+ 			}
++		} else {
++			lastbf->bf_stale = true;
++			if (bf != lastbf)
++				list_cut_position(&bf_head, fifo_list,
++						  lastbf->list.prev);
+ 		}
+ 
+ 		ath_tx_process_buffer(sc, txq, &ts, bf, &bf_head);

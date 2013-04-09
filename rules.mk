@@ -63,8 +63,20 @@ endif
 ifneq ($(filter -mips%r2,$(TARGET_OPTIMIZATION)),)
   ARCH_SUFFIX:=_r2
 endif
+ifdef CONFIG_USE_MIPS16
+   TARGET_OPTIMIZATION+= -minterlink-mips16 -mips16
+endif
+ifneq ($(findstring -mips16,$(TARGET_OPTIMIZATION)),)
+  TARGET_ASFLAGS_OVERRIDE:=-mno-mips16
+  ARCH_SUFFIX:= $(ARCH_SUFFIX)_m16
+endif
 ifdef CONFIG_HAS_SPE_FPU
   TARGET_SUFFIX:=$(TARGET_SUFFIX)spe
+endif
+ifdef CONFIG_MIPS64_ABI
+  ifneq ($(CONFIG_MIPS64_ABI_O32),y)
+     ARCH_SUFFIX:=$(ARCH_SUFFIX)_$(subst ",,$(CONFIG_MIPS64_ABI))
+  endif
 endif
 
 DL_DIR:=$(if $(call qstrip,$(CONFIG_DOWNLOAD_FOLDER)),$(call qstrip,$(CONFIG_DOWNLOAD_FOLDER)),$(TOPDIR)/dl)
@@ -111,6 +123,7 @@ PKG_INFO_DIR := $(STAGING_DIR)/pkginfo
 TARGET_PATH:=$(STAGING_DIR_HOST)/bin:$(subst $(space),:,$(filter-out .,$(filter-out ./,$(subst :,$(space),$(PATH)))))
 TARGET_CFLAGS:=$(TARGET_OPTIMIZATION)$(if $(CONFIG_DEBUG), -g3)
 TARGET_CXXFLAGS = $(TARGET_CFLAGS)
+TARGET_ASFLAGS = $(TARGET_CFLAGS) $(TARGET_ASFLAGS_OVERRIDE)
 TARGET_CPPFLAGS:=-I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/include
 TARGET_LDFLAGS:=-L$(STAGING_DIR)/usr/lib -L$(STAGING_DIR)/lib
 ifneq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
@@ -125,7 +138,7 @@ LIBRPC=-ltirpc
 LIBRPC_DEPENDS=+libtirpc
 LIBRPC_INCLUDE=-I$(STAGING_DIR)/usr/include/tirpc
 
-ifneq ($(findstring $(ARCH) , mips64 x86_64 ),)
+ifeq ($(CONFIG_ARCH_64BIT),y)
   LIB_SUFFIX:=64
 endif
 
@@ -212,7 +225,7 @@ endif
 
 TARGET_CONFIGURE_OPTS = \
   AR=$(TARGET_CROSS)ar \
-  AS="$(TARGET_CC) -c $(TARGET_CFLAGS)" \
+  AS="$(TARGET_CC) -c $(TARGET_ASFLAGS)" \
   LD=$(TARGET_CROSS)ld \
   NM=$(TARGET_CROSS)nm \
   CC="$(TARGET_CC)" \

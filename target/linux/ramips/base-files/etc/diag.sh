@@ -9,7 +9,7 @@ get_status_led() {
 	3g-6200n)
 		status_led="edimax:green:power"
 		;;
-	3g300m)
+	3g300m | w150m)
 		status_led="tenda:blue:ap"
 		;;
 	argus-atp52b)
@@ -20,6 +20,9 @@ get_status_led() {
 		;;
 	br6425)
 		status_led="edimax:green:power"
+		;;
+	d105)
+		status_led="d105:red:power"
 		;;
 	dir-300-b1 | dir-600-b1 | dir-600-b2 | dir-615-h1 | dir-615-d | dir-620-a1)
 		status_led="d-link:green:status"
