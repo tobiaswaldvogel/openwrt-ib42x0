@@ -6,14 +6,6 @@
 	compatible = "DIR-615-H1", "ralink,rt3352-soc";
 	model = "D-Link DIR-615 H1";
 
-	memorydetect {
-		ralink,memory = <0x0 0x200000 0x10000000>;
-	};
-
-	chosen {
-		bootargs = "console=ttyS0,57600 mtdparts=spi0.0:192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,3776k@0x50000(firmware)";
-	};
-
 	palmbus@10000000 {
 		sysc@0 {
 			ralink,pinmux = "i2c", "spi", "uartlite", "jtag", "mdio", "sdram", "rgmii";
@@ -34,6 +26,29 @@
 				reg = <0 0>;
 				linux,modalias = "m25p80", "mx25l3205d";
 				spi-max-frequency = <10000000>;
+
+		partition@0 {
+			label = "u-boot";
+			reg = <0x0 0x30000>;
+			read-only;
+		};
+
+		partition@30000 {
+			label = "u-boot-env";
+			reg = <0x30000 0x10000>;
+			read-only;
+		};
+
+		factory: partition@40000 {
+			label = "factory";
+			reg = <0x40000 0x10000>;
+			read-only;
+		};
+
+		partition@50000 {
+			label = "firmware";
+			reg = <0x50000 0x3b0000>;
+		};
 			};
 		};
 	};

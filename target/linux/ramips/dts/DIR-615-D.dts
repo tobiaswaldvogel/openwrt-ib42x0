@@ -6,14 +6,6 @@
 	compatible = "DIR-615-D", "ralink,rt3050-soc";
 	model = "D-Link DIR-615 D";
 
-	memorydetect {
-		ralink,memory = <0x0 0x200000 0x4000000>;
-	};
-
-	chosen {
-		bootargs = "console=ttyS0,57600 mtdparts=1f000000.cfi:192k(u-boot)ro,64k(devdata)ro,64k(devconf)ro,3776k@0x50000(firmware)";
-	};
-
 	palmbus@10000000 {
 		sysc@0 {
 			ralink,pinmux = "i2c", "spi", "uartlite", "jtag", "mdio", "sdram", "rgmii";
@@ -35,6 +27,29 @@
 		device-width = <2>;
 		#address-cells = <1>;
 		#size-cells = <1>;
+
+		partition@0 {
+			label = "u-boot";
+			reg = <0x0 0x30000>;
+			read-only;
+		};
+
+		partition@30000 {
+			label = "devdata";
+			reg = <0x30000 0x10000>;
+			read-only;
+		};
+
+		partition@40000 {
+			label = "devconf";
+			reg = <0x40000 0x10000>;
+			read-only;
+		};
+
+		partition@50000 {
+			label = "firmware";
+			reg = <0x50000 0x3b0000>;
+		};
 	};
 
 	ethernet@10100000 {

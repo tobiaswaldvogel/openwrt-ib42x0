@@ -22,6 +22,8 @@ platform_check_image() {
 	all0239-3g | \
 	all0256n | \
 	all5002 | \
+	all5003 | \
+	asl26555 | \
 	bc2 | \
 	broadway | \
 	carambola | \
@@ -32,6 +34,7 @@ platform_check_image() {
 	dir-615-h1 | \
 	dir-615-d | \
 	dir-620-a1 | \
+	dir-620-d1 | \
 	dap-1350 | \
 	esr-9753 | \
 	fonera20n | \
@@ -59,6 +62,7 @@ platform_check_image() {
 	wl341v3 | \
 	wl-330n | \
 	wl-351 | \
+	wnce2001 | \
 	wli-tx4-ag300n | \
 	whr-g300n |\
 	ur-326n4g |\

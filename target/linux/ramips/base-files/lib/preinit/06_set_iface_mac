@@ -12,6 +12,7 @@ preinit_set_mac_address() {
 	3g-6200n |\
 	3g-6200nl |\
 	3g300m | \
+	dir-620-d1 |\
 	w150m | \
 	mzk-w300nh2 |\
 	wl-330n |\
@@ -33,6 +34,7 @@ preinit_set_mac_address() {
 		mac=$(macaddr_setbit_la "$mac")
 		ifconfig eth0 hw ether $mac 2>/dev/null
 		;;
+	asl26555 |\
 	dir-300-b1 |\
 	dir-300-b2 |\
 	dir-600-b1)
@@ -51,6 +53,7 @@ preinit_set_mac_address() {
 	all0239-3g |\
 	all0256n |\
 	all5002 |\
+	all5003 |\
 	carambola |\
 	dir-615-h1 |\
 	fonera20n |\
@@ -64,6 +67,7 @@ preinit_set_mac_address() {
 	w306r-v20 |\
 	w502u    |\
 	wr6202 |\
+	wnce2001 |\
 	xdxrn502j)
 		mac=$(mtd_get_mac_binary factory 40)
 		ifconfig eth0 hw ether $mac 2>/dev/null

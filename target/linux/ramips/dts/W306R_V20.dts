@@ -6,14 +6,6 @@
 	compatible = "W306R_V20", "ralink,rt3052-soc";
 	model = "Tenda W306R V2.0";
 
-	memorydetect {
-		ralink,memory = <0x0 0x200000 0x4000000>;
-	};
-
-	chosen {
-		bootargs = "console=ttyS0,57600 mtdparts=1f000000.cfi:192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,3776k@0x50000(firmware)";
-	};
-
 	cfi@1f000000 {
 		compatible = "cfi-flash";
 		reg = <0x1f000000 0x800000>;
@@ -22,6 +14,29 @@
 		device-width = <2>;
 		#address-cells = <1>;
 		#size-cells = <1>;
+
+		partition@0 {
+			label = "u-boot";
+			reg = <0x0 0x30000>;
+			read-only;
+		};
+
+		partition@30000 {
+			label = "u-boot-env";
+			reg = <0x30000 0x10000>;
+			read-only;
+		};
+
+		factory: partition@40000 {
+			label = "factory";
+			reg = <0x40000 0x10000>;
+			read-only;
+		};
+
+		partition@50000 {
+			label = "firmware";
+			reg = <0x50000 0x3b0000>;
+		};
 	};
 
 	palmbus@10000000 {

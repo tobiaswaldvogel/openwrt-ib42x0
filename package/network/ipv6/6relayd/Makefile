@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=6relayd
-PKG_VERSION:=2013-02-28.1
+PKG_VERSION:=2013-04-24
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_URL:=git://github.com/sbyx/6relayd.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=be18c9722e8fa76ca96de16fb927b85bfe3197bc
+PKG_SOURCE_VERSION:=67c5e6b27958b1cd54798bf2a353ba5c36843b24
 
 PKG_MAINTAINER:=Steven Barth <steven@midlink.org>
 
@@ -25,18 +25,17 @@ include $(INCLUDE_DIR)/cmake.mk
 define Package/6relayd
   SECTION:=ipv6
   CATEGORY:=IPv6
-  TITLE:=IPv6-Relay and Server (RD-, DHCPv6- & NDP-Proxy)
+  TITLE:=DHCPv6(-PD)/RA Server & Relay
   DEPENDS:=+kmod-ipv6
 endef
 
 define Package/6relayd/description
- 6relayd is an IPv6-tool that relays IPv6-management protocols like router
- discovery, neighbor discovery and DHCPv6 so that clients on routed (non-
- bridged) interfaces can use the public address prefix, DHCPv6 and DNS-service
- of a master interface. This is useful to avoid NAT in chained IPv6-routers.
+ 6relayd is a daemon for serving and relaying IPv6 management protocols to
+ configure clients and downstream routers.
 
- It can also be used as a lightweight router advertisement daemon and provide
- stateless DHCPv6 service where size matters.
+ 6relayd provides server services for RA, stateless DHCPv6, DHCPv6-PD and can
+ be used to relay RA, DHCPv6 and NDP between routed (non-bridged) interfaces
+ in case no delegated prefixes are provided by the upstream router.
 endef
 
 define Package/6relayd/conffiles

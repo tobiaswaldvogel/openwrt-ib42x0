@@ -45,7 +45,7 @@
  /**
   *	pskb_trim_unique - remove end from a paged unique (not cloned) buffer
   *	@skb: buffer to alter
-@@ -1859,16 +1863,6 @@ static inline struct sk_buff *dev_alloc_
+@@ -1877,16 +1881,6 @@ static inline struct sk_buff *dev_alloc_
  }
  
  
@@ -145,7 +145,7 @@
 +	struct sk_buff *skb = __netdev_alloc_skb(dev, length + NET_IP_ALIGN, gfp);
 +
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
-+	if (dev->priv_flags & IFF_NO_IP_ALIGN)
++	if (dev && (dev->priv_flags & IFF_NO_IP_ALIGN))
 +		return skb;
 +#endif
 +

@@ -6,12 +6,8 @@
 	compatible = "CARAMBOLA", "ralink,rt3050-soc";
 	model = "8devices Carambola";
 
-	memorydetect {
-		ralink,memory = <0x0 0x200000 0x4000000>;
-	};
-
 	chosen {
-		bootargs = "console=ttyS0,115200 mtdparts=1f000000.cfi:192k(u-boot)ro,64k(u-boot-env)ro,64k(factory)ro,7872k@0x50000(firmware)";
+		bootargs = "console=ttyS0,115200";
 	};
 
 	palmbus@10000000 {
@@ -36,6 +32,29 @@
 		device-width = <2>;
 		#address-cells = <1>;
 		#size-cells = <1>;
+
+		partition@0 {
+			label = "u-boot";
+			reg = <0x0 0x30000>;
+			read-only;
+		};
+
+		partition@30000 {
+			label = "u-boot-env";
+			reg = <0x30000 0x10000>;
+			read-only;
+		};
+
+		factory: partition@40000 {
+			label = "factory";
+			reg = <0x40000 0x10000>;
+			read-only;
+		};
+
+		partition@50000 {
+			label = "firmware";
+			reg = <0x50000 0x7b0000>;
+		};
 	};
 
 	ethernet@10100000 {

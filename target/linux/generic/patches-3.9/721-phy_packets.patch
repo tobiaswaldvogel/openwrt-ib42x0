@@ -45,7 +45,7 @@
  /**
   *	pskb_trim_unique - remove end from a paged unique (not cloned) buffer
   *	@skb: buffer to alter
-@@ -1892,16 +1896,6 @@ static inline struct sk_buff *dev_alloc_
+@@ -1910,16 +1914,6 @@ static inline struct sk_buff *dev_alloc_
  }
  
  
@@ -79,7 +79,7 @@
  	help
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
-@@ -2530,9 +2530,19 @@ int dev_hard_start_xmit(struct sk_buff *
+@@ -2532,9 +2532,19 @@ int dev_hard_start_xmit(struct sk_buff *
  		if (!list_empty(&ptype_all))
  			dev_queue_xmit_nit(skb, dev);
  
@@ -102,7 +102,7 @@
  		if (rc == NETDEV_TX_OK)
  			txq_trans_update(txq);
  		return rc;
-@@ -2555,9 +2565,19 @@ gso:
+@@ -2557,9 +2567,19 @@ gso:
  		if (!list_empty(&ptype_all))
  			dev_queue_xmit_nit(nskb, dev);
  
@@ -145,7 +145,7 @@
 +	struct sk_buff *skb = __netdev_alloc_skb(dev, length + NET_IP_ALIGN, gfp);
 +
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
-+	if (dev->priv_flags & IFF_NO_IP_ALIGN)
++	if (dev && (dev->priv_flags & IFF_NO_IP_ALIGN))
 +		return skb;
 +#endif
 +
