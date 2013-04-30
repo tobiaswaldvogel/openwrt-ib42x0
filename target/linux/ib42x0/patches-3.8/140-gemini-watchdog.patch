@@ -43,7 +43,7 @@
  MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
 --- a/drivers/watchdog/Kconfig
 +++ b/drivers/watchdog/Kconfig
-@@ -152,6 +152,16 @@ config 977_WATCHDOG
+@@ -153,6 +153,16 @@ config 977_WATCHDOG
  
  	  Not sure? It's safe to say N.
  

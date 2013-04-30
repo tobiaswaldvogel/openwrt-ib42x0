@@ -1,6 +1,6 @@
 --- a/drivers/mtd/mtdpart.c		2011-12-19 20:46:50.216319584 +0100
 +++ b/drivers/mtd/mtdpart.c		2011-12-19 20:35:32.922380340 +0100
-@@ -791,6 +791,100 @@
+@@ -780,6 +780,100 @@
  	return 0;
  }
  
@@ -101,7 +101,7 @@
  static int refresh_rootfs_split(struct mtd_info *mtd)
  {
  	struct mtd_partition tpart;
-@@ -842,6 +936,59 @@
+@@ -831,6 +925,59 @@
  
  	return 0;
  }
@@ -161,7 +161,7 @@
  #endif /* CONFIG_MTD_ROOTFS_SPLIT */
  
  /*
-@@ -863,11 +1010,22 @@
+@@ -852,11 +999,22 @@
  #ifdef CONFIG_MTD_ROOTFS_SPLIT
  	int ret;
  #endif
@@ -186,7 +186,7 @@
  		if (IS_ERR(slave))
  			return PTR_ERR(slave);
  
-@@ -877,7 +1035,17 @@
+@@ -866,7 +1024,17 @@
  
  		add_mtd_device(&slave->mtd);
  
@@ -205,7 +205,7 @@
  #ifdef CONFIG_MTD_ROOTFS_ROOT_DEV
  			if (ROOT_DEV == 0) {
  				printk(KERN_NOTICE "mtd: partition \"rootfs\" "
-@@ -886,7 +1054,7 @@
+@@ -875,7 +1043,7 @@
  			}
  #endif
  #ifdef CONFIG_MTD_ROOTFS_SPLIT
@@ -214,7 +214,7 @@
  			/* if (ret == 0)
  			 * 	j++; */
  #endif
-@@ -898,7 +1066,7 @@
+@@ -887,7 +1055,7 @@
  	return 0;
  }
  
@@ -223,7 +223,7 @@
  {
  	int ret = 0;
  
-@@ -916,6 +1084,9 @@
+@@ -905,6 +1073,9 @@
  		ret = mtd->refresh_device(mtd);
  
  #ifdef CONFIG_MTD_ROOTFS_SPLIT
