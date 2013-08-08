@@ -7,7 +7,7 @@ STOP=98
 system_config() {
 	local cfg="$1"
 
-	local hostname conloglevel timezone
+	local hostname conloglevel buffersize timezone zonename
 
 	config_get hostname "$cfg" hostname 'OpenWrt'
 	echo "$hostname" > /proc/sys/kernel/hostname
@@ -48,11 +48,7 @@ start() {
 	grep -q debugfs /proc/filesystems && mount -o noatime -t debugfs debugfs /sys/kernel/debug
 	[ "$FAILSAFE" = "true" ] && touch /tmp/.failsafe
 
-	if [ -f /sbin/kmodloader ]; then
-		/sbin/kmodloader
-	else
-		load_modules /etc/modules.d/*
-	fi
+	/sbin/kmodloader
 
 	# allow wifi modules time to settle
 	sleep 1
@@ -64,6 +60,10 @@ start() {
 	rm -f /tmp/wireless.tmp
 
 	apply_uci_config
+	
+	# temporary hack until configd exists
+	/sbin/reload_config
+	
 	config_load system
 	config_foreach system_config system
 
@@ -72,11 +72,4 @@ start() {
 		rootdev=$(awk 'BEGIN { RS=" "; FS="="; } $1 == "root" { print $2 }' < /proc/cmdline)
 		[ -n "$rootdev" ] && ln -s "$rootdev" /dev/root
 	}
-
-	# early sysctl to avoid networking races
-	if [ -d /proc/sys/net/ipv6/conf ]; then
-		for i in /proc/sys/net/ipv6/conf/*/accept_ra; do
-			echo 0 > $i
-		done
-	fi
 }

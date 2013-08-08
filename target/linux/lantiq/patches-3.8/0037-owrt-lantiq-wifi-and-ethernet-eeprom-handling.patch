@@ -19,8 +19,10 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
  create mode 100644 arch/mips/lantiq/xway/pci-ath-fixup.c
  create mode 100644 arch/mips/lantiq/xway/rt_eep.c
 
---- /dev/null
-+++ b/arch/mips/include/asm/mach-lantiq/pci-ath-fixup.h
+Index: linux-3.8.13/arch/mips/include/asm/mach-lantiq/pci-ath-fixup.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-3.8.13/arch/mips/include/asm/mach-lantiq/pci-ath-fixup.h	2013-07-25 20:47:01.531327796 +0200
 @@ -0,0 +1,6 @@
 +#ifndef _PCI_ATH_FIXUP
 +#define _PCI_ATH_FIXUP
@@ -28,9 +30,11 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +void ltq_pci_ath_fixup(unsigned slot, u16 *cal_data) __init;
 +
 +#endif /* _PCI_ATH_FIXUP */
---- a/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
-+++ b/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
-@@ -90,5 +90,8 @@ int xrx200_gphy_boot(struct device *dev,
+Index: linux-3.8.13/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
+===================================================================
+--- linux-3.8.13.orig/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h	2013-07-25 20:46:52.599327583 +0200
++++ linux-3.8.13/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h	2013-07-25 20:47:01.531327796 +0200
+@@ -90,5 +90,8 @@
  extern void ltq_pmu_enable(unsigned int module);
  extern void ltq_pmu_disable(unsigned int module);
  
@@ -39,8 +43,10 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +
  #endif /* CONFIG_SOC_TYPE_XWAY */
  #endif /* _LTQ_XWAY_H__ */
---- a/arch/mips/lantiq/xway/Makefile
-+++ b/arch/mips/lantiq/xway/Makefile
+Index: linux-3.8.13/arch/mips/lantiq/xway/Makefile
+===================================================================
+--- linux-3.8.13.orig/arch/mips/lantiq/xway/Makefile	2013-07-25 20:47:01.371327792 +0200
++++ linux-3.8.13/arch/mips/lantiq/xway/Makefile	2013-07-25 21:31:31.287391412 +0200
 @@ -1,3 +1,6 @@
  obj-y := prom.o sysctrl.o clk.o reset.o dma.o gptu.o dcdc.o
  
@@ -48,14 +54,17 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +obj-$(CONFIG_PCI) += ath_eep.o rt_eep.o pci-ath-fixup.o
 +
  obj-$(CONFIG_XRX200_PHY_FW) += xrx200_phy_fw.o
---- /dev/null
-+++ b/arch/mips/lantiq/xway/ath_eep.c
-@@ -0,0 +1,206 @@
+Index: linux-3.8.13/arch/mips/lantiq/xway/ath_eep.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-3.8.13/arch/mips/lantiq/xway/ath_eep.c	2013-07-25 20:47:01.535327796 +0200
+@@ -0,0 +1,248 @@
 +/*
 + *  Copyright (C) 2011 Luca Olivetti <luca@ventoso.org>
 + *  Copyright (C) 2011 John Crispin <blogic@openwrt.org>
 + *  Copyright (C) 2011 Andrej Vlašić <andrej.vlasic0@gmail.com>
 + *  Copyright (C) 2013 Álvaro Fernández Rojas <noltari@gmail.com>
++ *  Copyright (C) 2013 Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
 + *
 + *  This program is free software; you can redistribute it and/or modify it
 + *  under the terms of the GNU General Public License version 2 as published
@@ -69,14 +78,16 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +#include <linux/ath5k_platform.h>
 +#include <linux/ath9k_platform.h>
 +#include <linux/pci.h>
++#include <linux/err.h>
++#include <linux/mtd/mtd.h>
 +#include <pci-ath-fixup.h>
++#include <lantiq_soc.h>
 +
 +extern int (*ltq_pci_plat_dev_init)(struct pci_dev *dev);
 +struct ath5k_platform_data ath5k_pdata;
 +struct ath9k_platform_data ath9k_pdata = {
 +	.led_pin = -1,
 +};
-+static u16 ath5k_eeprom_data[ATH5K_PLAT_EEP_MAX_WORDS];
 +static u8 athxk_eeprom_mac[6];
 +
 +static int ath9k_pci_plat_dev_init(struct pci_dev *dev)
@@ -87,49 +98,62 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +
 +int __init of_ath9k_eeprom_probe(struct platform_device *pdev)
 +{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *eep_res, *mac_res;
++	struct device_node *np = pdev->dev.of_node, *mtd_np;
++	struct resource *eep_res, *mac_res = NULL;
 +	void __iomem *eep, *mac;
 +	int mac_offset;
 +	u32 mac_inc = 0, pci_slot = 0;
 +	int i;
-+	u16 *eepdata, sum, el;
++	struct mtd_info *the_mtd;
++	size_t flash_readlen;
++	const __be32 *list;
++	const char *part;
++	phandle phandle;
 +
-+	eep_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if ((list = of_get_property(np, "ath,eep-flash", &i)) && i == 2 *
++			sizeof(*list) && (phandle = be32_to_cpup(list++)) &&
++			(mtd_np = of_find_node_by_phandle(phandle)) && ((part =
++			of_get_property(mtd_np, "label", NULL)) || (part =
++			mtd_np->name)) && (the_mtd = get_mtd_device_nm(part))
++			!= ERR_PTR(-ENODEV)) {
++		i = mtd_read(the_mtd, be32_to_cpup(list),
++				ATH9K_PLAT_EEP_MAX_WORDS << 1, &flash_readlen,
++				(void *) ath9k_pdata.eeprom_data);
++		put_mtd_device(the_mtd);
++		if ((sizeof(ath9k_pdata.eeprom_data) != flash_readlen) || i) {
++			dev_err(&pdev->dev, "failed to load eeprom from mtd\n");
++			return -ENODEV;
++		}
++	} else {
++		eep_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 +
-+	if (!eep_res) {
-+		dev_err(&pdev->dev, "failed to load eeprom address\n");
-+		return -ENODEV;
++		if (!eep_res) {
++			dev_err(&pdev->dev, "failed to load eeprom address\n");
++			return -ENODEV;
++		}
++		if (resource_size(eep_res) != ATH9K_PLAT_EEP_MAX_WORDS << 1) {
++			dev_err(&pdev->dev, "eeprom has an invalid size\n");
++			return -EINVAL;
++		}
++
++		eep = ioremap(eep_res->start, resource_size(eep_res));
++		memcpy_fromio(ath9k_pdata.eeprom_data, eep,
++				ATH9K_PLAT_EEP_MAX_WORDS << 1);
 +	}
-+	if (resource_size(eep_res) != ATH9K_PLAT_EEP_MAX_WORDS) {
-+		dev_err(&pdev->dev, "eeprom has an invalid size\n");
-+		return -EINVAL;
-+	}
 +
-+	eep = ioremap(eep_res->start, resource_size(eep_res));
-+	memcpy_fromio(ath9k_pdata.eeprom_data, eep, ATH9K_PLAT_EEP_MAX_WORDS);
++	if (of_find_property(np, "ath,eep-swap", NULL))
++		for (i = 0; i < ATH9K_PLAT_EEP_MAX_WORDS; i++)
++			ath9k_pdata.eeprom_data[i] = swab16(ath9k_pdata.eeprom_data[i]);
 +
-+	if (of_find_property(np, "ath,eep-swap", NULL)) {
++	if (of_find_property(np, "ath,eep-endian", NULL)) {
 +		ath9k_pdata.endian_check = true;
 +
 +		dev_info(&pdev->dev, "endian check enabled.\n");
 +	}
 +
-+	if (of_find_property(np, "ath,eep-csum", NULL)) {
-+		sum = ath9k_pdata.eeprom_data[0x200>>1];
-+		el = sum / sizeof(u16) - 2;  /* skip length and (old) checksum */
-+		eepdata = (u16 *) (&ath9k_pdata.eeprom_data[0x204>>1]); /* after checksum */
-+		for (i = 0; i < el; i++)
-+			sum ^= *eepdata++;
-+		sum ^= 0xffff;
-+		ath9k_pdata.eeprom_data[0x202>>1] = sum;
-+
-+		dev_info(&pdev->dev, "checksum fixed.\n");
-+	}
-+
 +	if (!of_property_read_u32(np, "ath,mac-offset", &mac_offset)) {
-+		memcpy_fromio(athxk_eeprom_mac, (void*) ath9k_pdata.eeprom_data, 6);
++		memcpy_fromio(athxk_eeprom_mac, (void*) ath9k_pdata.eeprom_data + mac_offset, 6);
 +	} else if (mac_res) {
 +		if (resource_size(mac_res) != 6) {
 +			dev_err(&pdev->dev, "mac has an invalid size\n");
@@ -137,7 +161,9 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +		}
 +		mac = ioremap(mac_res->start, resource_size(mac_res));
 +		memcpy_fromio(athxk_eeprom_mac, mac, 6);
-+	} else {
++	} else if (ltq_get_eth_mac())
++		memcpy(athxk_eeprom_mac, ltq_get_eth_mac(), 6);
++	else {
 +		dev_warn(&pdev->dev, "using random mac\n");
 +		random_ether_addr(athxk_eeprom_mac);
 +	}
@@ -176,7 +202,7 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +{
 +	return platform_driver_probe(&ath9k_eeprom_driver, of_ath9k_eeprom_probe);
 +}
-+arch_initcall(of_ath9k_eeprom_init);
++late_initcall(of_ath9k_eeprom_init);
 +
 +
 +static int ath5k_pci_plat_dev_init(struct pci_dev *dev)
@@ -187,34 +213,57 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +
 +int __init of_ath5k_eeprom_probe(struct platform_device *pdev)
 +{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *eep_res, *mac_res;
++	struct device_node *np = pdev->dev.of_node, *mtd_np;
++	struct resource *eep_res, *mac_res = NULL;
 +	void __iomem *eep, *mac;
 +	int mac_offset;
 +	u32 mac_inc = 0;
 +	int i;
++	struct mtd_info *the_mtd;
++	size_t flash_readlen;
++	const __be32 *list;
++	const char *part;
++	phandle phandle;
 +
-+	eep_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if ((list = of_get_property(np, "ath,eep-flash", &i)) && i == 2 *
++			sizeof(*list) && (phandle = be32_to_cpup(list++)) &&
++			(mtd_np = of_find_node_by_phandle(phandle)) && ((part =
++			of_get_property(mtd_np, "label", NULL)) || (part =
++			mtd_np->name)) && (the_mtd = get_mtd_device_nm(part))
++			!= ERR_PTR(-ENODEV)) {
++		i = mtd_read(the_mtd, be32_to_cpup(list),
++				ATH5K_PLAT_EEP_MAX_WORDS << 1, &flash_readlen,
++				(void *) ath5k_pdata.eeprom_data);
++		put_mtd_device(the_mtd);
++		if ((sizeof(ATH5K_PLAT_EEP_MAX_WORDS << 1) != flash_readlen)
++				|| i) {
++			dev_err(&pdev->dev, "failed to load eeprom from mtd\n");
++			return -ENODEV;
++		}
++	} else {
++		eep_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 +
-+	if (!eep_res) {
-+		dev_err(&pdev->dev, "failed to load eeprom address\n");
-+		return -ENODEV;
++		if (!eep_res) {
++			dev_err(&pdev->dev, "failed to load eeprom address\n");
++			return -ENODEV;
++		}
++		if (resource_size(eep_res) != ATH5K_PLAT_EEP_MAX_WORDS << 1) {
++			dev_err(&pdev->dev, "eeprom has an invalid size\n");
++			return -EINVAL;
++		}
++
++		eep = ioremap(eep_res->start, resource_size(eep_res));
++		memcpy_fromio(ath5k_pdata.eeprom_data, eep,
++				ATH5K_PLAT_EEP_MAX_WORDS << 1);
 +	}
-+	if (resource_size(eep_res) != ATH5K_PLAT_EEP_MAX_WORDS) {
-+		dev_err(&pdev->dev, "eeprom has an invalid size\n");
-+		return -EINVAL;
-+	}
-+
-+	eep = ioremap(eep_res->start, resource_size(eep_res));
-+	memcpy_fromio(ath5k_eeprom_data, eep, ATH5K_PLAT_EEP_MAX_WORDS);
 +
 +	if (of_find_property(np, "ath,eep-swap", NULL))
-+		for (i = 0; i < (ATH5K_PLAT_EEP_MAX_WORDS >> 1); i++)
-+				ath5k_eeprom_data[i] = swab16(ath5k_eeprom_data[i]);
++		for (i = 0; i < ATH5K_PLAT_EEP_MAX_WORDS; i++)
++			ath5k_pdata.eeprom_data[i] = swab16(ath5k_pdata.eeprom_data[i]);
 +
 +	if (!of_property_read_u32(np, "ath,mac-offset", &mac_offset)) {
-+		memcpy_fromio(athxk_eeprom_mac, (void*) ath5k_eeprom_data, 6);
++		memcpy_fromio(athxk_eeprom_mac, (void*) ath5k_pdata.eeprom_data + mac_offset, 6);
 +	} else if (mac_res) {
 +		if (resource_size(mac_res) != 6) {
 +			dev_err(&pdev->dev, "mac has an invalid size\n");
@@ -222,7 +271,9 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +		}
 +		mac = ioremap(mac_res->start, resource_size(mac_res));
 +		memcpy_fromio(athxk_eeprom_mac, mac, 6);
-+	} else {
++	} else if (ltq_get_eth_mac())
++		memcpy(athxk_eeprom_mac, ltq_get_eth_mac(), 6);
++	else {
 +		dev_warn(&pdev->dev, "using random mac\n");
 +		random_ether_addr(athxk_eeprom_mac);
 +	}
@@ -230,7 +281,6 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +	if (!of_property_read_u32(np, "ath,mac-increment", &mac_inc))
 +		athxk_eeprom_mac[5] += mac_inc;
 +
-+	ath5k_pdata.eeprom_data = ath5k_eeprom_data;
 +	ath5k_pdata.macaddr = athxk_eeprom_mac;
 +	ltq_pci_plat_dev_init = ath5k_pci_plat_dev_init;
 +
@@ -257,9 +307,11 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +	return platform_driver_probe(&ath5k_eeprom_driver, of_ath5k_eeprom_probe);
 +}
 +device_initcall(of_ath5k_eeprom_init);
---- /dev/null
-+++ b/arch/mips/lantiq/xway/eth_mac.c
-@@ -0,0 +1,76 @@
+Index: linux-3.8.13/arch/mips/lantiq/xway/eth_mac.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-3.8.13/arch/mips/lantiq/xway/eth_mac.c	2013-07-25 21:28:37.743387278 +0200
+@@ -0,0 +1,98 @@
 +/*
 + *  Copyright (C) 2012 John Crispin <blogic@openwrt.org>
 + *
@@ -272,6 +324,7 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +#include <linux/module.h>
 +#include <linux/of_platform.h>
 +#include <linux/if_ether.h>
++#include <linux/mtd/mtd.h>
 +
 +static u8 eth_mac[6];
 +static int eth_mac_set;
@@ -290,28 +343,49 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +
 +int __init of_eth_mac_probe(struct platform_device *pdev)
 +{
-+	struct device_node *np = pdev->dev.of_node;
++	struct device_node *np = pdev->dev.of_node, *mtd_np;
 +	struct resource *mac_res;
 +	void __iomem *mac;
 +	u32 mac_inc = 0;
++	phandle phandle;
++	size_t flash_readlen;
++	const __be32 *list;
++	const char *part;
++	struct mtd_info *the_mtd;
++	int i;
 +
 +	if (eth_mac_set) {
 +		dev_err(&pdev->dev, "mac was already set by bootloader\n");
 +		return -EINVAL;
 +	}
-+	mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if ((list = of_get_property(np, "ath,eep-mac", &i)) && i == 2 *
++			sizeof(*list) && (phandle = be32_to_cpup(list++)) &&
++			(mtd_np = of_find_node_by_phandle(phandle)) && ((part =
++			of_get_property(mtd_np, "label", NULL)) || (part =
++			mtd_np->name)) && (the_mtd = get_mtd_device_nm(part))
++			!= ERR_PTR(-ENODEV)) {
++		i = mtd_read(the_mtd, be32_to_cpup(list), 6, &flash_readlen,
++					(void *) eth_mac);
++		put_mtd_device(the_mtd);
++		if ((sizeof(eth_mac) != flash_readlen) || i) {
++			dev_err(&pdev->dev, "failed to load eeprom from mtd\n");
++			return -ENODEV;
++		}
++	} else {
++		mac_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 +
-+	if (!mac_res) {
-+		dev_err(&pdev->dev, "failed to load mac\n");
-+		return -EINVAL;
-+	}
-+	if (resource_size(mac_res) != 6) {
-+		dev_err(&pdev->dev, "mac has an invalid size\n");
-+		return -EINVAL;
-+	}
-+	mac = ioremap(mac_res->start, resource_size(mac_res));
-+	memcpy_fromio(eth_mac, mac, 6);
++		if (!mac_res) {
++			dev_err(&pdev->dev, "failed to load mac\n");
++			return -EINVAL;
++		}
++		if (resource_size(mac_res) != 6) {
++			dev_err(&pdev->dev, "mac has an invalid size\n");
++			return -EINVAL;
++		}
++		mac = ioremap(mac_res->start, resource_size(mac_res));
++		memcpy_fromio(eth_mac, mac, 6);
 +
++	}
 +	if (!of_property_read_u32(np, "mac-increment", &mac_inc))
 +		eth_mac[5] += mac_inc;
 +
@@ -336,8 +410,10 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +	return platform_driver_probe(&eth_mac_driver, of_eth_mac_probe);
 +}
 +device_initcall(of_eth_mac_init);
---- /dev/null
-+++ b/arch/mips/lantiq/xway/pci-ath-fixup.c
+Index: linux-3.8.13/arch/mips/lantiq/xway/pci-ath-fixup.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-3.8.13/arch/mips/lantiq/xway/pci-ath-fixup.c	2013-07-25 20:47:01.535327796 +0200
 @@ -0,0 +1,109 @@
 +/*
 + *  Atheros AP94 reference board PCI initialization
@@ -448,8 +524,10 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +	ath_fixups[ath_num_fixups].cal_data = cal_data;
 +	ath_num_fixups++;
 +}
---- /dev/null
-+++ b/arch/mips/lantiq/xway/rt_eep.c
+Index: linux-3.8.13/arch/mips/lantiq/xway/rt_eep.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-3.8.13/arch/mips/lantiq/xway/rt_eep.c	2013-07-25 20:47:01.535327796 +0200
 @@ -0,0 +1,60 @@
 +/*
 + *  Copyright (C) 2011 John Crispin <blogic@openwrt.org>
@@ -511,9 +589,11 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
 +	return platform_driver_probe(&ralink_eeprom_driver, of_ralink_eeprom_probe);
 +}
 +device_initcall(of_ralink_eeprom_init);
---- a/drivers/net/ethernet/lantiq_etop.c
-+++ b/drivers/net/ethernet/lantiq_etop.c
-@@ -826,7 +826,8 @@ ltq_etop_init(struct net_device *dev)
+Index: linux-3.8.13/drivers/net/ethernet/lantiq_etop.c
+===================================================================
+--- linux-3.8.13.orig/drivers/net/ethernet/lantiq_etop.c	2013-07-25 20:46:52.599327583 +0200
++++ linux-3.8.13/drivers/net/ethernet/lantiq_etop.c	2013-07-25 20:47:01.535327796 +0200
+@@ -829,7 +829,8 @@
  
  	ltq_etop_change_mtu(dev, 1500);
  
@@ -523,7 +603,7 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
  	if (!is_valid_ether_addr(mac.sa_data)) {
  		pr_warn("etop: invalid MAC, using random\n");
  		random_ether_addr(mac.sa_data);
-@@ -885,8 +886,7 @@ static const struct net_device_ops ltq_e
+@@ -888,8 +889,7 @@
  	.ndo_tx_timeout = ltq_etop_tx_timeout,
  };
  
@@ -533,7 +613,7 @@ Subject: [PATCH 37/40] owrt: lantiq: wifi and ethernet eeprom handling
  {
  	struct net_device *dev;
  	struct ltq_etop_priv *priv;
-@@ -950,7 +950,9 @@ ltq_etop_probe(struct platform_device *p
+@@ -953,7 +953,9 @@
  	priv->tx_irq = irqres[0].start;
  	priv->rx_irq = irqres[1].start;
  	priv->mii_mode = of_get_phy_mode(pdev->dev.of_node);

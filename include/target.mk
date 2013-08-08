@@ -12,9 +12,9 @@ __target_inc=1
 DEVICE_TYPE?=router
 
 # Default packages - the really basic set
-DEFAULT_PACKAGES:=base-files libc libgcc busybox dropbear mtd uci opkg hotplug2 netifd
+DEFAULT_PACKAGES:=base-files libc libgcc busybox dropbear mtd uci opkg netifd
 # For router targets
-DEFAULT_PACKAGES.router:=dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall3 6relayd odhcp6c
+DEFAULT_PACKAGES.router:=dnsmasq iptables ip6tables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall 6relayd odhcp6c
 DEFAULT_PACKAGES.bootloader:=
 
 ifneq ($(DUMP),)
@@ -163,7 +163,7 @@ ifeq ($(DUMP),1)
     .SILENT: $(TMP_CONFIG)
     .PRECIOUS: $(TMP_CONFIG)
 
-    ifneq ($(CONFIG_GENERIC_GPIO),)
+    ifneq ($(CONFIG_GENERIC_GPIO)$(CONFIG_GPIOLIB),)
       FEATURES += gpio
     endif
     ifneq ($(CONFIG_PCI),)
@@ -186,21 +186,22 @@ ifeq ($(DUMP),1)
     ifneq ($(CONFIG_RTC_CLASS),)
       FEATURES += rtc
     endif
+    FEATURES += $(foreach v,v4 v5 v6 v7,$(if $(findstring -march=arm$(v),$(CFLAGS)),arm_$(v)))
 
     # remove duplicates
     FEATURES:=$(sort $(FEATURES))
   endif
-  DEFAULT_CFLAGS_i386=-O2 -pipe -march=i486 -fno-caller-saves
-  DEFAULT_CFLAGS_x86_64=-O2 -pipe -march=athlon64 -fno-caller-saves
-  DEFAULT_CFLAGS_m68k=-Os -pipe -mcfv4e -fno-caller-saves
-  DEFAULT_CFLAGS_mips=-Os -pipe -mips32 -mtune=mips32 -fno-caller-saves -mno-branch-likely
+  DEFAULT_CFLAGS_i386=-O2 -pipe -march=i486
+  DEFAULT_CFLAGS_x86_64=-O2 -pipe -march=athlon64
+  DEFAULT_CFLAGS_m68k=-Os -pipe -mcfv4e
+  DEFAULT_CFLAGS_mips=-Os -pipe -mips32 -mtune=mips32 -mno-branch-likely
   DEFAULT_CFLAGS_mipsel=$(DEFAULT_CFLAGS_mips)
-  DEFAULT_CFLAGS_mips64=-Os -pipe -mips64 -mtune=mips64 -mabi=64 -fno-caller-saves
+  DEFAULT_CFLAGS_mips64=-Os -pipe -mips64 -mtune=mips64 -mabi=64
   DEFAULT_CFLAGS_mips64el=$(DEFAULT_CFLAGS_mips64)
-  DEFAULT_CFLAGS_sparc=-Os -pipe -mcpu=ultrasparc -fno-caller-saves
-  DEFAULT_CFLAGS_arm=-Os -pipe -march=armv5te -mtune=xscale -fno-caller-saves
+  DEFAULT_CFLAGS_sparc=-Os -pipe -mcpu=ultrasparc
+  DEFAULT_CFLAGS_arm=-Os -pipe -march=armv5te -mtune=xscale
   DEFAULT_CFLAGS_armeb=$(DEFAULT_CFLAGS_arm)
-  DEFAULT_CFLAGS=$(if $(DEFAULT_CFLAGS_$(ARCH)),$(DEFAULT_CFLAGS_$(ARCH)),-Os -pipe -fno-caller-saves)
+  DEFAULT_CFLAGS=$(if $(DEFAULT_CFLAGS_$(ARCH)),$(DEFAULT_CFLAGS_$(ARCH)),-Os -pipe)
 endif
 
 define BuildTargets/DumpCurrent

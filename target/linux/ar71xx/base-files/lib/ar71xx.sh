@@ -85,6 +85,9 @@ tplink_board_detect() {
 	"070300"*)
 		model="TP-Link TL-WR703N"
 		;;
+	"071000"*)
+		model="TP-Link TL-WR710N"
+		;;
 	"072001"*)
 		model="TP-Link TL-WR720N"
 		;;
@@ -132,7 +135,10 @@ tplink_board_detect() {
 	"254300"*)
 		model="TP-Link TL-WR2543N/ND"
 		;;
-	"110101"*)
+	"001001"*)
+		model="TP-Link TL-MR10U"
+		;;
+	"001101"*)
 		model="TP-Link TL-MR11U"
 		;;
 	"302000"*)
@@ -158,6 +164,9 @@ tplink_board_detect() {
 		;;
 	"431000"*)
 		model="TP-Link TL-WDR4310"
+		;;
+	"453000"*)
+		model="MERCURY MW4530R"
 		;;
 	*)
 		hwver=""
@@ -219,6 +228,9 @@ ar71xx_board_detect() {
 	*AP83)
 		name="ap83"
 		;;
+	*"Archer C7")
+		name="archer-c7"
+		;;
 	*"Atheros AP96")
 		name="ap96"
 		;;
@@ -230,6 +242,9 @@ ar71xx_board_detect() {
 		;;
 	*"DB120 reference board")
 		name="db120"
+		;;
+	*"DIR-505 rev. A1")
+		name="dir-505-a1"
 		;;
 	*"DIR-600 rev. A1")
 		name="dir-600-a1"
@@ -348,6 +363,9 @@ ar71xx_board_detect() {
 	*"RouterBOARD 2011L")
 		name="rb-2011l"
 		;;
+	*"RouterBOARD 2011UAS")
+		name="rb-2011uas"
+		;;
 	*"RouterBOARD 2011UAS-2HnD")
 		name="rb-2011uas-2hnd"
 		;;
@@ -441,6 +459,9 @@ ar71xx_board_detect() {
 	*"TL-WR720N v3")
 		name="tl-wr720n-v3"
 		;;
+	*"TL-MR10U")
+		name="tl-mr10u"
+		;;
 	*"TL-MR11U")
 		name="tl-mr11u"
 		;;
@@ -483,6 +504,9 @@ ar71xx_board_detect() {
 	*WNR2000)
 		name="wnr2000"
 		;;
+	*"WNR612 V2")
+		name="wnr612-v2"
+		;;
 	*WRT160NL)
 		name="wrt160nl"
 		;;
@@ -515,6 +539,9 @@ ar71xx_board_detect() {
 		;;
 	*EmbWir-Dorin-Router)
 		name="ew-dorin-router"
+		;;
+	"8devices Carambola2"*)
+		name="carambola2"
 		;;
 	esac
 

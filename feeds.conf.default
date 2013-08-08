@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 src-git packages git://github.com/tobiaswaldvogel/openwrt-packages.git
+=======
+src-git packages git://git.openwrt.org/packages.git
+>>>>>>> openwrt/master
 src-svn xwrt http://x-wrt.googlecode.com/svn/trunk/package
 src-git luci git://github.com/tobiaswaldvogel/luci.git
 src-git routing git://github.com/openwrt-routing/packages.git

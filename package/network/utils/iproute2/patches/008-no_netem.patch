@@ -1,6 +1,6 @@
 --- a/Makefile
 +++ b/Makefile
-@@ -34,7 +34,7 @@ WFLAGS = -Wall -Wstrict-prototypes
+@@ -35,7 +35,7 @@ WFLAGS := -Wall -Wstrict-prototypes
  CFLAGS = $(WFLAGS) $(CCOPTS) -I../include $(DEFINES)
  YACCFLAGS = -d -t -v
  

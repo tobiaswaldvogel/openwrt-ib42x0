@@ -1,8 +1,12 @@
 #!/bin/sh
 [ -f /etc/banner ] && cat /etc/banner
 
+<<<<<<< HEAD
 export LANG=en_US.UTF-8
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+=======
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin
+>>>>>>> openwrt/master
 export HOME=$(grep -e "^${USER:-root}:" /etc/passwd | cut -d ":" -f 6)
 export HOME=${HOME:-/root}
 export PS1='\u@\h:\w\$ '

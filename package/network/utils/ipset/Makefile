@@ -31,7 +31,7 @@ define Package/ipset
 $(call Package/ipset/Default)
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS+= +iptables-mod-ipset +kmod-ipt-ipset +libmnl
+  DEPENDS+= +kmod-ipt-ipset +libmnl
   TITLE:=IPset administration utility
   URL:=http://ipset.netfilter.org/
 endef
@@ -40,7 +40,8 @@ CONFIGURE_ARGS += \
 	--with-kbuild="$(LINUX_DIR)"
 
 MAKE_FLAGS += \
-	ARCH="$(LINUX_KARCH)"
+	ARCH="$(LINUX_KARCH)" \
+	SHELL="$(BASH)"
 
 IPSET_MODULES:= \
 	ipset/ip_set \

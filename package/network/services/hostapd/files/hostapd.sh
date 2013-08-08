@@ -108,6 +108,13 @@ hostapd_set_bss_options() {
 			[ -n "$acct_port" ] && append "$var" "acct_server_port=$acct_port" "$N"
 			config_get acct_secret "$vif" acct_secret
 			[ -n "$acct_secret" ] && append "$var" "acct_server_shared_secret=$acct_secret" "$N"
+			config_get dae_client "$vif" dae_client
+			config_get dae_secret "$vif" dae_secret
+			[ -n "$dae_client" -a -n "$dae_secret" ] && {
+				config_get dae_port  "$vif" dae_port
+				append "$var" "radius_das_port=${dae_port:-3799}" "$N"
+				append "$var" "radius_das_client=$dae_client $dae_secret" "$N"
+			}
 			config_get nasid "$vif" nasid
 			append "$var" "nas_identifier=$nasid" "$N"
 			append "$var" "eapol_key_index_workaround=1" "$N"
@@ -215,10 +222,33 @@ hostapd_set_bss_options() {
 		esac
 	fi
 
-	config_get macfilter "$vif" macfilter
-	macfile="/var/run/hostapd-$ifname.maclist"
-	[ -e "$macfile" ] && rm -f "$macfile"
+	config_get macfile "$vif" macfile
+	config_get maclist "$vif" maclist
+	if [ -z "$macfile" ]
+	then
+		# if no macfile has been specified, fallback to the default name
+		# and truncate file to avoid aggregating entries over time
+		macfile="/var/run/hostapd-$ifname.maclist"
+		echo "" > "$macfile"
+	else
+		if [ -n "$maclist" ]
+		then
+			# to avoid to overwrite the original file, make a copy
+			# before appending the entries specified by the maclist
+			# option
+			cp $macfile $macfile.maclist
+			macfile=$macfile.maclist
+		fi
+	fi
 
+	if [ -n "$maclist" ]
+	then
+		for mac in $maclist; do
+			echo "$mac" >> $macfile
+		done
+	fi
+
+	config_get macfilter "$vif" macfilter
 	case "$macfilter" in
 		allow)
 			append "$var" "macaddr_acl=1" "$N"
@@ -229,12 +259,6 @@ hostapd_set_bss_options() {
 			append "$var" "deny_mac_file=$macfile" "$N"
 			;;
 	esac
-	config_get maclist "$vif" maclist
-	[ -n "$maclist" ] && {
-		for mac in $maclist; do
-			echo "$mac" >> $macfile
-		done
-	}
 }
 
 hostapd_set_log_options() {

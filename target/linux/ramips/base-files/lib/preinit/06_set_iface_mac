@@ -26,6 +26,8 @@ preinit_set_mac_address() {
 	dir-620-a1 |\
 	esr-9753 |\
 	freestation5 |\
+	mpr-a1 | \
+	mpr-a2 | \
 	nw718 |\
 	psr-680w |\
 	rt-n56u |\
@@ -54,9 +56,11 @@ preinit_set_mac_address() {
 	all0256n |\
 	all5002 |\
 	all5003 |\
+	awm002-evb |\
 	carambola |\
 	dir-615-h1 |\
 	fonera20n |\
+	ip2202 |\
 	rt-n13u |\
 	hw550-3g |\
 	nbg-419n |\
@@ -70,6 +74,14 @@ preinit_set_mac_address() {
 	wnce2001 |\
 	xdxrn502j)
 		mac=$(mtd_get_mac_binary factory 40)
+		ifconfig eth0 hw ether $mac 2>/dev/null
+		;;
+	m3 |\
+	m4 |\
+	x5 |\
+	x8)
+		mac=$(mtd_get_mac_binary factory 4)
+		mac=$(macaddr_add "$mac" -1)
 		ifconfig eth0 hw ether $mac 2>/dev/null
 		;;
 	wl341v3)

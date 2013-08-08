@@ -14,6 +14,7 @@ ucidef_set_interface_loopback
 
 case "$board_name" in
 
+CVG834G_E15R3921 |\
 RTA770BW |\
 RTA770W |\
 96348W3 |\
@@ -60,6 +61,7 @@ V2500V_BB)
 	;;
 
 AW4139 |\
+AW4339U |\
 HW556*)
 	ucidef_set_interface_lan "eth0.1"
 	ucidef_add_switch "eth0" "1" "1"

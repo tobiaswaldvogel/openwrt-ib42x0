@@ -13,7 +13,6 @@ ramips_setup_rt3x5x_vlans()
 	fi
 	local wanports=""
 	local lanports=""
-	swconfig dev rt305x set reset 1
 	for port in 5 4 3 2 1 0; do
 		if [ `swconfig dev rt305x port $port get disable` = "1" ]; then
 			continue
@@ -42,6 +41,7 @@ ramips_setup_interfaces()
 	all0256n | \
 	all5002 | \
 	all5003 | \
+	awm002-evb | \
 	broadway | \
 	wnce2001)
 		ucidef_add_switch "switch0" "1" "0"
@@ -87,6 +87,7 @@ ramips_setup_interfaces()
 
 	f5d8235-v1 | \
 	f5d8235-v2 | \
+	hg255d | \
 	ur-326n4g)
 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
 		ucidef_add_switch "switch0" "1" "1"
@@ -172,6 +173,9 @@ ramips_setup_macs()
 	broadway | \
 	dir-620-d1 | \
 	f5d8235-v1 | \
+	ip2202 | \
+	mpr-a1 | \
+	mpr-a2 | \
 	mzk-w300nh2 | \
 	nw718 | \
 	psr-680w | \
@@ -192,6 +196,7 @@ ramips_setup_macs()
 		;;
 
 	rt-n13u | \
+	hg255d	| \
 	fonera20n)
 		lan_mac=$(mtd_get_mac_binary factory 40)
 		wan_mac=$(macaddr_add "$lan_mac" 1)
@@ -220,6 +225,14 @@ ramips_setup_macs()
 	ur-336un)
 		lan_mac=$(mtd_get_mac_binary devdata 16388)
 		wan_mac=$(macaddr_add "$lan_mac" 1)
+		;;
+
+	m3 |\
+	m4 |\
+	x5 |\
+	x8)
+		lan_mac=$(mtd_get_mac_binary factory 4)
+		lan_mac=$(macaddr_add "$lan_mac" -1)
 		;;
 
 	nbg-419n | \

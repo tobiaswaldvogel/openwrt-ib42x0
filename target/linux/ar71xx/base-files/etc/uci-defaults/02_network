@@ -44,8 +44,16 @@ ap135-020)
 	ucidef_add_switch_vlan "switch0" "2" "5 6"
 	;;
 
+archer-c7)
+	ucidef_set_interfaces_lan_wan "eth1" "eth0"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0 2 3 4 5"
+	ucidef_add_switch_vlan "switch0" "2" "1 6"
+	;;
+
 db120 |\
 rb-2011l | \
+rb-2011uas |\
 rb-2011uas-2hnd)
 	ucidef_set_interfaces_lan_wan "eth0.1 eth1" "eth0.2"
 	ucidef_add_switch "switch0" "1" "1"
@@ -53,6 +61,13 @@ rb-2011uas-2hnd)
 	ucidef_add_switch_vlan "switch0" "2" "0t 1"
 	ucidef_add_switch "switch1" "1" "1"
 	ucidef_add_switch_vlan "switch1" "1" "0 1 2 3 4 5"
+
+	case "$board" in
+	rb-2011uas*)
+		ucidef_set_interface_raw "sfp" "eth0.3"
+		ucidef_add_switch_vlan "switch0" "3" "0t 6"
+		;;
+	esac
 	;;
 
 dir-825-b1|\
@@ -153,7 +168,8 @@ tl-wr941nd)
 
 tl-mr3420-v2 |\
 tl-wr841n-v8 |\
-wnr2000-v3)
+wnr2000-v3 |\
+wnr612-v2)
 	ucidef_set_interfaces_lan_wan "eth1" "eth0"
 	ucidef_add_switch "switch0" "1" "1"
 	ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 4"
@@ -194,6 +210,7 @@ eap7660d |\
 mr600 |\
 mr600v2 |\
 rb-411 |\
+tl-mr10u |\
 tl-mr11u |\
 tl-mr3020 |\
 tl-mr3040 |\
@@ -205,6 +222,10 @@ wp543)
 	ucidef_set_interface_lan "eth0"
 	;;
 
+dir-505-a1)
+	ucidef_set_interface_lan "eth1"
+	;;
+
 alfa-ap96 |\
 alfa-nx |\
 ap83 |\
@@ -212,6 +233,7 @@ jwap003 |\
 pb42 |\
 pb44 |\
 routerstation|\
+tl-wr710n |\
 tl-wr720n-v3|\
 wpe72)
 	ucidef_set_interfaces_lan_wan "eth1" "eth0"

@@ -62,7 +62,7 @@
 
 			ath5k_eep {
 				compatible = "ath5k,eeprom";
-				reg = <0 0x3f0400 0x800>;
+				reg = <0 0x3f0400 0x1000>;
 				ath,mac-offset = <0>;
 				ath,eep-swap;
 			};
@@ -135,7 +135,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		poll-interval = <100>;
-		
+
 		wps {
 			label = "wps";
 			gpios = <&gpio 11 1>;

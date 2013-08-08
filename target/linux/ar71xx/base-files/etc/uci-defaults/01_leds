@@ -38,6 +38,12 @@ cap4200ag)
 	ucidef_set_led_wlan "wlan_green" "WLAN_GREEN" "senao:green:wlan" "phy1tpt"
 	;;
 
+carambola2)
+	ucidef_set_led_netdev "lan" "LAN" "carambola2:orange:eth0" "eth0"
+	ucidef_set_led_netdev "wan" "WAN" "carambola2:orange:eth1" "eth1"
+	ucidef_set_led_wlan "wlan" "WLAN" "carambola2:green:wlan" "phy0tpt"
+	;;
+
 db120)
 	ucidef_set_led_usbdev "usb" "USB" "db120:green:usb" "1-1"
 	;;
@@ -49,6 +55,10 @@ rb-750)
 	ucidef_set_led_switch "port3" "port3" "rb750:green:port3" "switch0" "0x08"
 	ucidef_set_led_switch "port4" "port4" "rb750:green:port4" "switch0" "0x04"
 	ucidef_set_led_switch "port5" "port5" "rb750:green:port5" "switch0" "0x02"
+	;;
+
+dir-505-a1)
+	ucidef_set_led_netdev "lan" "LAN" "d-link:green:power" "eth1"
 	;;
 
 dir-600-a1|\
@@ -153,6 +163,12 @@ tl-wdr3500)
 tl-wdr4300)
 	ucidef_set_led_usbdev "usb1" "USB1" "tp-link:green:usb1" "1-1.1"
 	ucidef_set_led_usbdev "usb2" "USB2" "tp-link:green:usb2" "1-1.2"
+	ucidef_set_led_wlan "wlan2g" "WLAN2G" "tp-link:blue:wlan2g" "phy0tpt"
+	;;
+
+archer-c7)
+	ucidef_set_led_usbdev "usb1" "USB1" "tp-link:green:usb1" "1-1"
+	ucidef_set_led_usbdev "usb2" "USB2" "tp-link:green:usb2" "2-1"
 	ucidef_set_led_wlan "wlan2g" "WLAN2G" "tp-link:blue:wlan2g" "phy0tpt"
 	;;
 

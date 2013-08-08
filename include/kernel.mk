@@ -105,7 +105,7 @@ define ModuleAutoLoad
 		echo "#!/bin/sh" > $(2)/CONTROL/postinst; \
 		echo "[ -z \"\$$$$$$$$IPKG_INSTROOT\" ] || exit 0" >> $(2)/CONTROL/postinst; \
 		echo ". /lib/functions.sh" >> $(2)/CONTROL/postinst; \
-		echo "load_modules $$$$$$$$modules" >> $(2)/CONTROL/postinst; \
+		echo "insert_modules $$$$$$$$modules" >> $(2)/CONTROL/postinst; \
 		chmod 0755 $(2)/CONTROL/postinst; \
 	fi
 endef
@@ -176,9 +176,13 @@ $(call KernelPackage/$(1)/config)
     endif
   $(if $(CONFIG_PACKAGE_kmod-$(1)),
     else
-      compile: kmod-$(1)-unavailable
-      kmod-$(1)-unavailable:
-		@echo "WARNING: kmod-$(1) is not available in the kernel config" >&2
+      compile: $(1)-disabled
+      $(1)-disabled:
+		@echo "WARNING: kmod-$(1) is not available in the kernel config - generating empty package" >&2
+
+      define Package/kmod-$(1)/install
+		true
+      endef
   )
   endif
   $$(eval $$(call BuildPackage,kmod-$(1)))

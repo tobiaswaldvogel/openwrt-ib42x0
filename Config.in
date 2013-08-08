@@ -78,7 +78,6 @@ menu "Target Images"
 	config TARGET_ROOTFS_EXT4FS
 		bool "ext4"
 		default y if USES_EXT4
-		depends on !TARGET_ROOTFS_INITRAMFS
 		help
 		  Ext4 file system with some free space for uml images
 
@@ -86,28 +85,32 @@ menu "Target Images"
 		bool "iso"
 		default n
 		depends on TARGET_x86_generic
-		depends on !TARGET_ROOTFS_INITRAMFS
 		help
 		  Create some bootable ISO image
 
 	config TARGET_ROOTFS_JFFS2
 		bool "jffs2"
 		default y if USES_JFFS2
-		depends on !TARGET_ROOTFS_INITRAMFS
 		help
 		  Build a jffs2 root filesystem
+
+	config TARGET_ROOTFS_JFFS2_NAND
+		bool "jffs2 for NAND"
+		default y if USES_JFFS2_NAND
+		depends on USES_JFFS2_NAND
+		help
+		  Build a jffs2 root filesystem for NAND flash
 
 	config TARGET_ROOTFS_SQUASHFS
 		bool "squashfs"
 		default y if USES_SQUASHFS
-		depends on !TARGET_ROOTFS_INITRAMFS
 		help
 		  Build a squashfs-lzma root filesystem
 
 	config TARGET_ROOTFS_UBIFS
 		bool "ubifs"
 		default y if USES_UBIFS
-		depends on !TARGET_ROOTFS_INITRAMFS && USES_UBIFS
+		depends on USES_UBIFS
 		help
 		  Build a ubifs root filesystem
 
@@ -135,6 +138,20 @@ menu "Target Images"
 		default 0
 		help
 		  Allows you to change the percentage of reserved blocks in the root filesystem
+
+	config TARGET_ROOTFS_INCLUDE_KERNEL
+		bool "include kernel in rootfs"
+		depends on TARGET_ROOTFS_UBIFS || TARGET_ROOTFS_EXT4FS
+		default n if USES_UBIFS
+		help
+		  Include the kernel image in the rootfs
+
+	config TARGET_ROOTFS_INCLUDE_DTB
+		bool "include dtb in rootfs"
+		depends on TARGET_ROOTFS_UBIFS || TARGET_ROOTFS_EXT4FS
+		default n if USES_UBIFS
+		help
+		  Include the device tree blob file in the rootfs
 
 endmenu
 
@@ -227,6 +244,11 @@ menu "Global build settings"
 		bool "Compile the kernel with tracing support"
 		default n
 
+	config KERNEL_FTRACE_SYSCALLS
+		bool "Trace system calls"
+		depends on KERNEL_FTRACE
+		default n
+
 	config KERNEL_ENABLE_DEFAULT_TRACERS
 		bool "Trace process context switches and events"
 		depends on KERNEL_FTRACE
@@ -299,6 +321,13 @@ menu "Global build settings"
 
 	config KERNEL_RELAY
 		bool
+
+	config KERNEL_KEXEC
+		bool "Enable kexec support"
+
+	config USE_RFKILL
+		bool "Enable rfkill support"
+		default RFKILL_SUPPORT
 
 	#
 	# CGROUP support symbols
@@ -437,13 +466,10 @@ menu "Global build settings"
 			  the kmem extension can use it to guarantee that no group of processes
 			  will ever exhaust kernel resources alone.
 
-		config KERNEL_PERF_EVENTS
-			bool
-			default y if KERNEL_CGROUP_PERF
-
 		config KERNEL_CGROUP_PERF
 			bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
 			default n
+			select KERNEL_PERF_EVENTS
 			help
 			  This option extends the per-cpu mode to restrict monitoring to
 			  threads which belong to the cgroup specified and run on the
@@ -568,6 +594,18 @@ menu "Global build settings"
 			  Allow user space to create what appear to be multiple instances
 			  of the network stack.
 
+	endif
+
+	#
+	# LXC related symbols
+	#
+
+	config KERNEL_LXC_MISC
+		bool "Enable miscellaneous LXC related options"
+		default n
+
+	if KERNEL_LXC_MISC
+
 		config KERNEL_DEVPTS_MULTIPLE_INSTANCES
 			bool "Support multiple instances of devpts"
 			default y
@@ -577,6 +615,20 @@ menu "Global build settings"
 			  say Y here. Otherwise, say N. If enabled, each mount of devpts
 			  filesystem with the '-o newinstance' option will create an
 			  independent PTY namespace.
+
+		config KERNEL_POSIX_MQUEUE
+			bool "POSIX Message Queues"
+			default n
+			help
+			  POSIX variant of message queues is a part of IPC. In POSIX message
+			  queues every message has a priority which decides about succession
+			  of receiving it by a process. If you want to compile and run
+			  programs written e.g. for Solaris with use of its POSIX message
+			  queues (functions mq_*) say Y here.
+
+			  POSIX message queues are visible as a filesystem called 'mqueue'
+			  and can be mounted somewhere if you want to do filesystem
+			  operations on message queues.
 
 	endif
 
@@ -794,6 +846,12 @@ menuconfig DEVEL
 		  code instead of the normal tarball. Create a symlink 'git-src'
 		  in the package directory, pointing to the .git tree that you want
 		  to pull the source code from
+
+	config EXTRA_OPTIMIZATION
+		string "Additional compiler options" if DEVEL
+		default "-fno-caller-saves"
+		help
+		  Extra Target-independent optimizations to use when building for the target.
 
 menuconfig TARGET_OPTIONS
 	bool "Target Options"  if DEVEL

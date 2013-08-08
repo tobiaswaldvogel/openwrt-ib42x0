@@ -10,10 +10,12 @@ ARCH:=arm
 BOARD:=gemini
 BOARDNAME:=Cortina Systems CS351x
 FEATURES:=squashfs pci
-CFLAGS:=-Os -pipe -march=armv4 -mtune=fa526 -fno-caller-saves
+CFLAGS:=-Os -pipe -march=armv4 -mtune=fa526
 MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>
 
-LINUX_VERSION:=3.9.1
+LINUX_VERSION:=3.9.11
+
+KERNELNAME:="zImage"
 
 include $(INCLUDE_DIR)/target.mk
 

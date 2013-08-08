@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hostapd
-PKG_VERSION:=20130405
-PKG_RELEASE:=1
-PKG_REV:=f2f66ad7e805218468aa041985dccaf8719c296e
+PKG_VERSION:=20130630
+PKG_RELEASE:=2
+PKG_REV:=9e6a321815f924e1e42896538d639e62d7786f6a
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=git://w1.fi/srv/git/hostap.git
@@ -303,14 +303,9 @@ Package/hostapd-mini/install = $(Package/hostapd/install)
 
 ifneq ($(LOCAL_TYPE),supplicant)
   define Package/hostapd-utils/install
-	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/hotplug.d/button
+	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/rc.button
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/hostapd/hostapd_cli $(1)/usr/sbin/
-	$(INSTALL_DATA) ./files/wps-hotplug.sh $(1)/etc/hotplug.d/button/50-wps
-	$(if $(CONFIG_PROCD_INIT),
-		$(INSTALL_DIR) $(1)/etc/rc.button/
-		$(INSTALL_BIN) ./files/wps-hotplug.sh $(1)/etc/rc.button/wps,
-		$(INSTALL_DATA) ./files/wps-hotplug.sh $(1)/etc/hotplug.d/button/50-wps
-	)
+	$(INSTALL_BIN) ./files/wps-hotplug.sh $(1)/etc/rc.button/wps
   endef
 endif
 
