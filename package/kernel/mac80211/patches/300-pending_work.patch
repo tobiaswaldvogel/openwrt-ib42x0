@@ -194,6 +194,16 @@
  }
  
  static void
+@@ -820,6 +828,9 @@ minstrel_ht_update_cck(struct minstrel_p
+ 	if (sband->band != IEEE80211_BAND_2GHZ)
+ 		return;
+ 
++	if (!(mp->hw->flags & IEEE80211_HW_SUPPORTS_HT_CCK_RATES))
++		return;
++
+ 	mi->cck_supported = 0;
+ 	mi->cck_supported_short = 0;
+ 	for (i = 0; i < 4; i++) {
 --- a/net/mac80211/rx.c
 +++ b/net/mac80211/rx.c
 @@ -936,8 +936,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
@@ -436,7 +446,20 @@
  
  	if (index >= ((tid->baw_tail - tid->baw_head) &
  		(ATH_TID_MAX_BUFS - 1))) {
-@@ -243,7 +331,7 @@ static void ath_tid_drain(struct ath_sof
+@@ -224,12 +312,6 @@ static void ath_tx_addto_baw(struct ath_
+ 	}
+ }
+ 
+-/*
+- * TODO: For frame(s) that are in the retry state, we will reuse the
+- * sequence number(s) without setting the retry bit. The
+- * alternative is to give up on these and BAR the receiver's window
+- * forward.
+- */
+ static void ath_tid_drain(struct ath_softc *sc, struct ath_txq *txq,
+ 			  struct ath_atx_tid *tid)
+ 
+@@ -243,7 +325,7 @@ static void ath_tid_drain(struct ath_sof
  	memset(&ts, 0, sizeof(ts));
  	INIT_LIST_HEAD(&bf_head);
  
@@ -445,7 +468,22 @@
  		fi = get_frame_info(skb);
  		bf = fi->bf;
  
-@@ -380,7 +468,6 @@ static void ath_tx_complete_aggr(struct 
+@@ -253,14 +335,8 @@ static void ath_tid_drain(struct ath_sof
+ 		}
+ 
+ 		list_add_tail(&bf->list, &bf_head);
+-
+-		ath_tx_update_baw(sc, tid, bf->bf_state.seqno);
+ 		ath_tx_complete_buf(sc, bf, txq, &bf_head, &ts, 0);
+ 	}
+-
+-	tid->seq_next = tid->seq_start;
+-	tid->baw_tail = tid->baw_head;
+-	tid->bar_index = -1;
+ }
+ 
+ static void ath_tx_set_retry(struct ath_softc *sc, struct ath_txq *txq,
+@@ -380,7 +456,6 @@ static void ath_tx_complete_aggr(struct 
  	struct ieee80211_tx_rate rates[4];
  	struct ath_frame_info *fi;
  	int nframes;
@@ -453,7 +491,16 @@
  	bool flush = !!(ts->ts_status & ATH9K_TX_FLUSH);
  	int i, retries;
  	int bar_index = -1;
-@@ -417,8 +504,7 @@ static void ath_tx_complete_aggr(struct 
+@@ -406,7 +481,7 @@ static void ath_tx_complete_aggr(struct 
+ 		while (bf) {
+ 			bf_next = bf->bf_next;
+ 
+-			if (!bf->bf_stale || bf_next != NULL)
++			if (!bf->bf_state.stale || bf_next != NULL)
+ 				list_move_tail(&bf->list, &bf_head);
+ 
+ 			ath_tx_complete_buf(sc, bf, txq, &bf_head, ts, 0);
+@@ -417,8 +492,7 @@ static void ath_tx_complete_aggr(struct 
  	}
  
  	an = (struct ath_node *)sta->drv_priv;
@@ -463,7 +510,7 @@
  	seq_first = tid->seq_start;
  	isba = ts->ts_flags & ATH9K_TX_BA;
  
-@@ -430,7 +516,7 @@ static void ath_tx_complete_aggr(struct 
+@@ -430,7 +504,7 @@ static void ath_tx_complete_aggr(struct 
  	 * Only BlockAcks have a TID and therefore normal Acks cannot be
  	 * checked
  	 */
@@ -472,7 +519,7 @@
  		txok = false;
  
  	isaggr = bf_isaggr(bf);
-@@ -466,7 +552,8 @@ static void ath_tx_complete_aggr(struct 
+@@ -466,7 +540,8 @@ static void ath_tx_complete_aggr(struct 
  		tx_info = IEEE80211_SKB_CB(skb);
  		fi = get_frame_info(skb);
  
@@ -482,7 +529,25 @@
  			/*
  			 * Outside of the current BlockAck window,
  			 * maybe part of a previous session
-@@ -560,7 +647,7 @@ static void ath_tx_complete_aggr(struct 
+@@ -499,7 +574,7 @@ static void ath_tx_complete_aggr(struct 
+ 		 * not a holding desc.
+ 		 */
+ 		INIT_LIST_HEAD(&bf_head);
+-		if (bf_next != NULL || !bf_last->bf_stale)
++		if (bf_next != NULL || !bf_last->bf_state.stale)
+ 			list_move_tail(&bf->list, &bf_head);
+ 
+ 		if (!txpending) {
+@@ -523,7 +598,7 @@ static void ath_tx_complete_aggr(struct 
+ 				ieee80211_sta_eosp(sta);
+ 			}
+ 			/* retry the un-acked ones */
+-			if (bf->bf_next == NULL && bf_last->bf_stale) {
++			if (bf->bf_next == NULL && bf_last->bf_state.stale) {
+ 				struct ath_buf *tbf;
+ 
+ 				tbf = ath_clone_txbuf(sc, bf_last);
+@@ -560,7 +635,7 @@ static void ath_tx_complete_aggr(struct 
  		if (an->sleeping)
  			ieee80211_sta_set_buffered(sta, tid->tidno, true);
  
@@ -491,7 +556,7 @@
  		if (!an->sleeping) {
  			ath_tx_queue_tid(txq, tid);
  
-@@ -618,7 +705,7 @@ static void ath_tx_process_buffer(struct
+@@ -618,7 +693,7 @@ static void ath_tx_process_buffer(struct
  	} else
  		ath_tx_complete_aggr(sc, txq, bf, bf_head, ts, txok);
  
@@ -500,7 +565,7 @@
  		ath_txq_schedule(sc, txq);
  }
  
-@@ -792,15 +879,20 @@ static int ath_compute_num_delims(struct
+@@ -792,15 +867,20 @@ static int ath_compute_num_delims(struct
  
  static struct ath_buf *
  ath_tx_get_tid_subframe(struct ath_softc *sc, struct ath_txq *txq,
@@ -523,8 +588,12 @@
  		if (!skb)
  			break;
  
-@@ -810,11 +902,22 @@ ath_tx_get_tid_subframe(struct ath_softc
+@@ -808,13 +888,26 @@ ath_tx_get_tid_subframe(struct ath_softc
+ 		bf = fi->bf;
+ 		if (!fi->bf)
  			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
++		else
++			bf->bf_state.stale = false;
  
  		if (!bf) {
 -			__skb_unlink(skb, &tid->buf_q);
@@ -547,7 +616,7 @@
  		bf->bf_state.bf_type = BUF_AMPDU | BUF_AGGR;
  		seqno = bf->bf_state.seqno;
  
-@@ -828,73 +931,52 @@ ath_tx_get_tid_subframe(struct ath_softc
+@@ -828,73 +921,52 @@ ath_tx_get_tid_subframe(struct ath_softc
  
  			INIT_LIST_HEAD(&bf_head);
  			list_add(&bf->list, &bf_head);
@@ -642,7 +711,7 @@
  		}
  
  		/* add padding for previous frame to aggregation length */
-@@ -912,22 +994,37 @@ static enum ATH_AGGR_STATUS ath_tx_form_
+@@ -912,22 +984,37 @@ static enum ATH_AGGR_STATUS ath_tx_form_
  		bf->bf_next = NULL;
  
  		/* link buffers of this frame to the aggregate */
@@ -685,7 +754,7 @@
  #undef PADBYTES
  }
  
-@@ -1188,53 +1285,86 @@ static void ath_tx_fill_desc(struct ath_
+@@ -1188,53 +1275,86 @@ static void ath_tx_fill_desc(struct ath_
  	}
  }
  
@@ -788,7 +857,11 @@
 +					tid_q, &aggr_len);
 +	else
 +		ath_tx_form_burst(sc, txq, tid, &bf_q, bf, tid_q);
-+
+ 
+-		ath_tx_fill_desc(sc, bf, txq, aggr_len);
+-		ath_tx_txqaddbuf(sc, txq, &bf_q, false);
+-	} while (txq->axq_ampdu_depth < ATH_AGGR_MIN_QDEPTH &&
+-		 status != ATH_AGGR_BAW_CLOSED);
 +	if (list_empty(&bf_q))
 +		return false;
 +
@@ -796,18 +869,14 @@
 +		tid->ac->clear_ps_filter = false;
 +		tx_info->flags |= IEEE80211_TX_CTL_CLEAR_PS_FILT;
 +	}
- 
--		ath_tx_fill_desc(sc, bf, txq, aggr_len);
--		ath_tx_txqaddbuf(sc, txq, &bf_q, false);
--	} while (txq->axq_ampdu_depth < ATH_AGGR_MIN_QDEPTH &&
--		 status != ATH_AGGR_BAW_CLOSED);
++
 +	ath_tx_fill_desc(sc, bf, txq, aggr_len);
 +	ath_tx_txqaddbuf(sc, txq, &bf_q, false);
 +	return true;
  }
  
  int ath_tx_aggr_start(struct ath_softc *sc, struct ieee80211_sta *sta,
-@@ -1258,6 +1388,9 @@ int ath_tx_aggr_start(struct ath_softc *
+@@ -1258,6 +1378,9 @@ int ath_tx_aggr_start(struct ath_softc *
  		an->mpdudensity = density;
  	}
  
@@ -817,7 +886,7 @@
  	txtid->active = true;
  	txtid->paused = true;
  	*ssn = txtid->seq_start = txtid->seq_next;
-@@ -1277,8 +1410,9 @@ void ath_tx_aggr_stop(struct ath_softc *
+@@ -1277,8 +1400,9 @@ void ath_tx_aggr_stop(struct ath_softc *
  
  	ath_txq_lock(sc, txq);
  	txtid->active = false;
@@ -828,7 +897,7 @@
  	ath_txq_unlock_complete(sc, txq);
  }
  
-@@ -1302,7 +1436,7 @@ void ath_tx_aggr_sleep(struct ieee80211_
+@@ -1302,7 +1426,7 @@ void ath_tx_aggr_sleep(struct ieee80211_
  
  		ath_txq_lock(sc, txq);
  
@@ -837,7 +906,7 @@
  
  		tid->sched = false;
  		list_del(&tid->list);
-@@ -1334,7 +1468,7 @@ void ath_tx_aggr_wakeup(struct ath_softc
+@@ -1334,7 +1458,7 @@ void ath_tx_aggr_wakeup(struct ath_softc
  		ath_txq_lock(sc, txq);
  		ac->clear_ps_filter = true;
  
@@ -846,7 +915,7 @@
  			ath_tx_queue_tid(txq, tid);
  			ath_txq_schedule(sc, txq);
  		}
-@@ -1359,7 +1493,7 @@ void ath_tx_aggr_resume(struct ath_softc
+@@ -1359,7 +1483,7 @@ void ath_tx_aggr_resume(struct ath_softc
  	tid->baw_size = IEEE80211_MIN_AMPDU_BUF << sta->ht_cap.ampdu_factor;
  	tid->paused = false;
  
@@ -855,7 +924,7 @@
  		ath_tx_queue_tid(txq, tid);
  		ath_txq_schedule(sc, txq);
  	}
-@@ -1379,6 +1513,7 @@ void ath9k_release_buffered_frames(struc
+@@ -1379,6 +1503,7 @@ void ath9k_release_buffered_frames(struc
  	struct ieee80211_tx_info *info;
  	struct list_head bf_q;
  	struct ath_buf *bf_tail = NULL, *bf;
@@ -863,7 +932,7 @@
  	int sent = 0;
  	int i;
  
-@@ -1394,15 +1529,15 @@ void ath9k_release_buffered_frames(struc
+@@ -1394,15 +1519,15 @@ void ath9k_release_buffered_frames(struc
  			continue;
  
  		ath_txq_lock(sc, tid->ac->txq);
@@ -883,7 +952,7 @@
  			bf->bf_state.bf_type &= ~BUF_AGGR;
  			if (bf_tail)
  				bf_tail->bf_next = bf;
-@@ -1412,7 +1547,7 @@ void ath9k_release_buffered_frames(struc
+@@ -1412,7 +1537,7 @@ void ath9k_release_buffered_frames(struc
  			sent++;
  			TX_STAT_INC(txq->axq_qnum, a_queued_hw);
  
@@ -892,7 +961,16 @@
  				ieee80211_sta_set_buffered(an->sta, i, false);
  		}
  		ath_txq_unlock_complete(sc, tid->ac->txq);
-@@ -1665,25 +1800,27 @@ void ath_tx_cleanupq(struct ath_softc *s
+@@ -1571,7 +1696,7 @@ static void ath_drain_txq_list(struct at
+ 	while (!list_empty(list)) {
+ 		bf = list_first_entry(list, struct ath_buf, list);
+ 
+-		if (bf->bf_stale) {
++		if (bf->bf_state.stale) {
+ 			list_del(&bf->list);
+ 
+ 			ath_tx_return_buffer(sc, bf);
+@@ -1665,25 +1790,27 @@ void ath_tx_cleanupq(struct ath_softc *s
   */
  void ath_txq_schedule(struct ath_softc *sc, struct ath_txq *txq)
  {
@@ -925,7 +1003,7 @@
  			tid = list_first_entry(&ac->tid_q, struct ath_atx_tid,
  					       list);
  			list_del(&tid->list);
-@@ -1692,17 +1829,17 @@ void ath_txq_schedule(struct ath_softc *
+@@ -1692,17 +1819,17 @@ void ath_txq_schedule(struct ath_softc *
  			if (tid->paused)
  				continue;
  
@@ -947,7 +1025,7 @@
  				break;
  		}
  
-@@ -1711,9 +1848,17 @@ void ath_txq_schedule(struct ath_softc *
+@@ -1711,9 +1838,17 @@ void ath_txq_schedule(struct ath_softc *
  			list_add_tail(&ac->list, &txq->axq_acq);
  		}
  
@@ -967,7 +1045,7 @@
  	}
  
  	rcu_read_unlock();
-@@ -1792,57 +1937,6 @@ static void ath_tx_txqaddbuf(struct ath_
+@@ -1792,57 +1927,6 @@ static void ath_tx_txqaddbuf(struct ath_
  	}
  }
  
@@ -1025,7 +1103,7 @@
  static void ath_tx_send_normal(struct ath_softc *sc, struct ath_txq *txq,
  			       struct ath_atx_tid *tid, struct sk_buff *skb)
  {
-@@ -1985,6 +2079,7 @@ static int ath_tx_prepare(struct ieee802
+@@ -1985,6 +2069,7 @@ static int ath_tx_prepare(struct ieee802
  	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
  	struct ieee80211_sta *sta = txctl->sta;
  	struct ieee80211_vif *vif = info->control.vif;
@@ -1033,7 +1111,7 @@
  	struct ath_softc *sc = hw->priv;
  	int frmlen = skb->len + FCS_LEN;
  	int padpos, padsize;
-@@ -1992,6 +2087,10 @@ static int ath_tx_prepare(struct ieee802
+@@ -1992,6 +2077,10 @@ static int ath_tx_prepare(struct ieee802
  	/* NOTE:  sta can be NULL according to net/mac80211.h */
  	if (sta)
  		txctl->an = (struct ath_node *)sta->drv_priv;
@@ -1044,7 +1122,7 @@
  
  	if (info->control.hw_key)
  		frmlen += info->control.hw_key->icv_len;
-@@ -2041,7 +2140,6 @@ int ath_tx_start(struct ieee80211_hw *hw
+@@ -2041,7 +2130,6 @@ int ath_tx_start(struct ieee80211_hw *hw
  	struct ath_txq *txq = txctl->txq;
  	struct ath_atx_tid *tid = NULL;
  	struct ath_buf *bf;
@@ -1052,7 +1130,7 @@
  	int q;
  	int ret;
  
-@@ -2069,27 +2167,31 @@ int ath_tx_start(struct ieee80211_hw *hw
+@@ -2069,27 +2157,31 @@ int ath_tx_start(struct ieee80211_hw *hw
  		ath_txq_unlock(sc, txq);
  		txq = sc->tx.uapsdq;
  		ath_txq_lock(sc, txq);
@@ -1095,7 +1173,7 @@
  		if (txctl->paprd)
  			dev_kfree_skb_any(skb);
  		else
-@@ -2189,7 +2291,7 @@ static void ath_tx_complete(struct ath_s
+@@ -2189,7 +2281,7 @@ static void ath_tx_complete(struct ath_s
  	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
  	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
  	struct ieee80211_hdr * hdr = (struct ieee80211_hdr *)skb->data;
@@ -1104,7 +1182,7 @@
  	unsigned long flags;
  
  	ath_dbg(common, XMIT, "TX complete: skb: %p\n", skb);
-@@ -2225,21 +2327,7 @@ static void ath_tx_complete(struct ath_s
+@@ -2225,21 +2317,7 @@ static void ath_tx_complete(struct ath_s
  	spin_unlock_irqrestore(&sc->sc_pm_lock, flags);
  
  	__skb_queue_tail(&txq->complete_q, skb);
@@ -1127,7 +1205,7 @@
  }
  
  static void ath_tx_complete_buf(struct ath_softc *sc, struct ath_buf *bf,
-@@ -2360,8 +2448,7 @@ static void ath_tx_processq(struct ath_s
+@@ -2360,8 +2438,7 @@ static void ath_tx_processq(struct ath_s
  
  		if (list_empty(&txq->axq_q)) {
  			txq->axq_link = NULL;
@@ -1137,7 +1215,43 @@
  			break;
  		}
  		bf = list_first_entry(&txq->axq_q, struct ath_buf, list);
-@@ -2583,6 +2670,7 @@ void ath_tx_node_init(struct ath_softc *
+@@ -2375,7 +2452,7 @@ static void ath_tx_processq(struct ath_s
+ 		 * it with the STALE flag.
+ 		 */
+ 		bf_held = NULL;
+-		if (bf->bf_stale) {
++		if (bf->bf_state.stale) {
+ 			bf_held = bf;
+ 			if (list_is_last(&bf_held->list, &txq->axq_q))
+ 				break;
+@@ -2399,7 +2476,7 @@ static void ath_tx_processq(struct ath_s
+ 		 * however leave the last descriptor back as the holding
+ 		 * descriptor for hw.
+ 		 */
+-		lastbf->bf_stale = true;
++		lastbf->bf_state.stale = true;
+ 		INIT_LIST_HEAD(&bf_head);
+ 		if (!list_is_singular(&lastbf->list))
+ 			list_cut_position(&bf_head,
+@@ -2470,7 +2547,7 @@ void ath_tx_edma_tasklet(struct ath_soft
+ 		}
+ 
+ 		bf = list_first_entry(fifo_list, struct ath_buf, list);
+-		if (bf->bf_stale) {
++		if (bf->bf_state.stale) {
+ 			list_del(&bf->list);
+ 			ath_tx_return_buffer(sc, bf);
+ 			bf = list_first_entry(fifo_list, struct ath_buf, list);
+@@ -2492,7 +2569,7 @@ void ath_tx_edma_tasklet(struct ath_soft
+ 				ath_tx_txqaddbuf(sc, txq, &bf_q, true);
+ 			}
+ 		} else {
+-			lastbf->bf_stale = true;
++			lastbf->bf_state.stale = true;
+ 			if (bf != lastbf)
+ 				list_cut_position(&bf_head, fifo_list,
+ 						  lastbf->list.prev);
+@@ -2583,6 +2660,7 @@ void ath_tx_node_init(struct ath_softc *
  		tid->paused    = false;
  		tid->active	   = false;
  		__skb_queue_head_init(&tid->buf_q);
@@ -1145,7 +1259,7 @@
  		acno = TID_TO_WME_AC(tidno);
  		tid->ac = &an->ac[acno];
  	}
-@@ -2590,6 +2678,7 @@ void ath_tx_node_init(struct ath_softc *
+@@ -2590,6 +2668,7 @@ void ath_tx_node_init(struct ath_softc *
  	for (acno = 0, ac = &an->ac[acno];
  	     acno < IEEE80211_NUM_ACS; acno++, ac++) {
  		ac->sched    = false;
@@ -1433,6 +1547,18 @@
  		state->filter_wiphy = -1;
  		ret = nl80211_dump_wiphy_parse(skb, cb, state);
  		if (ret) {
+@@ -4770,9 +4774,9 @@ do {									    \
+ 	FILL_IN_MESH_PARAM_IF_SET(tb, cfg, dot11MeshForwarding, 0, 1,
+ 				  mask, NL80211_MESHCONF_FORWARDING,
+ 				  nla_get_u8);
+-	FILL_IN_MESH_PARAM_IF_SET(tb, cfg, rssi_threshold, 1, 255,
++	FILL_IN_MESH_PARAM_IF_SET(tb, cfg, rssi_threshold, -255, 0,
+ 				  mask, NL80211_MESHCONF_RSSI_THRESHOLD,
+-				  nla_get_u32);
++				  nla_get_s32);
+ 	FILL_IN_MESH_PARAM_IF_SET(tb, cfg, ht_opmode, 0, 16,
+ 				  mask, NL80211_MESHCONF_HT_OPMODE,
+ 				  nla_get_u16);
 @@ -6615,12 +6619,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_ev
  
  void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
@@ -1819,7 +1945,21 @@
  
  	/*
  	 * Downgrade the new channel if we associated with restricted
-@@ -3394,10 +3405,13 @@ static int ieee80211_probe_auth(struct i
+@@ -1043,6 +1054,13 @@ ieee80211_sta_process_chanswitch(struct 
+ 		if (!ieee80211_operating_class_to_band(
+ 				elems->ext_chansw_ie->new_operating_class,
+ 				&new_band)) {
++			/*
++			 * Some APs send invalid ECSA IEs in probe response
++			 * frames, so check for these and ignore them.
++			 */
++			if (beacon && elems->ext_chansw_ie->new_ch_num == 0 &&
++			    elems->ext_chansw_ie->new_operating_class == 0)
++				return;
+ 			sdata_info(sdata,
+ 				   "cannot understand ECSA IE operating class %d, disconnecting\n",
+ 				   elems->ext_chansw_ie->new_operating_class);
+@@ -3394,10 +3412,13 @@ static int ieee80211_probe_auth(struct i
  
  	if (tx_flags == 0) {
  		auth_data->timeout = jiffies + IEEE80211_AUTH_TIMEOUT;
@@ -1835,7 +1975,7 @@
  	}
  
  	return 0;
-@@ -3434,7 +3448,11 @@ static int ieee80211_do_assoc(struct iee
+@@ -3434,7 +3455,11 @@ static int ieee80211_do_assoc(struct iee
  		assoc_data->timeout_started = true;
  		run_again(sdata, assoc_data->timeout);
  	} else {
@@ -1848,7 +1988,7 @@
  	}
  
  	return 0;
-@@ -3829,7 +3847,7 @@ static int ieee80211_prep_channel(struct
+@@ -3829,7 +3854,7 @@ static int ieee80211_prep_channel(struct
  	ifmgd->flags |= ieee80211_determine_chantype(sdata, sband,
  						     cbss->channel,
  						     ht_oper, vht_oper,
@@ -2235,7 +2375,25 @@
  #define	REALTEK_USB_VENQT_WRITE			0x40
 --- a/drivers/net/wireless/ath/ath9k/ath9k.h
 +++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-@@ -137,7 +137,8 @@ int ath_descdma_setup(struct ath_softc *
+@@ -72,17 +72,12 @@ struct ath_config {
+ /*************************/
+ 
+ #define ATH_TXBUF_RESET(_bf) do {				\
+-		(_bf)->bf_stale = false;			\
+ 		(_bf)->bf_lastbf = NULL;			\
+ 		(_bf)->bf_next = NULL;				\
+ 		memset(&((_bf)->bf_state), 0,			\
+ 		       sizeof(struct ath_buf_state));		\
+ 	} while (0)
+ 
+-#define ATH_RXBUF_RESET(_bf) do {		\
+-		(_bf)->bf_stale = false;	\
+-	} while (0)
+-
+ /**
+  * enum buffer_type - Buffer type flags
+  *
+@@ -137,7 +132,8 @@ int ath_descdma_setup(struct ath_softc *
  #define ATH_AGGR_ENCRYPTDELIM      10
  /* minimum h/w qdepth to be sustained to maximize aggregation */
  #define ATH_AGGR_MIN_QDEPTH        2
@@ -2245,7 +2403,7 @@
  
  #define IEEE80211_SEQ_SEQ_SHIFT    4
  #define IEEE80211_SEQ_MAX          4096
-@@ -174,12 +175,6 @@ int ath_descdma_setup(struct ath_softc *
+@@ -174,12 +170,6 @@ int ath_descdma_setup(struct ath_softc *
  
  #define ATH_TX_COMPLETE_POLL_INT	1000
  
@@ -2258,7 +2416,19 @@
  #define ATH_TXFIFO_DEPTH 8
  struct ath_txq {
  	int mac80211_qnum; /* mac80211 queue number, -1 means not mac80211 Q */
-@@ -212,8 +207,9 @@ struct ath_frame_info {
+@@ -201,10 +191,10 @@ struct ath_txq {
+ 
+ struct ath_atx_ac {
+ 	struct ath_txq *txq;
+-	int sched;
+ 	struct list_head list;
+ 	struct list_head tid_q;
+ 	bool clear_ps_filter;
++	bool sched;
+ };
+ 
+ struct ath_frame_info {
+@@ -212,14 +202,16 @@ struct ath_frame_info {
  	int framelen;
  	enum ath9k_key_type keytype;
  	u8 keyix;
@@ -2269,7 +2439,22 @@
  };
  
  struct ath_buf_state {
-@@ -241,6 +237,7 @@ struct ath_buf {
+ 	u8 bf_type;
+ 	u8 bfs_paprd;
+ 	u8 ndelim;
++	bool stale;
+ 	u16 seqno;
+ 	unsigned long bfs_paprd_timestamp;
+ };
+@@ -233,7 +225,6 @@ struct ath_buf {
+ 	void *bf_desc;			/* virtual addr of desc */
+ 	dma_addr_t bf_daddr;		/* physical addr of desc */
+ 	dma_addr_t bf_buf_addr;	/* physical addr of data buffer, for DMA */
+-	bool bf_stale;
+ 	struct ieee80211_tx_rate rates[4];
+ 	struct ath_buf_state bf_state;
+ };
+@@ -241,16 +232,18 @@ struct ath_buf {
  struct ath_atx_tid {
  	struct list_head list;
  	struct sk_buff_head buf_q;
@@ -2277,15 +2462,43 @@
  	struct ath_node *an;
  	struct ath_atx_ac *ac;
  	unsigned long tx_buf[BITS_TO_LONGS(ATH_TID_MAX_BUFS)];
-@@ -268,6 +265,7 @@ struct ath_node {
+-	int bar_index;
+ 	u16 seq_start;
+ 	u16 seq_next;
+ 	u16 baw_size;
+-	int tidno;
++	u8 tidno;
+ 	int baw_head;   /* first un-acked tx buffer */
+ 	int baw_tail;   /* next unused tx buffer slot */
++
++	s8 bar_index;
+ 	bool sched;
+ 	bool paused;
+ 	bool active;
+@@ -262,12 +255,13 @@ struct ath_node {
+ 	struct ieee80211_vif *vif; /* interface with which we're associated */
+ 	struct ath_atx_tid tid[IEEE80211_NUM_TIDS];
+ 	struct ath_atx_ac ac[IEEE80211_NUM_ACS];
+-	int ps_key;
+ 
+ 	u16 maxampdu;
  	u8 mpdudensity;
++	s8 ps_key;
  
  	bool sleeping;
 +	bool no_ps_filter;
  
  #if defined(CPTCFG_MAC80211_DEBUGFS) && defined(CPTCFG_ATH9K_DEBUGFS)
  	struct dentry *node_stat;
-@@ -367,6 +365,7 @@ void ath9k_release_buffered_frames(struc
+@@ -317,6 +311,7 @@ struct ath_rx {
+ 	struct ath_descdma rxdma;
+ 	struct ath_rx_edma rx_edma[ATH9K_RX_QUEUE_MAX];
+ 
++	struct ath_buf *buf_hold;
+ 	struct sk_buff *frag;
+ 
+ 	u32 ampdu_ref;
+@@ -367,6 +362,7 @@ void ath9k_release_buffered_frames(struc
  /********/
  
  struct ath_vif {
@@ -2354,3 +2567,237 @@
  	if (len > size)
  		len = size;
  
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -36,7 +36,7 @@
+ 
+ static void __ieee80211_sta_join_ibss(struct ieee80211_sub_if_data *sdata,
+ 				      const u8 *bssid, const int beacon_int,
+-				      struct ieee80211_channel *chan,
++				      struct cfg80211_chan_def *req_chandef,
+ 				      const u32 basic_rates,
+ 				      const u16 capability, u64 tsf,
+ 				      bool creator)
+@@ -51,6 +51,7 @@ static void __ieee80211_sta_join_ibss(st
+ 	u32 bss_change;
+ 	u8 supp_rates[IEEE80211_MAX_SUPP_RATES];
+ 	struct cfg80211_chan_def chandef;
++	struct ieee80211_channel *chan;
+ 	struct beacon_data *presp;
+ 	int frame_len;
+ 
+@@ -81,7 +82,9 @@ static void __ieee80211_sta_join_ibss(st
+ 
+ 	sdata->drop_unencrypted = capability & WLAN_CAPABILITY_PRIVACY ? 1 : 0;
+ 
+-	chandef = ifibss->chandef;
++	/* make a copy of the chandef, it could be modified below. */
++	chandef = *req_chandef;
++	chan = chandef.chan;
+ 	if (!cfg80211_reg_can_beacon(local->hw.wiphy, &chandef)) {
+ 		chandef.width = NL80211_CHAN_WIDTH_20;
+ 		chandef.center_freq1 = chan->center_freq;
+@@ -259,10 +262,12 @@ static void ieee80211_sta_join_ibss(stru
+ 	struct cfg80211_bss *cbss =
+ 		container_of((void *)bss, struct cfg80211_bss, priv);
+ 	struct ieee80211_supported_band *sband;
++	struct cfg80211_chan_def chandef;
+ 	u32 basic_rates;
+ 	int i, j;
+ 	u16 beacon_int = cbss->beacon_interval;
+ 	const struct cfg80211_bss_ies *ies;
++	enum nl80211_channel_type chan_type;
+ 	u64 tsf;
+ 
+ 	sdata_assert_lock(sdata);
+@@ -270,6 +275,26 @@ static void ieee80211_sta_join_ibss(stru
+ 	if (beacon_int < 10)
+ 		beacon_int = 10;
+ 
++	switch (sdata->u.ibss.chandef.width) {
++	case NL80211_CHAN_WIDTH_20_NOHT:
++	case NL80211_CHAN_WIDTH_20:
++	case NL80211_CHAN_WIDTH_40:
++		chan_type = cfg80211_get_chandef_type(&sdata->u.ibss.chandef);
++		cfg80211_chandef_create(&chandef, cbss->channel, chan_type);
++		break;
++	case NL80211_CHAN_WIDTH_5:
++	case NL80211_CHAN_WIDTH_10:
++		cfg80211_chandef_create(&chandef, cbss->channel,
++					NL80211_CHAN_WIDTH_20_NOHT);
++		chandef.width = sdata->u.ibss.chandef.width;
++		break;
++	default:
++		/* fall back to 20 MHz for unsupported modes */
++		cfg80211_chandef_create(&chandef, cbss->channel,
++					NL80211_CHAN_WIDTH_20_NOHT);
++		break;
++	}
++
+ 	sband = sdata->local->hw.wiphy->bands[cbss->channel->band];
+ 
+ 	basic_rates = 0;
+@@ -294,7 +319,7 @@ static void ieee80211_sta_join_ibss(stru
+ 
+ 	__ieee80211_sta_join_ibss(sdata, cbss->bssid,
+ 				  beacon_int,
+-				  cbss->channel,
++				  &chandef,
+ 				  basic_rates,
+ 				  cbss->capability,
+ 				  tsf, false);
+@@ -736,7 +761,7 @@ static void ieee80211_sta_create_ibss(st
+ 		sdata->drop_unencrypted = 0;
+ 
+ 	__ieee80211_sta_join_ibss(sdata, bssid, sdata->vif.bss_conf.beacon_int,
+-				  ifibss->chandef.chan, ifibss->basic_rates,
++				  &ifibss->chandef, ifibss->basic_rates,
+ 				  capability, 0, true);
+ }
+ 
+@@ -792,6 +817,17 @@ static void ieee80211_sta_find_ibss(stru
+ 		return;
+ 	}
+ 
++	/* if a fixed bssid and a fixed freq have been provided create the IBSS
++	 * directly and do not waste time scanning
++	 */
++	if (ifibss->fixed_bssid && ifibss->fixed_channel) {
++		sdata_info(sdata, "Created IBSS using preconfigured BSSID %pM\n",
++			   bssid);
++		ieee80211_sta_create_ibss(sdata);
++		return;
++	}
++
++
+ 	ibss_dbg(sdata, "sta_find_ibss: did not try to join ibss\n");
+ 
+ 	/* Selected IBSS not found in current scan results - try to scan */
+@@ -1138,6 +1174,7 @@ int ieee80211_ibss_leave(struct ieee8021
+ 	clear_bit(SDATA_STATE_OFFCHANNEL_BEACON_STOPPED, &sdata->state);
+ 	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON_ENABLED |
+ 						BSS_CHANGED_IBSS);
++	ieee80211_vif_release_channel(sdata);
+ 	synchronize_rcu();
+ 	kfree(presp);
+ 
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -1173,6 +1173,10 @@ skip_ws_det:
+ 		 * is_on == 0 means MRC CCK is OFF (more noise imm)
+ 		 */
+ 		bool is_on = param ? 1 : 0;
++
++		if (ah->caps.rx_chainmask == 1)
++			break;
++
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
+ 			      AR_PHY_MRC_CCK_ENABLE, is_on);
+ 		REG_RMW_FIELD(ah, AR_PHY_MRC_CCK_CTRL,
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -42,8 +42,6 @@ static void ath_rx_buf_link(struct ath_s
+ 	struct ath_desc *ds;
+ 	struct sk_buff *skb;
+ 
+-	ATH_RXBUF_RESET(bf);
+-
+ 	ds = bf->bf_desc;
+ 	ds->ds_link = 0; /* link to null */
+ 	ds->ds_data = bf->bf_buf_addr;
+@@ -70,6 +68,14 @@ static void ath_rx_buf_link(struct ath_s
+ 	sc->rx.rxlink = &ds->ds_link;
+ }
+ 
++static void ath_rx_buf_relink(struct ath_softc *sc, struct ath_buf *bf)
++{
++	if (sc->rx.buf_hold)
++		ath_rx_buf_link(sc, sc->rx.buf_hold);
++
++	sc->rx.buf_hold = bf;
++}
++
+ static void ath_setdefantenna(struct ath_softc *sc, u32 antenna)
+ {
+ 	/* XXX block beacon interrupts */
+@@ -117,7 +123,6 @@ static bool ath_rx_edma_buf_link(struct 
+ 
+ 	skb = bf->bf_mpdu;
+ 
+-	ATH_RXBUF_RESET(bf);
+ 	memset(skb->data, 0, ah->caps.rx_status_len);
+ 	dma_sync_single_for_device(sc->dev, bf->bf_buf_addr,
+ 				ah->caps.rx_status_len, DMA_TO_DEVICE);
+@@ -432,6 +437,7 @@ int ath_startrecv(struct ath_softc *sc)
+ 	if (list_empty(&sc->rx.rxbuf))
+ 		goto start_recv;
+ 
++	sc->rx.buf_hold = NULL;
+ 	sc->rx.rxlink = NULL;
+ 	list_for_each_entry_safe(bf, tbf, &sc->rx.rxbuf, list) {
+ 		ath_rx_buf_link(sc, bf);
+@@ -677,6 +683,9 @@ static struct ath_buf *ath_get_next_rx_b
+ 	}
+ 
+ 	bf = list_first_entry(&sc->rx.rxbuf, struct ath_buf, list);
++	if (bf == sc->rx.buf_hold)
++		return NULL;
++
+ 	ds = bf->bf_desc;
+ 
+ 	/*
+@@ -1375,7 +1384,7 @@ requeue:
+ 		if (edma) {
+ 			ath_rx_edma_buf_link(sc, qtype);
+ 		} else {
+-			ath_rx_buf_link(sc, bf);
++			ath_rx_buf_relink(sc, bf);
+ 			ath9k_hw_rxena(ah);
+ 		}
+ 	} while (1);
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -802,7 +802,8 @@ void ath9k_set_hw_capab(struct ath_softc
+ 		IEEE80211_HW_PS_NULLFUNC_STACK |
+ 		IEEE80211_HW_SPECTRUM_MGMT |
+ 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
+-		IEEE80211_HW_SUPPORTS_RC_TABLE;
++		IEEE80211_HW_SUPPORTS_RC_TABLE |
++		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+ 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
+--- a/drivers/net/wireless/ath/carl9170/main.c
++++ b/drivers/net/wireless/ath/carl9170/main.c
+@@ -1878,7 +1878,8 @@ void *carl9170_alloc(size_t priv_size)
+ 		     IEEE80211_HW_PS_NULLFUNC_STACK |
+ 		     IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC |
+ 		     IEEE80211_HW_SUPPORTS_RC_TABLE |
+-		     IEEE80211_HW_SIGNAL_DBM;
++		     IEEE80211_HW_SIGNAL_DBM |
++		     IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	if (!modparam_noht) {
+ 		/*
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -6133,7 +6133,8 @@ static int rt2800_probe_hw_mode(struct r
+ 	    IEEE80211_HW_SUPPORTS_PS |
+ 	    IEEE80211_HW_PS_NULLFUNC_STACK |
+ 	    IEEE80211_HW_AMPDU_AGGREGATION |
+-	    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
++	    IEEE80211_HW_REPORTS_TX_ACK_STATUS |
++	    IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
+ 	/*
+ 	 * Don't set IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING for USB devices
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1499,6 +1499,7 @@ enum ieee80211_hw_flags {
+ 	IEEE80211_HW_SUPPORTS_RC_TABLE			= 1<<24,
+ 	IEEE80211_HW_P2P_DEV_ADDR_FOR_INTF		= 1<<25,
+ 	IEEE80211_HW_TIMING_BEACON_ONLY			= 1<<26,
++	IEEE80211_HW_SUPPORTS_HT_CCK_RATES		= 1<<27,
+ };
+ 
+ /**

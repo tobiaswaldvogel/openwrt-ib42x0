@@ -156,9 +156,9 @@ BuildFirmware/Edimax/initramfs=$(call BuildFirmware/OF/initramfs,$(1),$(2),$(3))
 
 # build Seama header images
 define BuildFirmware/Seama/squashfs
-	$(call BuildFirmware/OF,$(1),$(2),$(3),$(4))
+	$(call BuildFirmware/OF,$(1),$(2),$(3),$(5))
 	cat $(KDIR)/vmlinux-$(2).bin.lzma $(KDIR)/root.$(1) > $(KDIR)/img_$(2).$(1).tmp
-	if [ `stat -c%s "$(KDIR)/img_$(2).$(1).tmp"` -gt $$$$(($(4) - 64)) ]; then \
+	if [ `stat -c%s "$(KDIR)/img_$(2).$(1).tmp"` -gt $$$$(($(5) - 64)) ]; then \
 		echo "Warning: $(KDIR)/img_$(2).$(1).tmp is too big" >&2; \
 	else \
 		dd if=$(KDIR)/vmlinux-$(2).bin.lzma of=$(KDIR)/vmlinux-$(2).bin.lzma.padded bs=64k conv=sync; \
@@ -279,6 +279,8 @@ endif
 #
 # RT305X Profiles
 #
+
+Image/Build/Profile/DIR610A1=$(call BuildFirmware/Seama/$(1),$(1),dir-610-a1,DIR-610-A1,wrgn59_dlob.hans_dir610,$(ralink_default_fw_size_4M))
 
 edimax_3g6200n_mtd_size=3735552
 Image/Build/Profile/3G6200N=$(call BuildFirmware/Edimax/$(1),$(1),3g-6200n,3G-6200N,$(edimax_3g6200n_mtd_size),CSYS,3G62,0x50000,0xc0000)
@@ -505,6 +507,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/DIR-300-B1,$(1))
 	$(call Image/Build/Profile/DIR-600-B1,$(1))
 	$(call Image/Build/Profile/DIR-600-B2,$(1))
+	$(call Image/Build/Profile/DIR610A1,$(1))
 	$(call Image/Build/Profile/DIR-615-D,$(1))
 	$(call Image/Build/Profile/DIR-620-A1,$(1))
 	$(call Image/Build/Profile/DIR-620-D1,$(1))
@@ -585,11 +588,16 @@ endif
 
 Image/Build/Profile/MT7620a=$(call BuildFirmware/Default8M/$(1),$(1),mt7620a,MT7620a)
 Image/Build/Profile/MT7620a_MT7610e=$(call BuildFirmware/Default8M/$(1),$(1),mt7620a_mt7610e,MT7620a_MT7610e)
+Image/Build/Profile/RP-N53=$(call BuildFirmware/Default8M/$(1),$(1),rp_n53,RP-N53)
+dlink810l_mtd_size=6881280
+Image/Build/Profile/DIR-810L=$(call BuildFirmware/CustomFlash/$(1),$(1),dir-810l,DIR-810L,$(dlink810l_mtd_size))
 
 ifeq ($(SUBTARGET),mt7620a)
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/MT7620a,$(1))
 	$(call Image/Build/Profile/MT7620a_MT7610e,$(1))
+	$(call Image/Build/Profile/RP-N53,$(1))
+	$(call Image/Build/Profile/DIR-810L,$(1))
 endef
 endif
 

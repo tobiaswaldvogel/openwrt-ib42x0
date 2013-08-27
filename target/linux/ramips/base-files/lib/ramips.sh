@@ -73,6 +73,9 @@ ramips_board_detect() {
 	*"DIR-600 B2")
 		name="dir-600-b2"
 		;;
+	*"DIR-610 A1")
+		name="dir-610-a1"
+		;;
 	*"DIR-620 A1")
 		name="dir-620-a1"
 		;;
@@ -87,6 +90,9 @@ ramips_board_detect() {
 		;;
 	*"DIR-645")
 		name="dir-645"
+		;;
+	*"DIR-810L")
+		name="dir-810l"
 		;;
 	*"DAP-1350")
 		name="dap-1350"
@@ -165,6 +171,9 @@ ramips_board_detect() {
 		;;
 	*"PWH2004")
 		name="pwh2004"
+		;;
+	*"Asus RP-N53")
+		name="rp-n53"
 		;;
 	*"RT-G32 B1")
 		name="rt-g32-b1"
