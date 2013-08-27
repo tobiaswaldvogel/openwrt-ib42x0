@@ -44,6 +44,10 @@
 #include "fis.h"
 #include "mtd.h"
 
+#ifndef MTDREFRESH
+#define MTDREFRESH	_IO('M', 50)
+#endif
+
 #define MAX_ARGS 8
 #define JFFS2_DEFAULT_DIR	"" /* directory name without /, empty means root dir */
 
@@ -242,6 +246,33 @@ mtd_erase(const char *mtd)
 	close(fd);
 	return 0;
 
+}
+
+static int
+mtd_refresh(const char *mtd, int option)
+{
+	int fd;
+
+	if (quiet < 2)
+		fprintf(stderr, "Refreshing mtd partition %s ... ", mtd);
+
+	fd = mtd_check_open(mtd);
+	if(fd < 0) {
+		fprintf(stderr, "Could not open mtd device: %s\n", mtd);
+		exit(1);
+	}
+
+	if (ioctl(fd, MTDREFRESH, option)) {
+		fprintf(stderr, "Failed to refresh the MTD device\n");
+		close(fd);
+		exit(1);
+	}
+	close(fd);
+
+	if (quiet < 2)
+		fprintf(stderr, "\n");
+
+	return 0;
 }
 
 static void
@@ -469,6 +500,9 @@ done:
 		if (fis_remap(old_parts, n_old, new_parts, n_new) < 0)
 			fprintf(stderr, "Failed to update the FIS partition table\n");
 	}
+	else {
+		fis_update_len(mtd, w);
+	}
 #endif
 
 	close(fd);
@@ -536,7 +570,7 @@ static void do_reboot(void)
 
 int main (int argc, char **argv)
 {
-	int ch, i, boot, imagefd = 0, force, unlocked;
+	int ch, i, boot, imagefd = 0, force, unlocked, option = 0;
 	char *erase[MAX_ARGS], *device = NULL;
 	char *fis_layout = NULL;
 	size_t offset = 0, part_offset = 0;
@@ -544,6 +578,7 @@ int main (int argc, char **argv)
 		CMD_ERASE,
 		CMD_WRITE,
 		CMD_UNLOCK,
+		CMD_REFRESH,
 		CMD_JFFS2WRITE,
 		CMD_FIXTRX,
 		CMD_FIXSEAMA,
@@ -626,6 +661,11 @@ int main (int argc, char **argv)
 	if ((strcmp(argv[0], "unlock") == 0) && (argc == 2)) {
 		cmd = CMD_UNLOCK;
 		device = argv[1];
+	} else if ((strcmp(argv[0], "refresh") == 0) && (argc == 2 || argc == 3)) {
+		cmd = CMD_REFRESH;
+		device = argv[1];
+		if (argc == 3)
+			option = atoi(argv[2]);
 	} else if ((strcmp(argv[0], "erase") == 0) && (argc == 2)) {
 		cmd = CMD_ERASE;
 		device = argv[1];
@@ -703,6 +743,9 @@ int main (int argc, char **argv)
 			if (!unlocked)
 				mtd_unlock(device);
 			mtd_write_jffs2(device, imagefile, jffs2dir);
+			break;
+		case CMD_REFRESH:
+			mtd_refresh(device, option);
 			break;
 		case CMD_FIXTRX:
 		    if (mtd_fixtrx) {

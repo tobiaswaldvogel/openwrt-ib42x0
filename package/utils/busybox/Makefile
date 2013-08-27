@@ -46,7 +46,7 @@ define Package/busybox
   MAINTAINER:=Nicolas Thill <nico@openwrt.org>
   TITLE:=Core utilities for embedded Linux
   URL:=http://busybox.net/
-  DEPENDS:=+BUSYBOX_CONFIG_FEATURE_HAVE_RPC:librpc
+  DEPENDS:=+BUSYBOX_CONFIG_FEATURE_HAVE_RPC:librpc +BUSYBOX_CONFIG_PAM:libpam +BUSYBOX_CONFIG_PAM:libpam_misc
   MENU:=1
 endef
 
@@ -81,6 +81,11 @@ ifdef CONFIG_BUSYBOX_CONFIG_FEATURE_HAVE_RPC
   export LDFLAGS=$(TARGET_LDFLAGS)
   LDLIBS += rpc
 endif
+ifdef CONFIG_BUSYBOX_CONFIG_PAM
+  TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+  export LDFLAGS=$(TARGET_LDFLAGS)
+  LDLIBS += pam pam_misc
+endif
 
 define Build/Compile
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
@@ -113,6 +118,9 @@ define Package/busybox/install
 		$(INSTALL_BIN) ./files/$$$$tmp $(1)/etc/init.d/$$$$tmp; \
 	done
 	-rm -rf $(1)/lib64
+
+	touch  $(1)/etc/busybox.conf
+	chmod u+s $(1)/bin/busybox
 endef
 
 $(eval $(call BuildPackage,busybox))

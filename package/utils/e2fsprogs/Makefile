@@ -20,6 +20,8 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
+EXTRA_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib -L$(PKG_BUILD_DIR)/lib
+
 define Package/e2fsprogs/Default
   URL:=http://e2fsprogs.sourceforge.net/
   SUBMENU:=Filesystem
@@ -30,7 +32,7 @@ $(call Package/e2fsprogs/Default)
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Ext2/3/4 filesystem utilities
-  DEPENDS:=+libuuid +libext2fs
+  DEPENDS:=+libblkid +libuuid +libext2fs
 endef
 
 define Package/e2fsprogs/description
@@ -41,6 +43,7 @@ endef
 
 define Package/libext2fs
 $(call Package/e2fsprogs/Default)
+  DEPENDS:=+libcom_err
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=ext2/3/4 filesystem library
@@ -48,6 +51,18 @@ endef
 
 define Package/libext2fs/description
  libext2fs is a library which can access ext2, ext3 and ext4 filesystems.
+endef
+
+define Package/libcom_err
+$(call Package/e2fsprogs/Default)
+  DEPENDS:=+libpthread
+  SECTION:=libs
+  CATEGORY:=Libraries
+  TITLE:=Common error description library
+endef
+
+define Package/libcom_err/description
+ libcom_err is a library providing common error descriptions
 endef
 
 define Package/tune2fs
@@ -74,6 +89,18 @@ $(call Package/e2fsprogs)
   DEPENDS:= +e2fsprogs
 endef
 
+define Package/chattr
+$(call Package/e2fsprogs)
+  TITLE:=Ext2 Filesystem chattr utility
+  DEPENDS:= +e2fsprogs
+endef
+
+define Package/lsattr
+$(call Package/e2fsprogs)
+  TITLE:=Ext2 Filesystem lsattr utility
+  DEPENDS:= +e2fsprogs
+endef
+
 TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
 
 CONFIGURE_VARS += \
@@ -83,8 +110,9 @@ CONFIGURE_ARGS += \
 	--disable-testio-debug \
 	--enable-elf-shlibs	\
 	--disable-libuuid	\
-	--enable-libblkid	\
+	--disable-libblkid	\
 	--disable-uuidd		\
+	--disable-blkid		\
 	--disable-tls		\
 	--disable-nls		\
 	--disable-rpath
@@ -105,8 +133,20 @@ define Build/Compile
 		LDFLAGS=-Wl,--gc-sections \
 		BUILDCC="$(HOSTCC)" \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
-		LIBBLKID="$(PKG_BUILD_DIR)/lib/libblkid.a -luuid" \
 		all
+endef
+
+define Build/InstallDev
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		BUILDCC="$(HOSTCC)" \
+		DESTDIR="$(1)" \
+		install-libs
+	$(MAKE) -C $(PKG_BUILD_DIR)/lib/ext2fs \
+		BUILDCC="$(HOSTCC)" \
+		DESTDIR="$(1)" \
+		install
+	rm -f $(1)/usr/lib/libcom_err.so
+	rm -f $(1)/usr/lib/libcom_err.a
 endef
 
 define Package/e2fsprogs/install
@@ -125,19 +165,13 @@ define Package/e2fsprogs/install
 endef
 
 define Package/libcom_err/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libcom_err.so.* $(1)/usr/lib/
 endef
 
 define Package/libext2fs/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/libext2fs.so.* \
-		$(PKG_INSTALL_DIR)/usr/lib/libcom_err.so.* \
-		$(1)/usr/lib/
-endef
-
-define Package/libext2fs/install_lib
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/lib/ext2fs/libext2fs.a $(1)/usr/lib/libext2fs_pic.a
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libext2fs.so.* $(1)/usr/lib/
 endef
 
 define Package/tune2fs/install
@@ -160,9 +194,22 @@ define Package/badblocks/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/badblocks $(1)/usr/sbin/
 endef
 
+define Package/chattr/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/chattr $(1)/usr/bin/
+endef
+
+define Package/lsattr/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsattr $(1)/usr/bin/
+endef
+
 $(eval $(call BuildPackage,e2fsprogs))
 $(eval $(call BuildPackage,libext2fs))
+$(eval $(call BuildPackage,libcom_err))
 $(eval $(call BuildPackage,tune2fs))
 $(eval $(call BuildPackage,e4defrag))
 $(eval $(call BuildPackage,resize2fs))
 $(eval $(call BuildPackage,badblocks))
+$(eval $(call BuildPackage,chattr))
+$(eval $(call BuildPackage,lsattr))

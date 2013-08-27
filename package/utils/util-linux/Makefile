@@ -8,11 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-PKG_VERSION:=2.21.2
-PKG_RELEASE:=2
+PKG_MAJOR_VERSION:=2.21
+PKG_MINOR_VERSION=.2
+PKG_VERSION:=$(PKG_MAJOR_VERSION)$(PKG_MINOR_VERSION)
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v2.21
+PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v$(PKG_MAJOR_VERSION)
 PKG_MD5SUM:=54ba880f1d66782c2287ee2c898520e9
 
 PKG_LICENSE:=GPLv2 LGPLv2.1 BSD-3c
@@ -21,6 +23,7 @@ PKG_LICENSE_FILES:=COPYING getopt/COPYING libblkid/COPYING libmount/COPYING Docu
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=libncurses
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -35,6 +38,8 @@ CONFIGURE_ARGS += \
 	--with-ncurses		\
 	--disable-nls		\
 	--disable-tls		\
+	--disable-makeinstall-chown	\
+	--disable-makeinstall-setuid	\
 	--without-udev
 
 TARGET_CFLAGS += $(FPIC)
@@ -58,9 +63,9 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/libuuid/src/uuid.h $(1)/usr/include/uuid
 
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libblkid/src/.libs/libblkid.{a,so*} $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libmount/src/.libs/libmount.{a,so*} $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libuuid/src/.libs/libuuid.{a,so*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/libblkid/src/.libs/libblkid.{a,so.*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/libmount/src/.libs/libmount.{a,so.*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/libuuid/src/.libs/libuuid.{a,so.*} $(1)/usr/lib
 endef
 
 define Package/libblkid
@@ -156,6 +161,12 @@ endef
 
 define Package/dmesg/description
  dmesg  is used to examine or control the kernel ring buffer
+endef
+
+define Package/fallocate
+$(call Package/util-linux/Default)
+  TITLE:=allocate an empty file
+  SUBMENU:=disc
 endef
 
 define Package/fdisk
@@ -438,6 +449,11 @@ define Package/cfdisk/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fdisk/.libs/cfdisk $(1)/usr/sbin/
 endef
 
+define Package/fallocate/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/fallocate $(1)/usr/bin/
+endef
+
 define Package/fdisk/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fdisk/.libs/fdisk $(1)/usr/sbin/
@@ -532,6 +548,8 @@ define Package/swap-utils/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/disk-utils/.libs/mkswap $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/disk-utils/.libs/swaplabel $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sys-utils/.libs/swapon $(1)/usr/sbin/
+	ln -sf swapon $(1)/usr/sbin/swapoff
 endef
 
 define Package/uuidd/install
@@ -559,6 +577,18 @@ define Package/wipefs/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/misc-utils/.libs/wipefs $(1)/usr/sbin/
 endef
 
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{blkid,uuid}.a $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/lib/lib{blkid,uuid}.so* $(1)/usr/lib/	
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/blkid.pc
+	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/uuid.pc
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/{blkid,uuid}.pc $(1)/usr/lib/pkgconfig/
+endef
+
 $(eval $(call BuildPackage,libblkid))
 $(eval $(call BuildPackage,libmount))
 $(eval $(call BuildPackage,libuuid))
@@ -567,6 +597,7 @@ $(eval $(call BuildPackage,blkid))
 $(eval $(call BuildPackage,cal))
 $(eval $(call BuildPackage,cfdisk))
 $(eval $(call BuildPackage,dmesg))
+$(eval $(call BuildPackage,fallocate))
 $(eval $(call BuildPackage,fdisk))
 $(eval $(call BuildPackage,findfs))
 $(eval $(call BuildPackage,flock))
