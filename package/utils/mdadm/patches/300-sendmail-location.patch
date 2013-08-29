@@ -1,0 +1,11 @@
+--- a/mdadm.h	2011-10-15 15:30:24.348152580 +0200
++++ b/mdadm.h	2011-10-15 15:31:01.753783405 +0200
+@@ -530,7 +530,7 @@
+ 			   char *src_buf);
+ 
+ #ifndef Sendmail
+-#define Sendmail "/usr/lib/sendmail -t"
++#define Sendmail "/usr/sbin/sendmail -t"
+ #endif
+ 
+ #define SYSLOG_FACILITY LOG_DAEMON

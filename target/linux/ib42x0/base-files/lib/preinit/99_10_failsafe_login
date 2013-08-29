@@ -4,7 +4,9 @@
 
 failsafe_restore_passwd() {
     ramoverlay
-    find_mount_jffs2
+    mkdir -p /tmp/overlay
+    mount -o noatime -t jffs2 "$(find_mtd_part rootfs_data)" /tmp/overlay
+    mtd -qq unlock rootfs_data
 
     if [ -f /tmp/overlay/etc/passwd ]; then
         cp /tmp/overlay/etc/passwd /etc/passwd

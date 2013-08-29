@@ -1,0 +1,29 @@
+--- a/Assemble.c	2011-12-11 00:01:31.003336250 +0100
++++ b/Assemble.c	2011-12-11 00:03:10.832336148 +0100
+@@ -645,19 +645,13 @@
+ 	if (content == &info)
+ 		st->ss->getinfo_super(st, content, NULL);
+ 
+-	trustworthy = FOREIGN;
+-	name = content->name;
+-	switch (st->ss->match_home(st, homehost)
+-		?: st->ss->match_home(st, "any")) {
+-	case 1:
+-		trustworthy = LOCAL;
+-		name = strchr(content->name, ':');
+-		if (name)
+-			name++;
+-		else
+-			name = content->name;
+-		break;
+-	}
++	trustworthy = LOCAL;
++	name = strchr(content->name, ':');
++	if (name)
++		name++;
++	else
++		name = content->name;
++
+ 	if (!auto_assem)
+ 		/* If the array is listed in mdadm.conf or on
+ 		 * command line, then we trust the name
