@@ -1,6 +1,6 @@
 --- a/mm/memory.c	2013-01-19 02:25:45.164565400 +0100
 +++ b/mm/memory.c	2013-01-19 13:15:40.422146000 +0100
-@@ -1625,6 +1625,29 @@
+@@ -1626,6 +1626,29 @@
  	       stack_guard_page_end(vma, addr+PAGE_SIZE);
  }
  
@@ -30,7 +30,7 @@
  /**
   * __get_user_pages() - pin user pages in memory
   * @tsk:	task_struct of target task
-@@ -1681,6 +1704,11 @@
+@@ -1682,6 +1705,11 @@
  {
  	int i;
  	unsigned long vm_flags;
@@ -42,7 +42,7 @@
  
  	if (nr_pages <= 0)
  		return 0;
-@@ -1711,8 +1739,6 @@
+@@ -1712,8 +1740,6 @@
  	i = 0;
  
  	do {
@@ -51,7 +51,7 @@
  		vma = find_extend_vma(mm, start);
  		if (!vma && in_gate_area(mm, start)) {
  			unsigned long pg = start & PAGE_MASK;
-@@ -1772,8 +1798,10 @@
+@@ -1773,8 +1799,10 @@
  			continue;
  		}
  
@@ -63,7 +63,7 @@
  			unsigned int foll_flags = gup_flags;
  
  			/*
-@@ -1851,14 +1879,15 @@
+@@ -1852,14 +1880,15 @@
  
  				cond_resched();
  			}
@@ -84,7 +84,7 @@
  next_page:
  			if (vmas)
  				vmas[i] = vma;
-@@ -1866,6 +1895,9 @@
+@@ -1867,6 +1896,9 @@
  			start += PAGE_SIZE;
  			nr_pages--;
  		} while (nr_pages && start < vma->vm_end);

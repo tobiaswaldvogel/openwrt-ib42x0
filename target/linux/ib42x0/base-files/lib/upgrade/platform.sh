@@ -24,18 +24,17 @@ platform_do_upgrade() {
 	line=`grep Layout /tmp/ImageInfo`
 	eval $line
 
-	if [ "$Distribution" == "OpenWrt" ]; then
-		USE_REFRESH=1
-	fi
-
 	local mode=0
 	if [ "$Layout" == "Compact" ]; then
 		mode=1
 	fi 
 
+	local append=""
+	[ -f "$CONF_TAR" -a "$SAVE_CONFIG" -eq 1 ] && append="-j $CONF_TAR"
+
 	mtd -q write /tmp/zImage Kern
-	mtd refresh Kern $mode
-	mtd -q write /tmp/rootfs rootfs
+	mtd refresh rootfs $mode
+	mtd -q -r $append write /tmp/rootfs rootfs
 }
 
 disable_watchdog() {
