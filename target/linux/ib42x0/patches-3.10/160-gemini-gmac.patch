@@ -602,7 +602,7 @@
 +	int num = dev->dev_id;
 +
 +	dev->phydev = phy_connect(dev, pdata->bus_id[num],
-+		&gmac_update_link_state, 0, pdata->interface[num]);
++		&gmac_update_link_state, pdata->interface[num]);
 +
 +	if (IS_ERR(dev->phydev)) {
 +		int err = PTR_ERR(dev->phydev);

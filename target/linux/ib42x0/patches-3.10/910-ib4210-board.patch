@@ -1,10 +1,10 @@
---- /dev/null	2012-02-04 12:26:34.104456216 +0100
-+++ linux/arch/arm/mach-gemini/board-nas4210b.c	2012-02-05 20:42:23.311051383 +0100
-@@ -0,0 +1,204 @@
+--- /dev/null	2013-08-30 05:02:49.732496544 +0200
++++ linux/arch/arm/mach-gemini/board-nas4210b.c	2013-08-31 18:57:49.708908497 +0200
+@@ -0,0 +1,202 @@
 +/*
 + *  Support for Raidsonic NAS-4210-B
 + *
-+ *  Copyright (C) 2012 Tobias Waldvogel <tobias.waldvogel@gmail.com>
++ *  Copyright (C) 2009 Janos Laube <janos.dev@gmail.com>
 + *
 + * based on rut1xx.c
 + *  Copyright (C) 2008 Paulius Zaleckas <paulius.zaleckas@teltonika.lt>
@@ -29,7 +29,8 @@
 +#include <asm/mach/arch.h>
 +#include <asm/mach/time.h>
 +
-+#include <mach/system.h>
++#include <mach/hardware.h>
++#include <mach/global_reg.h>
 +#include <linux/platform_data/gemini_gmac.h>
 +
 +#include "common.h"
@@ -49,10 +50,6 @@
 +static struct gemini_gmac_platform_data ib4210b_gmac_data = {
 +	.bus_id[0]	= "gpio-0:01",
 +	.interface[0]	= PHY_INTERFACE_MODE_RGMII,
-+};
-+
-+static struct sys_timer ib4210b_timer = {
-+	.init	= gemini_timer_init,
 +};
 +
 +static struct gpio_led ib4210b_leds[] = {
@@ -122,7 +119,7 @@
 +	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
 +		GLOBAL_MISC_CTRL));
 +
-+	/* enabling ports for presence detection */
++	/* enabling ports for presence detection, master only */
 +	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
 +	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
 +}
@@ -179,6 +176,7 @@
 +	platform_device_register(&ib4210b_led_device);
 +	platform_device_register(&ib4210b_key_device);
 +	platform_register_rtc();
++	platform_register_pwc();
 +	platform_register_pata(0);
 +	platform_register_watchdog();
 +	platform_device_register (&ib4210b_phy_device);
@@ -200,8 +198,8 @@
 +	.atag_offset	= 0x100,
 +	.map_io		= gemini_map_io,
 +	.init_irq	= gemini_init_irq,
-+	.timer		= &ib4210b_timer,
-+	.fixup		= ib4210b_fixup,
++	.init_time	= gemini_timer_init,
++	.fixup          = ib4210b_fixup,
 +	.init_machine	= ib4210b_init,
-+	.restart	= arch_reset,
++	.restart	= gemini_restart,
 +MACHINE_END

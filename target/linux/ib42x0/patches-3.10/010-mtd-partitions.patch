@@ -33,8 +33,8 @@
  extern void __put_mtd_device(struct mtd_info *mtd);
  extern struct mtd_info *get_mtd_device_nm(const char *name);
  extern void put_mtd_device(struct mtd_info *mtd);
---- a/drivers/mtd/mtdpart.c	2013-08-31 04:54:37.210035081 +0200
-+++ b/drivers/mtd/mtdpart.c	2013-08-31 04:36:54.379966708 +0200
+--- a/drivers/mtd/mtdpart.c	2013-09-02 04:12:30.283438915 +0200
++++ b/drivers/mtd/mtdpart.c	2013-09-02 04:10:21.046986158 +0200
 @@ -851,6 +851,7 @@
  	arch_split_mtd_part(master, part->mtd.name, part->offset,
  			    part->mtd.size);
@@ -52,7 +52,7 @@
  		       const struct mtd_partition *parts,
  		       int nbparts)
  {
-@@ -888,6 +889,196 @@
+@@ -888,6 +889,194 @@
  	return 0;
  }
  
@@ -163,10 +163,9 @@
 +	if (k+1 >= nbparts)
 +		return -EINVAL;
 +
-+	offset = parts[k].offset + parts[k].size;
-+	offset +=  (master->erasesize - 1);
-+	offset &= ~(master->erasesize - 1);
-+	while (offset < parts[k+1].offset) {
++	parts[k].size = parts[k+1].offset - parts[k].offset;
++	offset = parts[k+1].offset;
++	while (offset > parts[k].offset) {
 +		ret = mtd_read(master, offset, sizeof(sb), &len, (void *) &sb);
 +		if (ret || (len != sizeof(sb))) {
 +			printk(KERN_ALERT "mtd: error occured while reading "
@@ -177,10 +176,9 @@
 +		if (SQUASHFS_MAGIC == le32_to_cpu(sb.s_magic))
 +			break;
 +
-+		offset += master->erasesize;
++		offset -= master->erasesize;
 +	}
 +
-+	parts[k].size = offset - parts[k].offset;
 +	parts[k+1].size += parts[k+1].offset - offset;
 +	parts[k+1].offset = offset;
 +	return 0;

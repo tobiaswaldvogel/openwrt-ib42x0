@@ -42,7 +42,7 @@
 +#define TIMER_2_CR_UPDOWN		(1 << 10)
 +#define TIMER_3_CR_UPDOWN		(1 << 11)
 +
-+#define TIMER_1_INT_MATCH1D		(1 << 0)
++#define TIMER_1_INT_MATCH1		(1 << 0)
 +#define TIMER_1_INT_MATCH2		(1 << 1)
 +#define TIMER_1_INT_OVERFLOW		(1 << 2)
 +#define TIMER_2_INT_MATCH1		(1 << 3)
@@ -99,7 +99,7 @@
 +		case CLOCK_EVT_MODE_PERIODIC:
 +			/* Stop timer and interrupt. */
 +			u = readl(TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
-+			u &= ~(TIMER_1_CR_ENABLE | TIMER_1_CR_OFENABLE);
++			u &= ~(TIMER_1_CR_ENABLE | TIMER_1_CR_INT);
 +			writel(u, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
 +
 +			/* Setup timer to fire at 1/HZ intervals. */
@@ -115,7 +115,7 @@
 +	
 +			/* start the timer */
 +			u = readl(TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
-+			u |= TIMER_1_CR_ENABLE | TIMER_1_CR_OFENABLE;
++			u |= TIMER_1_CR_ENABLE | TIMER_1_CR_INT;
 +			writel(u, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
 +			break;
 +
@@ -124,7 +124,7 @@
 +		case CLOCK_EVT_MODE_SHUTDOWN:
 +			/* Stop timer and interrupt. */
 +			u = readl(TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
-+			u &= ~(TIMER_1_CR_ENABLE | TIMER_1_CR_OFENABLE);
++			u &= ~(TIMER_1_CR_ENABLE | TIMER_1_CR_INT);
 +			writel(u, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
 +
 +			/* Setup counter start from 0 */
@@ -192,8 +192,8 @@
 +	writel(0, TIMER_LOAD(IO_ADDRESS(GEMINI_TIMER3_BASE)));
 +	writel(0, TIMER_MATCH1(IO_ADDRESS(GEMINI_TIMER3_BASE)));
 +	writel(0, TIMER_MATCH2(IO_ADDRESS(GEMINI_TIMER3_BASE)));
-+	u = TIMER_3_CR_ENABLE | TIMER_3_CR_UPDOWN;
-+	writel(u, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
++	reg_v = TIMER_3_CR_ENABLE | TIMER_3_CR_UPDOWN;
++	writel(reg_v, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
 +	clocksource_mmio_init(TIMER_COUNT(IO_ADDRESS(GEMINI_TIMER3_BASE)),
 +			"gemini_clocksource", tick_rate,
 +			300, 32, clocksource_mmio_readl_up);
@@ -216,8 +216,8 @@
 +	writel(0, TIMER_LOAD(IO_ADDRESS(GEMINI_TIMER1_BASE)));
 +	writel(0, TIMER_MATCH1(IO_ADDRESS(GEMINI_TIMER1_BASE)));
 +	writel(0, TIMER_MATCH2(IO_ADDRESS(GEMINI_TIMER1_BASE)));
-+	u |= TIMER_1_CR_UPDOWN;		// UP counter
-+	writel(u, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
++	reg_v |= TIMER_1_CR_UPDOWN;		// UP counter
++	writel(reg_v, TIMER_CR(IO_ADDRESS(GEMINI_TIMER_BASE)));
 +
 +	gemini_clkevt.mult = div_sc(tick_rate, NSEC_PER_SEC, gemini_clkevt.shift);
 +	gemini_clkevt.max_delta_ns = clockevent_delta2ns(0xfffffffe, &gemini_clkevt);
