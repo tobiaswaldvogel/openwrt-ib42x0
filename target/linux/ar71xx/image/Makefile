@@ -618,8 +618,8 @@ define Image/Build/TPLINK-LZMA/initramfs
 		-o $(call imgname,$(1),$(2))-uImage.bin
 endef
 
-
-Image/Build/CyberTAN/buildkernel=$(call MkuImageGzip,$(2),$(3))
+Image/Build/CyberTAN/loader=$(call Image/BuildLoader,$(1),gz,$(2),0x80060000)
+Image/Build/CyberTAN/buildkernel=$(call MkuImage,gzip,,$(KDIR)/loader-$(2).gz,$(KDIR_TMP)/vmlinux-$(2).uImage)
 
 define Image/Build/CyberTAN
 	$(STAGING_DIR_HOST)/bin/trx -o $(KDIR)/image.tmp -f $(KDIR_TMP)/vmlinux-$(2).uImage \
@@ -712,7 +712,7 @@ define Image/Build/Netgear/initramfs
 	$(call MkuImageLzma,$(2),$(3) $(4),,-initramfs)
 	$(STAGING_DIR_HOST)/bin/wndr3700 \
 		$(KDIR_TMP)/vmlinux-initramfs-$(2).uImage \
-		$(call imgname,$(1),$(2))-initramfs-uImage.bin \
+		$(call imgname,$(1),$(2))-uImage.bin \
 		$(5)
 endef
 

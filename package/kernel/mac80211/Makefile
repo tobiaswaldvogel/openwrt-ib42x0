@@ -27,7 +27,7 @@ PKG_DRIVERS = \
 	rt2x00-lib rt2x00-pci rt2x00-usb rt2x00-soc rt2800-lib rt2400-pci \
 	rt2500-pci rt2500-usb rt61-pci rt73-usb rt2800-pci rt2800-usb \
 	rtl8180 rtl8187 zd1211rw mac80211-hwsim carl9170 b43 b43legacy \
-	ath9k-common ath9k ath9k-htc ath net-libipw net-ipw2100 net-ipw2200 \
+	ath9k-common ath9k ath9k-htc ath10k ath net-libipw net-ipw2100 net-ipw2200 \
 	mwl8k net-hermes net-hermes-pci net-hermes-plx net-hermes-pcmcia \
 	iwl-legacy iwl3945 iwl4965 iwlagn wl12xx lib80211 \
 	rtlwifi rtlwifi-pci rtlwifi-usb rtl8192c-common rtl8192ce rtl8192se \
@@ -44,8 +44,6 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_B43_N_PHY \
 	CONFIG_PACKAGE_RTLWIFI_DEBUG \
 	CONFIG_ATH_USER_REGD \
-
-CARL9170_FW_VERSION:=1.9.6
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -125,11 +123,28 @@ define Download/linux-firmware
 endef
 $(eval $(call Download,linux-firmware))
 
+PKG_ATH10K_LINUX_FIRMWARE_NAME:=ath10k-firmware
+PKG_ATH10K_LINUX_FIRMWARE_VERSION:=9374d42c01bd84487855af9f9bffc622c50e7331
+PKG_ATH10K_LINUX_FIRMWARE_SOURCE:=$(PKG_ATH10K_LINUX_FIRMWARE_NAME)-$(PKG_ATH10K_LINUX_FIRMWARE_VERSION).tar.bz2
+PKG_ATH10K_LINUX_FIRMWARE_PROTO:=git
+PKG_ATH10K_LINUX_FIRMWARE_SOURCE_URL:=https://github.com/kvalo/ath10k-firmware.git
+PKG_ATH10K_LINUX_FIRMWARE_SUBDIR:=$(PKG_ATH10K_LINUX_FIRMWARE_NAME)-$(PKG_ATH10K_LINUX_FIRMWARE_VERSION)
+#PKG_ATH10K_LINUX_FIRMWARE_MIRROR_MD5SUM:=?
+
+define Download/ath10k-firmware
+  FILE:=$(PKG_ATH10K_LINUX_FIRMWARE_SOURCE)
+  URL:=$(PKG_ATH10K_LINUX_FIRMWARE_SOURCE_URL)
+  PROTO:=$(PKG_ATH10K_LINUX_FIRMWARE_PROTO)
+  VERSION:=$(PKG_ATH10K_LINUX_FIRMWARE_VERSION)
+  SUBDIR:=$(PKG_ATH10K_LINUX_FIRMWARE_SUBDIR)
+  #MIRROR_MD5SUM:=$(PKG_ATH10K_LINUX_FIRMWARE_MIRROR_MD5SUM)
+endef
+$(eval $(call Download,ath10k-firmware))
+
 # Prism54 drivers
 P54PCIFW:=2.13.12.0.arm
 P54USBFW:=2.13.24.0.lm87.arm
 P54SPIFW:=2.13.0.0.a.13.14.arm
-CARL9170_FW:=carl9170-1.fw
 
 define Download/p54usb
   FILE:=$(P54USBFW)
@@ -151,13 +166,6 @@ define Download/p54spi
   MD5SUM:=42661f8ecbadd88012807493f596081d
 endef
 $(eval $(call Download,p54spi))
-
-define Download/carl9170
-  FILE:=$(CARL9170_FW)-$(CARL9170_FW_VERSION)
-  URL:=http://downloads.openwrt.org/sources/
-  MD5SUM:=2fa6ed98d53d0b5fbcc136d1cf5e9609
-endef
-$(eval $(call Download,carl9170))
 
 define KernelPackage/p54/Default
   $(call KernelPackage/mac80211/Default)
@@ -566,17 +574,29 @@ This module adds support for wireless adapters based on
 Atheros USB AR9271 and AR7010 family of chipsets.
 endef
 
+define KernelPackage/ath10k
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=Atheros 802.11ac wireless cards support
+  URL:=http://wireless.kernel.org/en/users/Drivers/ath10k
+  DEPENDS+= @PCI_SUPPORT +kmod-ath +@DRIVER_11N_SUPPORT
+  FILES:= \
+	$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath10k/ath10k_core.ko \
+	$(PKG_BUILD_DIR)/drivers/net/wireless/ath/ath10k/ath10k_pci.ko
+  AUTOLOAD:=$(call AutoLoad,55,ath10k_core ath10k_pci)
+endef
+
+define KernelPackage/ath10k/description
+This module adds support for wireless adapters based on
+Atheros IEEE 802.11ac family of chipsets. For now only
+PCI is supported.
+endef
+
 define KernelPackage/carl9170
   $(call KernelPackage/mac80211/Default)
   TITLE:=Driver for Atheros AR9170 USB sticks
   DEPENDS:=@USB_SUPPORT +kmod-mac80211 +kmod-ath +kmod-usb-core +kmod-input-core +@DRIVER_11N_SUPPORT
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/ath/carl9170/carl9170.ko
   AUTOLOAD:=$(call AutoLoad,60,carl9170)
-endef
-
-define KernelPackage/carl9170/install
-	$(INSTALL_DIR) $(1)/lib/firmware
-	$(INSTALL_DATA) $(DL_DIR)/$(CARL9170_FW)-$(CARL9170_FW_VERSION) $(1)/lib/firmware/$(CARL9170_FW)
 endef
 
 define KernelPackage/lib80211
@@ -1298,6 +1318,7 @@ ifdef CONFIG_PACKAGE_MAC80211_DEBUGFS
 	MAC80211_DEBUGFS \
 	ATH9K_DEBUGFS \
 	ATH9K_HTC_DEBUGFS \
+	ATH10K_DEBUGFS \
 	CARL9170_DEBUGFS \
 	ATH5K_DEBUG
 endif
@@ -1305,7 +1326,7 @@ endif
 config-$(call config_package,lib80211) += LIB80211 LIB80211_CRYPT_WEP LIB80211_CRYPT_CCMP LIB80211_CRYPT_TKIP
 
 config-$(call config_package,ath) += ATH_CARDS ATH_COMMON
-config-$(CONFIG_PACKAGE_ATH_DEBUG) += ATH_DEBUG
+config-$(CONFIG_PACKAGE_ATH_DEBUG) += ATH_DEBUG ATH10K_DEBUG
 
 config-$(call config_package,ath9k) += ATH9K
 config-$(call config_package,ath9k-common) += ATH9K_COMMON
@@ -1314,6 +1335,7 @@ config-$(CONFIG_PCI) += ATH9K_PCI
 config-$(CONFIG_ATH_USER_REGD) += ATH_USER_REGD
 
 config-$(call config_package,ath9k-htc) += ATH9K_HTC
+config-$(call config_package,ath10k) += ATH10K ATH10K_PCI
 
 config-$(call config_package,ath5k) += ATH5K
 ifdef CONFIG_TARGET_atheros
@@ -1437,6 +1459,7 @@ define Build/Prepare
 	$(TAR) -C $(PKG_BUILD_DIR) -xzf $(DL_DIR)/$(IPW2200_NAME)-$(IPW2200_VERSION).tgz
 	$(TAR) -C $(PKG_BUILD_DIR) -xjf $(DL_DIR)/$(ZD1211FW_NAME)-$(ZD1211FW_VERSION).tar.bz2
 	$(TAR) -C $(PKG_BUILD_DIR) -xjf $(DL_DIR)/$(PKG_LINUX_FIRMWARE_SOURCE)
+	$(TAR) -C $(PKG_BUILD_DIR) -xjf $(DL_DIR)/$(PKG_ATH10K_LINUX_FIRMWARE_SOURCE)
 	rm -rf \
 		$(PKG_BUILD_DIR)/include/linux/ssb \
 		$(PKG_BUILD_DIR)/include/linux/bcma \
@@ -1568,12 +1591,26 @@ define KernelPackage/zd1211rw/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(ZD1211FW_NAME)/zd1211* $(1)/lib/firmware/zd1211
 endef
 
+define KernelPackage/carl9170/install
+	$(INSTALL_DIR) $(1)/lib/firmware
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/carl9170-1.fw $(1)/lib/firmware
+endef
+
 define KernelPackage/ath9k-htc/install
 	$(INSTALL_DIR) $(1)/lib/firmware
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/htc_9271.fw \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/htc_7010.fw \
 		$(1)/lib/firmware/
+endef
+
+define KernelPackage/ath10k/install
+	$(INSTALL_DIR) $(1)/lib/firmware/ath10k/QCA988X/hw2.0
+	$(INSTALL_DATA) \
+		$(PKG_BUILD_DIR)/$(PKG_ATH10K_LINUX_FIRMWARE_SUBDIR)/ath10k/QCA988X/hw2.0/board.bin \
+		$(PKG_BUILD_DIR)/$(PKG_ATH10K_LINUX_FIRMWARE_SUBDIR)/ath10k/QCA988X/hw2.0/firmware.bin \
+		$(PKG_BUILD_DIR)/$(PKG_ATH10K_LINUX_FIRMWARE_SUBDIR)/ath10k/QCA988X/hw2.0/otp.bin \
+		$(1)/lib/firmware/ath10k/QCA988X/hw2.0/
 endef
 
 define KernelPackage/mwl8k/install
@@ -1736,6 +1773,7 @@ $(eval $(call KernelPackage,mac80211-hwsim))
 $(eval $(call KernelPackage,ath9k-common))
 $(eval $(call KernelPackage,ath9k))
 $(eval $(call KernelPackage,ath9k-htc))
+$(eval $(call KernelPackage,ath10k))
 $(eval $(call KernelPackage,ath))
 $(eval $(call KernelPackage,carl9170))
 $(eval $(call KernelPackage,b43))
