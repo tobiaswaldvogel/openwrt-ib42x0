@@ -188,8 +188,13 @@ static void b53_set_vlan_entry(struct b53_device *dev, u16 vid, u16 members,
 	if (is5325(dev)) {
 		u32 entry = 0;
 
-		if (members)
-			entry = (untag << VA_UNTAG_S) | members | VA_VALID_25;
+		if (members) {
+			entry = (untag << VA_UNTAG_S) | members;
+			if (dev->core_rev >= 3)
+				entry |= VA_VALID_25_R4 | vid << VA_VID_HIGH_S;
+			else
+				entry |= VA_VALID_25;
+		}
 
 		b53_write32(dev, B53_VLAN_PAGE, B53_VLAN_WRITE_25, entry);
 		b53_write16(dev, B53_VLAN_PAGE, B53_VLAN_TABLE_ACCESS_25, vid |
@@ -476,6 +481,11 @@ static int b53_switch_reset(struct b53_device *dev)
 	u8 mgmt;
 
 	b53_switch_reset_gpio(dev);
+
+	if (is539x(dev)) {
+		b53_write8(dev, B53_CTRL_PAGE, B53_SOFTRESET, 0x83);
+		b53_write8(dev, B53_CTRL_PAGE, B53_SOFTRESET, 0x00);
+	}
 
 	b53_read8(dev, B53_CTRL_PAGE, B53_SWITCH_MODE, &mgmt);
 
@@ -1295,7 +1305,12 @@ int b53_switch_detect(struct b53_device *dev)
 		}
 	}
 
-	return b53_read8(dev, B53_MGMT_PAGE, B53_REV_ID, &dev->core_rev);
+	if (dev->chip_id == BCM5325_DEVICE_ID)
+		return b53_read8(dev, B53_STAT_PAGE, B53_REV_ID_25,
+				 &dev->core_rev);
+	else
+		return b53_read8(dev, B53_MGMT_PAGE, B53_REV_ID,
+				 &dev->core_rev);
 }
 EXPORT_SYMBOL(b53_switch_detect);
 
