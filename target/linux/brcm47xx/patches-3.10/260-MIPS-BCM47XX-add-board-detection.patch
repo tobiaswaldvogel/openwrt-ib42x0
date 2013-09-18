@@ -8,7 +8,7 @@
  obj-$(CONFIG_BCM47XX_SSB)	+= wgt634u.o
 --- /dev/null
 +++ b/arch/mips/bcm47xx/board.c
-@@ -0,0 +1,286 @@
+@@ -0,0 +1,288 @@
 +#include <linux/export.h>
 +#include <linux/string.h>
 +#include <bcm47xx_board.h>
@@ -123,6 +123,7 @@
 +	{{BCM47XX_BOARD_LINKSYS_E1000V1, "Linksys E1000 V1"}, "E100", "1.0"},  /* like WRT160N v3.0 */
 +	{{BCM47XX_BOARD_LINKSYS_E1000V2, "Linksys E1000 V2"}, "E1000", "2.0"},
 +	{{BCM47XX_BOARD_LINKSYS_E1000V21, "Linksys E1000 V2.1"}, "E1000", "2.1"},
++	{{BCM47XX_BOARD_LINKSYS_E1200V2, "Linksys E1200 V2"}, "E1200", "2.0"},
 +	{{BCM47XX_BOARD_LINKSYS_E2000V1, "Linksys E2000 V1"}, "Linksys E2000", "1.0"},
 +	{{BCM47XX_BOARD_LINKSYS_E3000V1, "Linksys E3000 V1"}, "E300", "1.0"}, /* like WRT610N v2.0 */
 +	{{BCM47XX_BOARD_LINKSYS_E3200V1, "Linksys E3200 V1"}, "E3200", "1.0"},
@@ -165,6 +166,7 @@
 +static const struct bcm47xx_board_type_list3 bcm47xx_board_list_board[] = {
 +	{{BCM47XX_BOARD_ZTE_H218N, "ZTE H218N"}, "0x053d", "1234", "0x1305"},
 +	{{BCM47XX_BOARD_HUAWEI_E970, "Huawei E970"}, "0x048e", "0x5347", "0x11"},
++	{{BCM47XX_BOARD_PHICOMM_M1, "Phicomm M1"}, "0x0590", "80", "0x1104"},
 +	{ {0}, 0},
 +};
 +
@@ -297,7 +299,7 @@
 +EXPORT_SYMBOL(bcm47xx_board_get_name);
 --- /dev/null
 +++ b/arch/mips/include/asm/mach-bcm47xx/bcm47xx_board.h
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,107 @@
 +#ifndef __BCM47XX_BOARD_H
 +#define __BCM47XX_BOARD_H
 +
@@ -352,6 +354,7 @@
 +	BCM47XX_BOARD_LINKSYS_E1000V1,
 +	BCM47XX_BOARD_LINKSYS_E1000V2,
 +	BCM47XX_BOARD_LINKSYS_E1000V21,
++	BCM47XX_BOARD_LINKSYS_E1200V2,
 +	BCM47XX_BOARD_LINKSYS_E2000V1,
 +	BCM47XX_BOARD_LINKSYS_E3000V1,
 +	BCM47XX_BOARD_LINKSYS_E3200V1,
@@ -388,6 +391,8 @@
 +	BCM47XX_BOARD_NETGEAR_WNR3500V2,
 +	BCM47XX_BOARD_NETGEAR_WNR3500V2VC,
 +	BCM47XX_BOARD_NETGEAR_WNR834BV2,
++
++	BCM47XX_BOARD_PHICOMM_M1,
 +
 +	/* TODO */
 +	BCM47XX_BOARD_SIMPLETECH_SIMPLESHARE,

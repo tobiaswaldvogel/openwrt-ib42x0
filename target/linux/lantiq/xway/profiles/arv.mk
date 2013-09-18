@@ -121,15 +121,8 @@ define Profile/ARV752DPW22
 	kmod-ltq-adsl-danube-fw-b kmod-ltq-atm-danube \
 	ltq-adsl-app ppp-mod-pppoa \
 	kmod-ltq-tapi kmod-ltq-vmmc \
+	kmod-rt2800-pci wpad-mini \
 	swconfig
 endef
 
 $(eval $(call Profile,ARV752DPW22))
-
-define Profile/VG3503J
-  NAME:=BT Openreach - ECI VDSL Modem
-  PACKAGES:=kmod-ltq-vdsl-vr9-mei kmod-ltq-vdsl-vr9 \
-	kmod-ltq-ptm-vr9 ltq-vdsl-app
-endef
-
-$(eval $(call Profile,VG3503J))

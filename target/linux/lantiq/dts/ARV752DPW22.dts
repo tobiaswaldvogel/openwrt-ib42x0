@@ -42,7 +42,7 @@
 				};
 
 				partition@20000 {
-					label = "linux";
+					label = "firmware";
 					reg = <0x40000 0x7b0000>;
 				};
 
@@ -137,6 +137,11 @@
 			req-mask = <0x3>;
 		};
 
+	};
+
+	ralink_eep {
+		compatible = "ralink,eeprom";
+		ralink,eeprom = "RT2860.eeprom";
 	};
 
 	gpio-keys-polled {

@@ -83,6 +83,7 @@ enum {
 	WRT160NV1,
 	WRT160NV3,
 	WRT300NV11,
+	WRT310NV1,
 	WRT350N,
 	WRT600N,
 	WRT600NV11,
@@ -90,6 +91,7 @@ enum {
 	WRT610NV2,
 	E1000V1,
 	E1000V21,
+	E2000V1,
 	E3000V1,
 	E3200V1,
 	E4200V1,
@@ -382,6 +384,18 @@ static struct platform_t __initdata platforms[] = {
 		},
 		.platform_init = bcm57xx_init,
 	},
+	[WRT310NV1] = {
+		.name		= "Linksys WRT310N V1",
+		.buttons	= {
+			{ .name = "reset",	.gpio = 1 << 6 }, // "Reset" on back panel
+			{ .name = "ses",	.gpio = 1 << 8 }, // "Reserved" on top panel
+		},
+		.leds		= {
+			{ .name = "power",	.gpio = 1 << 1, .polarity = NORMAL }, // Power LED
+			{ .name = "ses_amber",	.gpio = 1 << 3, .polarity = REVERSE }, // "Security" Amber
+			{ .name = "ses_blue",	.gpio = 1 << 9, .polarity = REVERSE }, // "Security" Blue
+		},
+	},
 	[WRT350N] = {
 		.name		= "Linksys WRT350N",
 		.buttons	= {
@@ -486,6 +500,19 @@ static struct platform_t __initdata platforms[] = {
 			{ .name = "wlan",       .gpio = 1 << 5, .polarity = NORMAL },
 			{ .name = "ses_blue",	.gpio = 1 << 8, .polarity = NORMAL }, /* nvram get gpio8=wps_led */
 			{ .name = "ses_orange",	.gpio = 1 << 7, .polarity = NORMAL }, /* nvram get gpio7=wps_status_led */
+		},
+	},
+	[E2000V1] = {
+		.name		= "Linksys E2000 V1",
+		.buttons	= {
+			{ .name = "reset",	.gpio = 1 << 8 },
+			{ .name = "ses",	.gpio = 1 << 5 },
+		},
+		.leds		= {
+			{ .name = "power",	.gpio = 1 << 2, .polarity = NORMAL },
+			{ .name = "ses_amber",	.gpio = 1 << 4, .polarity = REVERSE },
+			{ .name = "ses_blue",	.gpio = 1 << 3, .polarity = REVERSE },
+			{ .name = "wlan",	.gpio = 1 << 1, .polarity = NORMAL },
 		},
 	},
 	[E3000V1] = {
@@ -1381,6 +1408,8 @@ static struct platform_t __init *platform_detect(void)
 		return &platforms[E1000V1];
 	case BCM47XX_BOARD_LINKSYS_E1000V21:
 		return &platforms[E1000V21];
+	case BCM47XX_BOARD_LINKSYS_E2000V1:
+		return &platforms[E2000V1];
 	case BCM47XX_BOARD_LINKSYS_E3000V1:
 		return &platforms[E3000V1];
 	case BCM47XX_BOARD_LINKSYS_E3200V1:
@@ -1397,6 +1426,8 @@ static struct platform_t __init *platform_detect(void)
 		return &platforms[WRT160NV3];
 	case BCM47XX_BOARD_LINKSYS_WRT300NV11:
 		return &platforms[WRT300NV11];
+	case BCM47XX_BOARD_LINKSYS_WRT310NV1:
+		return &platforms[WRT310NV1];
 	case BCM47XX_BOARD_LINKSYS_WRT54G3GV2:
 		return &platforms[WRT54G3GV2_VF];
 	case BCM47XX_BOARD_LINKSYS_WRT610NV1:
