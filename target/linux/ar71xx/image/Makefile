@@ -169,10 +169,12 @@ ubdev_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,7488k(firmware)
 whrhpg300n_mtdlayout=mtdparts=spi0.0:248k(u-boot)ro,8k(u-boot-env)ro,3712k(firmware),64k(art)ro
 wndap360_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,1728k(kernel),6016k(rootfs),64k(nvram)ro,64k(art)ro,7744k@0x50000(firmware)
 wnr2000v3_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,1024k(kernel),2688k(rootfs),64k(art)ro,3712k@0x50000(firmware)
+wnr2200_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,1152k(kernel),6528k(rootfs),64k(art)ro,7680k@0x70000(firmware)
 wndr3700_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,1152k(kernel),6528k(rootfs),64k(art)ro,7680k@0x70000(firmware)
 wndr3700v2_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,1152k(kernel),14720k(rootfs),64k(art)ro,15872k@0x70000(firmware)
 wndr4300_mtdlayout=mtdparts=ar934x-nfc:256k(u-boot)ro,256k(u-boot-env)ro,256k(caldata),512k(pot),2048k(language),512k(config),3072k(traffic_meter),1152k(kernel),24448k(rootfs),25600k@0x6c0000(firmware),256k(caldata_backup),-(reserved)
 zcn1523h_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6208k(rootfs),1472k(kernel),64k(configure)ro,64k(mfg)ro,64k(art)ro,7680k@0x50000(firmware)
+mynet_n600_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,64k(devdata)ro,64k(devconf)ro,1280k(kernel),14592k(rootfs),64k(radiocfg)ro,15872k@0x70000(firmware)
 
 define Image/BuildKernel
 	cp $(KDIR)/vmlinux.elf $(VMLINUX).elf
@@ -531,6 +533,38 @@ define Image/Build/ALFA
 endef
 
 
+Image/Build/Seama/loader=$(call Image/BuildLoader,$(1),bin,$(2) $(3),0x80060000)
+
+define Image/Build/Seama
+	[ -e "$(KDIR)/loader-$(2).bin" ]
+	$(call CompressLzma,$(KDIR)/loader-$(2).bin,$(KDIR_TMP)/loader-$(2).bin.lzma)
+	-rm -f $(KDIR_TMP)/image-$(2).tmp
+	$(call CatFiles,$(KDIR_TMP)/loader-$(2).bin.lzma,$$$$(($(6) - 64)),$(KDIR)/root.$(1),$(7),$(KDIR_TMP)/image-$(2).tmp)
+	[ -e "$(KDIR_TMP)/image-$(2).tmp" ] && { \
+		$(STAGING_DIR_HOST)/bin/seama \
+		-i $(KDIR_TMP)/image-$(2).tmp \
+		-m "dev=/dev/mtdblock/1" -m "type=firmware"; \
+		$(STAGING_DIR_HOST)/bin/seama \
+			-s $(call imgname,$(1),$(2))-factory.bin \
+			-m "signature=$(5)" \
+			-i $(KDIR_TMP)/image-$(2).tmp.seama; \
+	}
+	cat $(KDIR_TMP)/loader-$(2).bin.lzma > $(KDIR_TMP)/image-$(2)-sysupgrade.tmp
+	$(STAGING_DIR_HOST)/bin/seama \
+		-i $(KDIR_TMP)/image-$(2)-sysupgrade.tmp \
+		-m "dev=/dev/mtdblock/1" -m "type=firmware"
+	$(call CatFiles,$(KDIR_TMP)/image-$(2)-sysupgrade.tmp.seama,$(6),$(KDIR)/root.$(1),$(7),$(call sysupname,$(1),$(2)))
+endef
+
+define Image/Build/Seama/initramfs
+	$(call PatchKernelLzma,$(2),$(3) $(4),,-initramfs)
+	$(STAGING_DIR_HOST)/bin/seama \
+		-i $(KDIR_TMP)/vmlinux-initramfs-$(2).bin.lzma \
+		-m "dev=/dev/mtdblock/1" -m "type=firmware"
+	cat $(KDIR_TMP)/vmlinux-initramfs-$(2).bin.lzma.seama > $(call imgname,initramfs,$(2))-seama.bin
+endef
+
+
 Image/Build/TPLINKOLD/loader=$(call Image/BuildLoaderAlone,$(1),gz,$(2),0x22000,0)
 
 define Image/Build/TPLINKOLD
@@ -859,6 +893,7 @@ $(eval $(call SingleProfile,MyLoader,64k,WPE72_16M,wpe72,,ttyS0,115200,0x1000000
 # This is used with AthGzip profile for now
 $(eval $(call SingleProfile,AthGzip,64k,WNDAP360,wndap360,WNDAP360,ttyS0,9600,$$(wndap360_mtdlayout),1769472,6160384,KRuImage))
 $(eval $(call SingleProfile,Netgear,64k,WNR2000V3,wnr2000v3,WNR2000V3,ttyS0,115200,$$(wnr2000v3_mtdlayout),2003,WNR2000V3,"" NA,))
+$(eval $(call SingleProfile,Netgear,64k,WNR2200,wnr2200,WNR2200,ttyS0,115200,$$(wnr2200_mtdlayout),2200,WNR2200,"" NA,))
 $(eval $(call SingleProfile,Netgear,64k,WNR612V2,wnr612v2,WNR612V2,ttyS0,115200,$$(wnr2000v3_mtdlayout),2061,WNR612V2,"",))
 $(eval $(call SingleProfile,Netgear,64k,WNDR3700V1,wndr3700,WNDR3700,ttyS0,115200,$$(wndr3700_mtdlayout),3700,WNDR3700,"" NA,))
 $(eval $(call SingleProfile,Netgear,64k,WNDR3700V2,wndr3700v2,WNDR3700,ttyS0,115200,$$(wndr3700v2_mtdlayout),3701,WNDR3700v2,"",-H 29763654+16+64))
@@ -881,6 +916,8 @@ $(eval $(call SingleProfile,PB4X,64k,PB44,pb44,PB44,ttyS0,115200))
 
 $(eval $(call SingleProfile,Planex,64k,MZKW04NU,mzk-w04nu,MZK-W04NU,ttyS0,115200))
 $(eval $(call SingleProfile,Planex,64k,MZKW300NH,mzk-w300nh,MZK-W300NH,ttyS0,115200))
+
+$(eval $(call SingleProfile,Seama,64k,MYNETN600,mynet-n600,MYNET-N600,ttyS0,115200,$$(mynet_n600_mtdlayout),wrgnd16_wd_db600,1310720,16187392))
 
 $(eval $(call SingleProfile,TPLINKOLD,squashfs-only,TLWR841NV15,tl-wr841nd-v1.5,TL-WR841N-v1.5,ttyS0,115200,0x08410002,2,4M))
 
@@ -911,6 +948,7 @@ $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,ARCHERC7,archer-c7-v1,ARCHER-C7,t
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR10U,tl-mr10u-v1,TL-MR10U,ttyATH0,115200,0x00100101,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR11UV1,tl-mr11u-v1,TL-MR11U,ttyATH0,115200,0x00110101,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR11UV2,tl-mr11u-v2,TL-MR11U,ttyATH0,115200,0x00110102,1,4Mlzma))
+$(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR13U,tl-mr13u-v1,TL-MR13U,ttyATH0,115200,0x00130101,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR3020,tl-mr3020-v1,TL-MR3020,ttyATH0,115200,0x30200001,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR3040V1,tl-mr3040-v1,TL-MR3040,ttyATH0,115200,0x30400001,1,4Mlzma))
 $(eval $(call SingleProfile,TPLINK-LZMA,64kraw,TLMR3040V2,tl-mr3040-v2,TL-MR3040,ttyATH0,115200,0x30400002,1,4Mlzma))

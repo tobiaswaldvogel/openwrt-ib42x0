@@ -77,6 +77,9 @@ get_status_led() {
 	mr600v2)
 		status_led="mr600:blue:power"
 		;;
+	mynet-n600)
+		status_led="wd:blue:power"
+		;;
 	mzk-w04nu | \
 	mzk-w300nh)
 		status_led="planex:green:status"
@@ -135,6 +138,7 @@ get_status_led() {
 		;;
 	archer-c7 | \
 	tl-mr10u | \
+	tl-mr13u | \
 	tl-wdr4300 | \
 	tl-wr703n | \
 	tl-wr710n | \
@@ -174,6 +178,9 @@ get_status_led() {
 		;;
 	wnr2000)
 		status_led="wnr2000:green:power"
+		;;
+	wnr2200)
+		status_led="wnr2200:amber:power"
 		;;
 	wnr612-v2)
 		status_led="wnr612v2:green:power"

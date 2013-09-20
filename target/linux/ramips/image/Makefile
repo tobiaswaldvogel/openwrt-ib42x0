@@ -357,6 +357,8 @@ Image/Build/Profile/DAP1350=$(call BuildFirmware/dap1350/$(1),$(1),dap-1350,DAP-
 
 Image/Build/Profile/DAP1350WW=$(call BuildFirmware/dap1350/$(1),$(1),dap-1350WW,DAP-1350,RT3052-AP-DAP1350WW-3)
 
+Image/Build/Profile/DCS930=$(call BuildFirmware/Default4M/$(1),$(1),dcs-930,DCS-930)
+
 Image/Build/Profile/ESR-9753=$(call BuildFirmware/Default4M/$(1),$(1),esr-9753,ESR-9753)
 
 Image/Build/Profile/HW550-3G=$(call BuildFirmware/Default8M/$(1),$(1),hw550-3g,HW550-3G)
@@ -387,6 +389,9 @@ Image/Build/Profile/MOFI3500-3GN=$(call BuildFirmware/Default8M/$(1),$(1),mofi35
 # Kernel name should be "Linux Kernel Image" to make the OpenWrt image installable from factory Web UI
 Image/Build/Profile/MPRA1=$(call BuildFirmware/Default4M/$(1),$(1),mpr-a1,MPRA1,Linux Kernel Image)
 Image/Build/Profile/MPRA2=$(call BuildFirmware/Default8M/$(1),$(1),mpr-a2,MPRA2,Linux Kernel Image)
+
+Image/Build/Profile/DIR-300-B7=$(call BuildFirmware/Default4M/$(1),$(1),dir-300-b7,DIR-300-B7)
+Image/Build/Profile/DIR-320-B1=$(call BuildFirmware/Default4M/$(1),$(1),dir-320-b1,DIR-320-B1)
 
 Image/Build/Profile/NBG-419N=$(call BuildFirmware/Default4M/$(1),$(1),nbg-419n,NBG-419N)
 
@@ -506,6 +511,8 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/D105,$(1))
 	$(call Image/Build/Profile/DIR-300-B1,$(1))
 	$(call Image/Build/Profile/DIR-600-B1,$(1))
+	$(call Image/Build/Profile/DIR-300-B7,$(1))
+	$(call Image/Build/Profile/DIR-320-B1,$(1))
 	$(call Image/Build/Profile/DIR-600-B2,$(1))
 	$(call Image/Build/Profile/DIR610A1,$(1))
 	$(call Image/Build/Profile/DIR-615-D,$(1))
@@ -514,6 +521,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/DIR615H1,$(1))
 	$(call Image/Build/Profile/DAP1350,$(1))
 	$(call Image/Build/Profile/DAP1350WW,$(1))
+	$(call Image/Build/Profile/DCS930,$(1))
 	$(call Image/Build/Profile/ESR-9753,$(1))
 	$(call Image/Build/Profile/F7C027,$(1))
 	$(call Image/Build/Profile/F5D8235V2,$(1))

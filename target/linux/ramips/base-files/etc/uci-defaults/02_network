@@ -43,6 +43,7 @@ ramips_setup_interfaces()
 	all5003 | \
 	awm002-evb | \
 	broadway | \
+	dcs-930| \
 	wnce2001)
 		ucidef_add_switch "switch0" "1" "0"
 		ucidef_set_interface_lan "eth0"
@@ -78,6 +79,8 @@ ramips_setup_interfaces()
 		;;
 
 	dir-610-a1 | \
+	dir-300-b7 | \
+	dir-320-b1 | \
 	dir-615-h1 | \
 	mzk-w300nh2)
 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
@@ -177,6 +180,8 @@ ramips_setup_macs()
 	ip2202 | \
 	mpr-a1 | \
 	mpr-a2 | \
+	dir-300-b7 | \
+	dir-320-b1 | \
 	mzk-w300nh2 | \
 	nw718 | \
 	psr-680w | \

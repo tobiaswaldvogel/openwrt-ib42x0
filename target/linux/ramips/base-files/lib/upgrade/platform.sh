@@ -29,7 +29,10 @@ platform_check_image() {
 	broadway | \
 	carambola | \
 	d105 | \
+	dcs-930 | \
 	dir-300-b1 | \
+	dir-300-b7 | \
+	dir-320-b1 | \
 	dir-600-b1 | \
 	dir-600-b2 | \
 	dir-615-h1 | \
