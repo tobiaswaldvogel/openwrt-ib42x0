@@ -51,12 +51,12 @@ get_status_led() {
 	dir-615-c1)
 		status_led="d-link:green:status"
 		;;
-	dir-825-b1 |\
-	dir-835-a1)
+	dir-825-b1)
 		status_led="d-link:orange:power"
 		;;
-	dir-825-c1)
-		status_led="d-link:orange:power"
+	dir-825-c1 |\
+	dir-835-a1)
+		status_led="d-link:amber:power"
 		;;
 	eap7660d)
 		status_led="eap7660d:green:ds4"
@@ -113,7 +113,8 @@ get_status_led() {
 	tew-673gru)
 		status_led="trendnet:blue:wps"
 		;;
-	tew-712br)
+	tew-712br|\
+	tew-732br)
 		status_led="trendnet:green:power"
 		;;
 	tl-mr3020)
@@ -167,23 +168,13 @@ get_status_led() {
 	wzr-hp-g300nh2)
 		status_led="buffalo:red:diag"
 		;;
-	wndap360)
-		status_led="wndap360:green:power"
-		;;
-	wndr3700)
-		status_led="wndr3700:green:power"
-		;;
-	wndr4300)
-		status_led="netgear:green:power"
-		;;
-	wnr2000)
-		status_led="wnr2000:green:power"
-		;;
-	wnr2200)
-		status_led="wnr2200:amber:power"
-		;;
+	wndap360 | \
+	wndr3700 | \
+	wndr4300 | \
+	wnr2000 | \
+	wnr2200 |\
 	wnr612-v2)
-		status_led="wnr612v2:green:power"
+		status_led="netgear:green:power"
 		;;
 	wp543)
 		status_led="wp543:green:diag"
