@@ -22,7 +22,7 @@
  	return gpio_get_value(GPIO_RDY);
 @@ -275,6 +288,16 @@ static void __init parse_mac_addr(char *
  /* NAND definitions */
- #define NAND_CHIP_DELAY	25
+ #define NAND_CHIP_DELAY 25
  
 +static int rb532_nand_fixup(struct mtd_info *mtd)
 +{

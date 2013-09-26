@@ -8,7 +8,7 @@
  void __init prom_setup_cmdline(void)
  {
  	static char cmd_line[COMMAND_LINE_SIZE] __initdata;
-@@ -109,6 +110,9 @@ void __init prom_setup_cmdline(void)
+@@ -108,6 +109,9 @@ void __init prom_setup_cmdline(void)
  	}
  	*(cp++) = ' ';
  
