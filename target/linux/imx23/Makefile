@@ -10,9 +10,10 @@ ARCH:=arm
 BOARD:=imx23
 BOARDNAME:=Freescale i.MX23 series
 FEATURES:=ext4 rtc usb gpio
-CFLAGS:=-Os -pipe -march=armv5te -mtune=arm926ej-s
+CPU_TYPE:=arm926ej-s
+
 MAINTAINER:=Zoltan HERPAI <wigyori@uid0.hu>
-LINUX_VERSION:=3.10.12
+LINUX_VERSION:=3.10.13
 KERNELNAME:="zImage dtbs"
 
 define Target/Description

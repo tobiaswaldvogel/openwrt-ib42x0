@@ -10,10 +10,10 @@ ARCH:=mips
 BOARD:=ar71xx
 BOARDNAME:=Atheros AR7xxx/AR9xxx
 FEATURES:=squashfs targz mips16
-CFLAGS:=-Os -pipe -mips32r2 -mtune=34kc -mno-branch-likely
+CPU_TYPE=34kc
 SUBTARGETS:=generic nand
 
-LINUX_VERSION:=3.10.12
+LINUX_VERSION:=3.10.13
 
 include $(INCLUDE_DIR)/target.mk
 

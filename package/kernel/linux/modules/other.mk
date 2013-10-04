@@ -195,7 +195,7 @@ $(eval $(call KernelPackage,gpio-pcf857x))
 
 define KernelPackage/iio-core
   SUBMENU:=$(OTHER_MENU)
-  DEPENDS:=@!LINUX_3_3
+  DEPENDS:=@!LINUX_3_3 @!LINUX_3_6
   TITLE:=Industrial IO core
   KCONFIG:= \
 	CONFIG_IIO \
@@ -205,7 +205,7 @@ define KernelPackage/iio-core
 	CONFIG_IIO_TRIGGERED_BUFFER
   FILES:= \
 	$(LINUX_DIR)/drivers/iio/industrialio.ko \
-	$(LINUX_DIR)/drivers/iio/industrialio-triggered-buffer.ko \
+	$(if $(CONFIG_IIO_TRIGGERED_BUFFER),$(LINUX_DIR)/drivers/iio/industrialio-triggered-buffer.ko) \
 	$(LINUX_DIR)/drivers/iio/kfifo_buf.ko
   AUTOLOAD:=$(call AutoLoad,55,industrialio kfifo_buf industrialio-triggered-buffer)
 endef
@@ -634,7 +634,7 @@ define KernelPackage/regmap
   FILES:= \
 	$(LINUX_DIR)/drivers/base/regmap/regmap-core.ko \
 	$(LINUX_DIR)/drivers/base/regmap/regmap-i2c.ko \
-	$(LINUX_DIR)/drivers/base/regmap/regmap-spi.ko
+	$(if $(CONFIG_SPI),$(LINUX_DIR)/drivers/base/regmap/regmap-spi.ko)
   AUTOLOAD:=$(call AutoLoad,21,regmap-core regmap-i2c regmap-spi)
 endef
 
@@ -760,3 +760,67 @@ define KernelPackage/random-core/description
 endef
 
 $(eval $(call KernelPackage,random-core))
+
+
+define KernelPackage/thermal
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Generic Thermal sysfs driver
+  HIDDEN:=1
+  KCONFIG:= \
+	CONFIG_THERMAL \
+	CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y \
+	CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE=n \
+	CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE=n \
+	CONFIG_THERMAL_GOV_FAIR_SHARE=n \
+	CONFIG_THERMAL_GOV_STEP_WISE=y \
+	CONFIG_THERMAL_GOV_USER_SPACE=n \
+	CONFIG_THERMAL_EMULATION=n
+  FILES:=$(LINUX_DIR)/drivers/thermal/thermal_sys.ko
+  AUTOLOAD:=$(call AutoProbe,thermal_sys)
+endef
+
+define KernelPackage/thermal/description
+ Generic Thermal Sysfs driver offers a generic mechanism for thermal
+ management. Usually it's made up of one or more thermal zone and cooling
+ device.
+endef
+
+$(eval $(call KernelPackage,thermal))
+
+
+define KernelPackage/thermal-armada
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Armada 370/XP thermal management
+  DEPENDS:=@TARGET_mvebu +kmod-thermal
+  KCONFIG:=CONFIG_ARMADA_THERMAL
+  FILES:=$(LINUX_DIR)/drivers/thermal/armada_thermal.ko
+  AUTOLOAD:=$(call AutoProbe,armada_thermal)
+endef
+
+define KernelPackage/thermal-armada/description
+ Enable this module if you want to have support for thermal management
+ controller present in Armada 370 and Armada XP SoC.
+endef
+
+$(eval $(call KernelPackage,thermal-armada))
+
+
+define KernelPackage/thermal-imx
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Temperature sensor driver for Freescale i.MX SoCs
+  DEPENDS:=@TARGET_imx6 +kmod-thermal
+  KCONFIG:= \
+	CONFIG_CPU_THERMAL=y \
+	CONFIG_IMX_THERMAL
+  FILES:=$(LINUX_DIR)/drivers/thermal/imx_thermal.ko
+  AUTOLOAD:=$(call AutoProbe,imx_thermal)
+endef
+
+define KernelPackage/thermal-imx/description
+ Support for Temperature Monitor (TEMPMON) found on Freescale i.MX SoCs.
+ It supports one critical trip point and one passive trip point. The
+ cpufreq is used as the cooling device to throttle CPUs when the
+ passive trip is crossed.
+endef
+
+$(eval $(call KernelPackage,thermal-imx))

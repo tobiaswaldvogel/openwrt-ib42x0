@@ -9,12 +9,12 @@ include $(TOPDIR)/rules.mk
 ARCH:=powerpc
 BOARD:=mpc85xx
 BOARDNAME:=Freescale MPC85xx
-CFLAGS:=-Os -pipe -mcpu=8540
+CPU_TYPE:=8540
 FEATURES:=spe_fpu squashfs
 MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>
 SUBTARGETS=generic p1020
 
-LINUX_VERSION:=3.10.12
+LINUX_VERSION:=3.10.13
 
 include $(INCLUDE_DIR)/target.mk
 

@@ -10,10 +10,10 @@ ARCH:=powerpc
 BOARD:=ppc40x
 BOARDNAME:=AMCC/IBM PPC40x
 FEATURES:=squashfs
-CFLAGS:=-Os -pipe -mcpu=405
+CPU_TYPE:=405
 MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>
 
-LINUX_VERSION:=3.10.12
+LINUX_VERSION:=3.10.13
 
 include $(INCLUDE_DIR)/target.mk
 

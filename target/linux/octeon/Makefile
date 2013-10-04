@@ -10,10 +10,11 @@ ARCH:=mips
 BOARD:=octeon
 BOARDNAME:=Cavium Networks Octeon
 FEATURES:=squashfs jffs2 pci usb
-CFLAGS:=-Os -pipe -march=octeon -fno-caller-saves
+CPU_TYPE:=octeon
+CPU_CFLAGS_octeon:=-march=octeon
 MAINTAINER:=John Crispin <blogic@openwrt.org>
 
-LINUX_VERSION:=3.10.12
+LINUX_VERSION:=3.10.13
 
 include $(INCLUDE_DIR)/target.mk
 
