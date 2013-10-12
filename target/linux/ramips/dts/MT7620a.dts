@@ -47,7 +47,7 @@
 	pinctrl {
 		state_default: pinctrl0 {
 			gpio {
-				ralink,group = "jtag", "mdio", "rgmii1", "rgmii1", "i2c", "uartf";
+				ralink,group = "i2c", "uartf";
 				ralink,function = "gpio";
 			};
 		};
@@ -56,16 +56,19 @@
 	ethernet@10100000 {
 		status = "okay";
 		
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgmii1_pins &rgmii2_pins &mdio_pins>;
+
+		ralink,port-map = "llllw";
+
 		port@4 {
-			compatible = "ralink,mt7620a-gsw-port", "ralink,eth-port";
-			reg = <4>;
+			status = "okay";
 			phy-mode = "rgmii";
 			phy-handle = <&phy4>;
 		};
 
 		port@5 {
-			compatible = "ralink,mt7620a-gsw-port", "ralink,eth-port";
-			reg = <5>;
+			status = "okay";
 			phy-mode = "rgmii";
 			phy-handle = <&phy5>;
 		};
@@ -87,9 +90,6 @@
 
 	gsw@10110000 {
 		ralink,port4 = "gmac";
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&ephy_pins>;
 	};
 
 	sdhci@10130000 {

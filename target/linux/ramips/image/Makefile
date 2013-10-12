@@ -319,7 +319,7 @@ define BuildFirmware/ASL26555/initramfs
 endef
 Image/Build/Profile/ASL26555=$(call BuildFirmware/ASL26555/$(1),$(1),asl26555,ASL26555)
 
-Image/Build/Profile/AWM002-EVB=$(call BuildFirmware/DefaultDualSize/$(1),$(1),awm002-evb,AWM002-EVB)
+Image/Build/Profile/AWM002EVB=$(call BuildFirmware/DefaultDualSize/$(1),$(1),awm002-evb,AWM002-EVB)
 
 Image/Build/Profile/BC2=$(call BuildFirmware/Default8M/$(1),$(1),bc2,BC2)
 
@@ -357,7 +357,23 @@ Image/Build/Profile/DAP1350=$(call BuildFirmware/dap1350/$(1),$(1),dap-1350,DAP-
 
 Image/Build/Profile/DAP1350WW=$(call BuildFirmware/dap1350/$(1),$(1),dap-1350WW,DAP-1350,RT3052-AP-DAP1350WW-3)
 
-Image/Build/Profile/DCS930=$(call BuildFirmware/Default4M/$(1),$(1),dcs-930,DCS-930)
+define BuildFirmware/DCS930/squashfs
+	$(call BuildFirmware/Default4M/squashfs,squashfs,$(2),$(3))
+	dd if=$(KDIR)/vmlinux-$(2).bin.lzma of=$(KDIR)/image.$(2).combined bs=1048512 count=1 conv=sync
+	cat $(KDIR)/root.squashfs >> $(KDIR)/image.$(2).combined
+        $(call MkImage,lzma,$(KDIR)/image.$(2).combined,$(KDIR)/image.$(2))
+	$(call prepare_generic_squashfs,$(KDIR)/image.$(2))
+	if [ `stat -c%s "$(KDIR)/image.$(2)"` -gt $(ralink_default_fw_size_4M) ]; then \
+		echo "Warning: $(KDIR)/image.$(2)  is too big" >&2; \
+	else \
+		dd if=$(KDIR)/image.$(2) of=$(KDIR)/dcs.tmp bs=64K count=5 conv=sync ;\
+		cat $(KDIR)/image.$(2) >> $(KDIR)/dcs.tmp ; \
+		dd if=$(KDIR)/dcs.tmp of=$(call imgname,$(1),$(2))-factory.bin bs=4M count=1 conv=sync ;\
+		$(STAGING_DIR_HOST)/bin/mkdcs932 $(call imgname,$(1),$(2))-factory.bin ; \
+	fi
+endef
+BuildFirmware/DCS930/initramfs=$(call BuildFirmware/OF/initramfs,$(1),$(2),$(3))
+Image/Build/Profile/DCS930=$(call BuildFirmware/DCS930/$(1),$(1),dcs-930,DCS-930)
 
 Image/Build/Profile/ESR-9753=$(call BuildFirmware/Default4M/$(1),$(1),esr-9753,ESR-9753)
 
@@ -504,7 +520,7 @@ define Image/Build/Profile/Default
 	$(call Image/Build/Profile/ALL5003,$(1))
 	$(call Image/Build/Profile/ARGUS_ATP52B,$(1))
 	$(call Image/Build/Profile/ASL26555,$(1))
-	$(call Image/Build/Profile/AWM002-EVB,$(1))
+	$(call Image/Build/Profile/AWM002EVB,$(1))
 	$(call Image/Build/Profile/BC2,$(1))
 	$(call Image/Build/Profile/BROADWAY,$(1))
 	$(call Image/Build/Profile/CARAMBOLA,$(1))
@@ -596,6 +612,7 @@ endif
 
 Image/Build/Profile/MT7620a=$(call BuildFirmware/Default8M/$(1),$(1),mt7620a,MT7620a)
 Image/Build/Profile/MT7620a_MT7610e=$(call BuildFirmware/Default8M/$(1),$(1),mt7620a_mt7610e,MT7620a_MT7610e)
+Image/Build/Profile/MT7620a_MT7530=$(call BuildFirmware/Default8M/$(1),$(1),mt7620a_mt7530,MT7620a_MT7530)
 Image/Build/Profile/RP-N53=$(call BuildFirmware/Default8M/$(1),$(1),rp_n53,RP-N53)
 dlink810l_mtd_size=6881280
 Image/Build/Profile/DIR-810L=$(call BuildFirmware/CustomFlash/$(1),$(1),dir-810l,DIR-810L,$(dlink810l_mtd_size))
@@ -604,6 +621,7 @@ ifeq ($(SUBTARGET),mt7620a)
 define Image/Build/Profile/Default
 	$(call Image/Build/Profile/MT7620a,$(1))
 	$(call Image/Build/Profile/MT7620a_MT7610e,$(1))
+	$(call Image/Build/Profile/MT7620a_MT7530,$(1))
 	$(call Image/Build/Profile/RP-N53,$(1))
 	$(call Image/Build/Profile/DIR-810L,$(1))
 endef
