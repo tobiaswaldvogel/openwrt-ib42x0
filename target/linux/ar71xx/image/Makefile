@@ -7,10 +7,14 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
+IMAGE_PROFILE:=$(if $(PROFILE),$(PROFILE),Default)
+
 JFFS2_BLOCKSIZE = 64k 128k 256k
 
+rootfs_type=$(patsubst jffs2-%,jffs2,$(patsubst squashfs-%,squashfs,$(1)))
+
 define imgname
-$(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(patsubst jffs2-%,jffs2,$(patsubst squashfs-%,squashfs,$(1)))
+$(BIN_DIR)/$(IMG_PREFIX)-$(2)-$(call rootfs_type,$(1))
 endef
 
 define rootfs_align
@@ -74,6 +78,7 @@ define PatchKernelGzip
 	gzip -9 -c $(KDIR_TMP)/vmlinux$(3)-$(1) > $(KDIR_TMP)/vmlinux$(3)-$(1).bin.gz
 endef
 
+ifneq ($(SUBTARGET),mikrotik)
 define MkuImage
 	mkimage -A mips -O linux -T kernel -a 0x80060000 -C $(1) $(2) \
 		-e 0x80060000 -n 'MIPS OpenWrt Linux-$(LINUX_VERSION)' \
@@ -86,8 +91,8 @@ define MkuImageLzma
 endef
 
 define MkuImageLzma/initramfs
-	$(call PatchKernelLzma,$(1),$(2),,-initramfs)
-	$(call MkuImage,lzma,,$(KDIR_TMP)/vmlinux-initramfs-$(1).bin.lzma,$(call imgname,initramfs,$(1))-uImage.bin)
+	$(call PatchKernelLzma,$(1),$(2),$(3),-initramfs)
+	$(call MkuImage,lzma,$(4),$(KDIR_TMP)/vmlinux-initramfs-$(1).bin.lzma,$(call imgname,initramfs,$(1))-uImage.bin)
 endef
 
 define MkuImageGzip
@@ -103,6 +108,7 @@ endef
 define MkuImageOKLI
 	$(call MkuImage,lzma,-M 0x4f4b4c49,$(KDIR)/vmlinux.bin.lzma,$(KDIR_TMP)/vmlinux-$(1).okli)
 endef
+endif
 
 define CatFiles
 	if [ $(2) -eq 0 ]; then \
@@ -137,6 +143,17 @@ endef
 Sysupgrade/KR=$(call CatFiles,$(2),$(3),$(KDIR)/root.$(1),$(4),$(call sysupname,$(1),$(5)))
 Sysupgrade/KRuImage=$(call CatFiles,$(KDIR_TMP)/vmlinux-$(2).uImage,$(3),$(KDIR)/root.$(1),$(4),$(call sysupname,$(1),$(2)),$(5))
 Sysupgrade/RKuImage=$(call CatFiles,$(KDIR)/root.$(1),$(4),$(KDIR_TMP)/vmlinux-$(2).uImage,$(3),$(call sysupname,$(1),$(2)))
+
+# $(1): ubinize ini file
+# $(2): working directory
+# $(3): output file
+# $(4): physical erase block size
+# $(5): minimum I/O unit size
+# $(6): custom options
+define ubinize
+	$(CP) $(1) $(2)
+	( cd $(2); $(STAGING_DIR_HOST)/bin/ubinize -o $(3) -p $(4) -m $(5) $(6) $(1))
+endef
 
 define Image/BuildLoader
 	-rm -rf $(KDIR)/lzma-loader
@@ -173,6 +190,7 @@ carambola2_mtdlayout_16M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,15936k
 ap132_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,1408k(kernel),6400k(rootfs),64k(art),7808k@0x50000(firmware)
 ap135_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,14528k(rootfs),1472k(kernel),64k(art)ro,16000k@0x50000(firmware)
 ap136_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6336k(rootfs),1408k(kernel),64k(mib0),64k(art)ro,7744k@0x50000(firmware)
+bxu2000n2_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,1408k(kernel),8448k(rootfs),6016k(user),64k(cfg),64k(oem),64k(art)ro
 cameo_ap81_mtdlayout=mtdparts=spi0.0:128k(u-boot)ro,64k(config)ro,3840k(firmware),64k(art)ro
 cameo_ap91_mtdlayout=mtdparts=spi0.0:192k(u-boot)ro,64k(nvram)ro,3712k(firmware),64k(mac)ro,64k(art)ro
 cameo_ap99_mtdlayout=mtdparts=spi0.0:192k(u-boot)ro,64k(nvram)ro,3520k(firmware),64k(mac)ro,192k(lp)ro,64k(art)ro
@@ -187,6 +205,7 @@ cameo_ap94_mtdlayout_fat=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,7808k(firmw
 ew-dorin_mtdlayout_4M=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env),3712k(firmware),64k(art)
 dlrtdev_mtdlayout=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,6208k(firmware),64k(caldata)ro,640k(certs),960k(unknown)ro,64k@0x7f0000(caldata_copy)
 dlrtdev_mtdlayout_fat=mtdparts=spi0.0:256k(uboot)ro,64k(config)ro,7168k(firmware),640k(certs),64k(caldata)ro,64k@0x660000(caldata_orig),6208k@0x50000(firmware_orig)
+dragino2_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,16000k(firmware),64k(config)ro,64k(art)ro
 pb92_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,2752k(rootfs),896k(kernel),64k(nvram),64k(art)ro,3648k@0x50000(firmware)
 planex_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,7744k(firmware),128k(art)ro
 ubntxm_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,7552k(firmware),256k(cfg)ro,64k(EEPROM)ro
@@ -198,7 +217,7 @@ wnr2200_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,7680k(firmwa
 wnr2000v3_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,3712k(firmware),64k(art)ro
 wndr3700_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,7680k(firmware),64k(art)ro
 wndr3700v2_mtdlayout=mtdparts=spi0.0:320k(u-boot)ro,128k(u-boot-env)ro,15872k(firmware),64k(art)ro
-wndr4300_mtdlayout=mtdparts=ar934x-nfc:256k(u-boot)ro,256k(u-boot-env)ro,256k(caldata),512k(pot),2048k(language),512k(config),3072k(traffic_meter),1152k(kernel),24448k(rootfs),25600k@0x6c0000(firmware),256k(caldata_backup),-(reserved)
+wndr4300_mtdlayout=mtdparts=ar934x-nfc:256k(u-boot)ro,256k(u-boot-env)ro,256k(caldata),512k(pot),2048k(language),512k(config),3072k(traffic_meter),2048k(kernel),23552k(ubiroot),25600k@0x6c0000(firmware),256k(caldata_backup),-(reserved) ubi.mtd=ubiroot
 zcn1523h_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,6208k(rootfs),1472k(kernel),64k(configure)ro,64k(mfg)ro,64k(art)ro,7680k@0x50000(firmware)
 mynet_n600_mtdlayout=mtdparts=spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,64k(devdata)ro,64k(devconf)ro,15872k(firmware),64k(radiocfg)ro
 
@@ -707,7 +726,64 @@ define Image/Build/Netgear/initramfs
 		$(5)
 endef
 
-Image/Build/NetgearNAND/initramfs=$(call Image/Build/Netgear/initramfs,$(1),$(2),$(3),$(4),$(5))
+Image/Build/NetgearNAND/initramfs=$(call MkuImageLzma/initramfs,$(2),$(3) $(4),,-M $(5))
+
+# $(1): (empty)
+# $(2): Board name (small caps)
+# $(3): Kernel board specific cmdline
+# $(4): Kernel mtdparts definition
+# $(5): U-Boot magic
+define Image/Build/NetgearNAND/buildkernel
+	$(eval kernelsize=$(call mtdpartsize,kernel,$(4)))
+	$(call PatchKernelLzma,$(2),$(3) $(4),-d20)
+	dd if=$(KDIR_TMP)/vmlinux-$(2).bin.lzma \
+		of=$(KDIR_TMP)/vmlinux-$(2).bin.tmp \
+		bs=$$$$(($(kernelsize)-131072-2*64-1)) \
+		count=1 conv=sync
+	$(call MkuImage,lzma,-M $(5),$(KDIR_TMP)/vmlinux-$(2).bin.tmp,$(KDIR_TMP)/vmlinux-$(2).uImage)
+	echo -ne '\xff' >> $(KDIR_TMP)/vmlinux-$(2).uImage
+	# create a fake rootfs image
+	dd if=/dev/zero of=$(KDIR_TMP)/fakeroot-$(2) bs=131072 count=1
+	mkimage -A mips -O linux -T filesystem -C none \
+		-a 0xbf070000 -e 0xbf070000 \
+		-n 'MIPS OpenWrt fakeroot' \
+		-d $(KDIR_TMP)/fakeroot-$(2) \
+		-M $(5) \
+		$(KDIR_TMP)/fakeroot-$(2).uImage
+	# append the fake rootfs image to the kernel, it will reside in the last
+	# erase block of the kernel partition
+	cat $(KDIR_TMP)/fakeroot-$(2).uImage >> $(KDIR_TMP)/vmlinux-$(2).uImage
+endef
+
+
+# $(1): rootfs image suffix
+# $(2): Board name (small caps)
+# $(3): Kernel board specific cmdline
+# $(4): Kernel mtdparts definition
+# $(5): U-Boot magic
+# $(6): Board name (upper caps)
+# $(7): firmware region code (not used yet)
+# $(8): DNI Hardware version
+define Image/Build/NetgearNAND
+	$(eval firmwaresize=$(call mtdpartsize,firmware,$(4)))
+	$(eval kernelsize=$(call mtdpartsize,kernel,$(4)))
+	$(eval imageraw=$(KDIR_TMP)/$(2)-raw.img)
+	$(CP) $(KDIR)/root.squashfs-raw $(KDIR_TMP)/root.squashfs
+	echo -ne '\xde\xad\xc0\xde' > $(KDIR_TMP)/jffs2.eof
+	$(call ubinize,ubinize-$(2).ini,$(KDIR_TMP),$(KDIR_TMP)/$(2)-root.ubi,128KiB,2048)
+	# Create firmware image full of 0xff to use the UBIFS auto-resize function
+	firmwareblocks=$$$$(($(firmwaresize) / 131072)); \
+	dd if=/dev/zero bs=128k count=$$$${firmwareblocks} conv=sync | tr '\000' '\377' > $(imageraw)
+	# Insert Kernel and UBI image to rootfs and generate DNI image
+	dd if=$(KDIR_TMP)/vmlinux-$(2).uImage of=$(imageraw) conv=notrunc
+	kernelblocks=$$$$(($(kernelsize) / 131072)); \
+	dd if=$(KDIR_TMP)/$(2)-root.ubi of=$(imageraw) bs=128k seek=$$$${kernelblocks} conv=notrunc
+	$(STAGING_DIR_HOST)/bin/mkdniimg \
+		-B $(6) -v OpenWrt.$(REVISION) -r "$$$$r" $(8) \
+		-i $(imageraw) \
+		-o $(call imgname,ubi,$(2))-recovery.img
+endef
+
 
 ifdef CONFIG_PACKAGE_uboot-ar71xx-nbg460n_550n_550nh
   Image/Build/ZyXEL/buildkernel=$(call MkuImageLzma,$(2),$(3))
@@ -790,6 +866,7 @@ $(eval $(call BuildTemplate,128kraw,-raw,128k))
 $(eval $(call BuildTemplate,256k,,256k))
 $(eval $(call BuildTemplate,all,,64k 128k 256k))
 
+ifeq ($(SUBTARGET),generic)
 $(eval $(call SingleProfile,ALFA,64k,ALFANX,alfa-nx,ALFA-NX,ttyS0,115200,$$(alfa_mtdlayout_8M),1638400,6291456,vmlinux.gz.uImage,pb9x-2.6.31-jffs2))
 $(eval $(call SingleProfile,ALFA,64k,HORNETUB,hornet-ub,HORNET-UB,ttyATH0,115200,$$(alfa_mtdlayout_8M),1638400,6291456,kernel_image,rootfs_image))
 
@@ -809,8 +886,10 @@ $(eval $(call SingleProfile,AthLzma,64k,AP132,ap132,AP132,ttyS0,115200,$$(ap132_
 $(eval $(call SingleProfile,AthLzma,64k,AP135,ap135-020,AP135-020,ttyS0,115200,$$(ap135_mtdlayout),1507328,14876672,RKuImage))
 $(eval $(call SingleProfile,AthLzma,64k,AP136_010,ap136-010,AP136-010,ttyS0,115200,$$(ap136_mtdlayout),1441792,6488064,RKuImage))
 $(eval $(call SingleProfile,AthLzma,64k,AP136_020,ap136-020,AP136-020,ttyS0,115200,$$(ap136_mtdlayout),1441792,6488064,RKuImage))
+$(eval $(call SingleProfile,AthLzma,64k,BXU2000N2,bxu2000n-2-a1,BXU2000n-2-A1,ttyS0,115200,$$(bxu2000n2_mtdlayout),1441792,8650752,RKuImage))
 $(eval $(call SingleProfile,AthLzma,64k,CAP4200AG,cap4200ag,CAP4200AG,ttyS0,115200,$$(cap4200ag_mtdlayout),1572864,12386304,KRuImage))
 $(eval $(call SingleProfile,AthLzma,64k,DB120,db120,DB120,ttyS0,115200,$$(db120_mtdlayout),1441792,6488064,RKuImage))
+$(eval $(call SingleProfile,AthLzma,64k,DRAGINO2,dragino2,DRAGINO2,ttyATH0,115200,$$(dragino2_mtdlayout),65536,15335424,KRuImage))
 $(eval $(call SingleProfile,AthLzma,64k,EWDORINAP,ew-dorin,EW-DORIN,ttyATH0,115200,$$(ew-dorin_mtdlayout_4M),65536,2752512,KRuImage))
 $(eval $(call SingleProfile,AthLzma,64k,EWDORINRT,ew-dorin-router,EW-DORIN-ROUTER,ttyATH0,115200,$$(ew-dorin_mtdlayout_4M),65536,2752512,KRuImage))
 $(eval $(call SingleProfile,AthLzma,64k,HORNETUBx2,hornet-ub-x2,HORNET-UB,ttyATH0,115200,$$(alfa_mtdlayout_16M),65536,16318464,KRuImage))
@@ -862,8 +941,6 @@ $(eval $(call SingleProfile,Netgear,64kraw,WNDR3700V2,wndr3700v2,WNDR3700,ttyS0,
 $(eval $(call SingleProfile,Netgear,64kraw,WNDR3800,wndr3800,WNDR3700,ttyS0,115200,$$(wndr3700v2_mtdlayout),3701,WNDR3800,"",-H 29763654+16+128))
 $(eval $(call SingleProfile,Netgear,64kraw,WNDRMAC,wndrmac,WNDR3700,ttyS0,115200,$$(wndr3700v2_mtdlayout),3701,WNDRMAC,"",-H 29763654+16+64))
 $(eval $(call SingleProfile,Netgear,64kraw,WNDRMACV2,wndrmacv2,WNDR3700,ttyS0,115200,$$(wndr3700v2_mtdlayout),3701,WNDRMACv2,"",-H 29763654+16+128))
-
-$(eval $(call SingleProfile,NetgearNAND,64k,WNDR4300,wndr4300,WNDR4300,ttyS0,115200,$$(wndr4300_mtdlayout),3703,WNDR4300,"",-H 29763948+0+128+128+2x2+3x3))
 
 $(eval $(call SingleProfile,OpenMesh,squashfs-only,OM2P,om2p,,,,OM2P))
 $(eval $(call SingleProfile,OpenMesh,squashfs-only,MR600,mr600,,,,MR600))
@@ -991,9 +1068,16 @@ $(eval $(call MultiProfile,WNDR3700,WNDR3700V1 WNDR3700V2 WNDR3800 WNDRMAC WNDRM
 $(eval $(call MultiProfile,WP543,WP543_2M WP543_4M WP543_8M WP543_16M))
 $(eval $(call MultiProfile,WPE72,WPE72_4M WPE72_8M WPE72_16M))
 
-$(eval $(call MultiProfile,Default,$(SINGLE_PROFILES)))
 $(eval $(call MultiProfile,Minimal,$(SINGLE_PROFILES)))
 $(eval $(call MultiProfile,Madwifi,EAP7660D UBNTRS UBNTRSPRO UBNTLSSR71 WP543))
+endif # ifeq ($(SUBTARGET),generic)
+
+ifeq ($(SUBTARGET),nand)
+$(eval $(call SingleProfile,NetgearNAND,64k,WNDR4300,wndr4300,WNDR4300,ttyS0,115200,$$(wndr4300_mtdlayout),0x33373033,WNDR4300,"",-H 29763948+0+128+128+2x2+3x3))
+endif # ifeq ($(SUBTARGET),nand)
+
+
+$(eval $(call MultiProfile,Default,$(SINGLE_PROFILES)))
 
 define Image/Build/squashfs
 	cp $(KDIR)/root.squashfs $(KDIR)/root.squashfs-raw
@@ -1001,10 +1085,15 @@ define Image/Build/squashfs
 	$(STAGING_DIR_HOST)/bin/padjffs2 $(KDIR)/root.squashfs-64k 64
 	cp $(KDIR)/root.squashfs-64k $(BIN_DIR)/$(IMG_PREFIX)-root.squashfs-64k
 	$(call prepare_generic_squashfs,$(KDIR)/root.squashfs)
+	dd if=$(KDIR)/root.$(1) of=$(BIN_DIR)/$(IMG_PREFIX)-root.$(1) bs=128k conv=sync
+endef
+
+define Image/Build/jffs2
+	dd if=$(KDIR)/root.$(1) of=$(BIN_DIR)/$(IMG_PREFIX)-root.$(1) bs=128k conv=sync
 endef
 
 define Image/Build/Initramfs
-	$(call Image/Build/Profile/$(PROFILE),initramfs)
+	$(call Image/Build/Profile/$(IMAGE_PROFILE),initramfs)
 endef
 
 define Image/Prepare
@@ -1016,13 +1105,12 @@ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
 	$(call Image/BuildLoader,generic,elf,,,-initramfs)
 endif
 	$(call Image/BuildLoader,generic,elf)
-	$(call Image/Build/Profile/$(if $(CONFIG_IB),Default,$(PROFILE)),loader)
+	$(call Image/Build/Profile/$(if $(CONFIG_IB),Default,$(IMAGE_PROFILE)),loader)
 endef
 
 define Image/Build
-	$(call Image/Build/$(1))
-	dd if=$(KDIR)/root.$(1) of=$(BIN_DIR)/$(IMG_PREFIX)-root.$(1) bs=128k conv=sync
-	$(call Image/Build/Profile/$(PROFILE),$(1))
+	$(call Image/Build/$(call rootfs_type,$(1)),$(1))
+	$(call Image/Build/Profile/$(IMAGE_PROFILE),$(1))
 endef
 
 $(eval $(call BuildImage))
