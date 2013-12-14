@@ -17,6 +17,7 @@
 #     data: arbitrary name/value pairs for detecting config changes (table)
 #     file: configuration files (array)
 #     netdev: bound network device (detects ifindex changes)
+#     limits: resource limits (passed to the process)
 #
 #   No space separation is done for arrays/tables - use one function argument per command line argument
 #
@@ -68,9 +69,7 @@ _procd_open_service() {
 
 _procd_close_service() {
 	json_close_object
-	_procd_open_trigger
 	service_triggers
-	_procd_close_trigger
 	_procd_ubus_call set
 }
 
@@ -117,11 +116,15 @@ _procd_open_trigger() {
 	json_add_array "triggers"
 }
 
+_procd_open_validate() {
+	json_add_array "validate"
+}
+
 _procd_set_param() {
 	local type="$1"; shift
 
 	case "$type" in
-		env|data)
+		env|data|limits)
 			_procd_add_table "$type" "$@"
 		;;
 		command|netdev|file|respawn)
@@ -135,7 +138,8 @@ _procd_set_param() {
 
 _procd_add_config_trigger() {
 	json_add_array
-	_procd_add_array_data "config.change"
+	_procd_add_array_data "$1"
+	shift
 
 	json_add_array
 	_procd_add_array_data "if"
@@ -158,14 +162,15 @@ _procd_add_reload_trigger() {
 	local script=$(readlink "$initscript")
 	local name=$(basename ${script:-$initscript})
 
-	_procd_add_config_trigger $1 /etc/init.d/$name reload
+	_procd_open_trigger
+	_procd_add_config_trigger "config.change" $1 /etc/init.d/$name reload
+	_procd_close_trigger
 }
 
-_procd_add_reload_trigger() {
-	local script=$(readlink "$initscript")
-	local name=$(basename ${script:-$initscript})
-
-	_procd_add_config_trigger $1 /etc/init.d/$name reload
+_procd_add_validation() {
+	_procd_open_validate
+	$@
+	_procd_close_validate
 }
 
 _procd_append_param() {
@@ -173,7 +178,7 @@ _procd_append_param() {
 
 	json_select "$type"
 	case "$type" in
-		env|data)
+		env|data|limits)
 			_procd_add_table_data "$@"
 		;;
 		command|netdev|file|respawn)
@@ -188,6 +193,10 @@ _procd_close_instance() {
 }
 
 _procd_close_trigger() {
+	json_close_array
+}
+
+_procd_close_validate() {
 	json_close_array
 }
 
@@ -207,6 +216,20 @@ _procd_kill() {
 	_procd_ubus_call delete
 }
 
+uci_validate_section()
+{
+	local package="$1"
+	local type="$2"
+	local name="$3"
+	local error
+	shift; shift; shift
+	local result=`/sbin/validate_data "$package" "$type" "$name" "$@" 2> /dev/null`
+	error=$?
+	eval "$result"
+	[ "$error" = "0" ] || `/sbin/validate_data "$package" "$type" "$name" "$@" 1> /dev/null`
+	return $error
+}
+
 _procd_wrapper \
 	procd_open_service \
 	procd_close_service \
@@ -219,4 +242,5 @@ _procd_wrapper \
 	procd_close_instance \
 	procd_set_param \
 	procd_append_param \
+	procd_add_validation \
 	procd_kill

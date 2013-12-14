@@ -36,7 +36,7 @@ supivot() { # <new_root> <old_root>
 	mkdir -p $1$2 $1/proc $1/sys $1/dev $1/tmp $1/overlay && \
 	mount -o noatime,move /proc $1/proc && \
 	pivot_root $1 $1$2 || {
-        umount -l $1 $1
+		umount -l $1 $1
 		return 1
 	}
 
@@ -93,12 +93,16 @@ kill_remaining() { # [ <signal> ]
 		local cmdline
 		read cmdline < /proc/$pid/cmdline
 
-		# Skip kernel threads 
+		# Skip kernel threads
 		[ -n "$cmdline" ] || continue
 
 		case "$name" in
 			# Skip essential services
+<<<<<<< HEAD
 			*procd*|*ubusd*|*ash*|*init*|*watchdog*|*ssh*|*dropbear*|*telnet*|*login*|*hostapd*|*wpa_supplicant*) : ;;
+=======
+			*procd*|*ash*|*init*|*watchdog*|*ssh*|*dropbear*|*telnet*|*login*|*hostapd*|*wpa_supplicant*|*nas*) : ;;
+>>>>>>> openwrt/master
 
 			# Killable process
 			*)
@@ -187,7 +191,7 @@ jffs2_copy_config() {
 default_do_upgrade() {
 	sync
 	if [ "$SAVE_CONFIG" -eq 1 ]; then
-		get_image "$1" | mtd -j "$CONF_TAR" write - "${PART_NAME:-image}"
+		get_image "$1" | mtd $MTD_CONFIG_ARGS -j "$CONF_TAR" write - "${PART_NAME:-image}"
 	else
 		get_image "$1" | mtd write - "${PART_NAME:-image}"
 	fi

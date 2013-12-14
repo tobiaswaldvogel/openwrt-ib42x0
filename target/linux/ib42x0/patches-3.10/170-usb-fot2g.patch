@@ -1,6 +1,6 @@
 --- a/arch/arm/mach-gemini/devices.c	2011-04-23 01:00:16.738137491 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-23 01:06:55.539299920 +0200
-@@ -280,3 +280,63 @@
+@@ -278,3 +278,63 @@
  	return platform_device_register(&ethernet_device);
  }
  
@@ -76,20 +76,18 @@
  
 --- a/arch/arm/mach-gemini/board-nas4220b.c	2011-04-23 01:08:34.030159642 +0200
 +++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-04-23 01:09:19.187131113 +0200
-@@ -150,11 +150,24 @@
- 		GLOBAL_ARBITRATION1_CTRL));
+@@ -144,11 +144,22 @@
+ 	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_ARBITRATION1_CTRL);
  }
  
 +static void __init usb_ib4220b_init(void)
 +{
 +	unsigned int val;
 +
-+	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
 +	val &= ~(USB0_PLUG_MINIB | USB1_PLUG_MINIB);
 +	val |= USB0_VBUS_ON | USB1_VBUS_ON;
-+	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
 +}
 +
  static void __init ib4220b_init(void)
@@ -101,7 +99,7 @@
  	platform_register_uart();
  	platform_register_pflash(SZ_16M, NULL, 0);
  	platform_device_register(&ib4220b_led_device);
-@@ -166,6 +179,8 @@
+@@ -160,6 +173,8 @@
  	platform_register_watchdog();
  	platform_device_register (&ib4220b_phy_device);
  	platform_register_ethernet (&ib4220b_gmac_data);

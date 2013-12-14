@@ -53,6 +53,15 @@ wndr3700_board_detect() {
 	AR71XX_MODEL="$machine"
 }
 
+cybertan_get_hw_magic() {
+	local part
+
+	part=$(find_mtd_part firmware)
+	[ -z "$part" ] && return 1
+
+	dd bs=8 count=1 skip=0 if=$part 2>/dev/null | hexdump -v -n 8 -e '1/1 "%02x"'
+}
+
 tplink_get_hwid() {
 	local part
 
@@ -103,6 +112,9 @@ tplink_board_detect() {
 	"074300"*)
 		model="TP-Link TL-WR743N/ND"
 		;;
+	"075000"*)
+		model="TP-Link TL-WA750RE"
+		;;
 	"080100"*)
 		model="TP-Link TL-WA801N/ND"
 		;;
@@ -114,6 +126,9 @@ tplink_board_detect() {
 		;;
 	"084200"*)
 		model="TP-Link TL-WR842N/ND"
+		;;
+	"085000"*)
+		model="TP-Link TL-WA850RE"
 		;;
 	"090100"*)
 		model="TP-Link TL-WA901N/ND"
@@ -306,6 +321,9 @@ ar71xx_board_detect() {
 	*"My Net N600")
 		name="mynet-n600"
 		;;
+	*"WD My Net Wi-Fi Range Extender")
+		name="mynet-rext"
+		;;
 	*MZK-W04NU)
 		name="mzk-w04nu"
 		;;
@@ -414,6 +432,9 @@ ar71xx_board_detect() {
 	*TL-WR1043ND)
 		name="tl-wr1043nd"
 		;;
+	*"TL-WR1043ND v2")
+		name="tl-wr1043nd-v2"
+		;;
 	*TL-WR2543N*)
 		name="tl-wr2543n"
 		;;
@@ -441,8 +462,14 @@ ar71xx_board_detect() {
 	*"TL-MR3420 v2")
 		name="tl-mr3420-v2"
 		;;
+	*TL-WA750RE)
+		name="tl-wa750re"
+		;;
 	*TL-WA7510N)
 		name="tl-wa7510n"
+		;;
+	*TL-WA850RE)
+		name="tl-wa850re"
 		;;
 	*TL-WA901ND)
 		name="tl-wa901nd"
@@ -470,6 +497,9 @@ ar71xx_board_detect() {
 		;;
 	*"TL-WR841N/ND v8")
 		name="tl-wr841n-v8"
+		;;
+	*"TL-WR842N/ND v2")
+		name="tl-wr842n-v2"
 		;;
 	*TL-WR941ND)
 		name="tl-wr941nd"

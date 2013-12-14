@@ -68,7 +68,7 @@ define add_jffs2_mark
 endef
 
 define toupper
-	$(shell echo $(1) | tr '[:lower:]' '[:upper:]')
+$(shell echo $(1) | tr '[:lower:]' '[:upper:]')
 endef
 
 # pad to 4k, 8k, 64k, 128k 256k and add jffs2 end-of-filesystem mark
@@ -142,7 +142,7 @@ ifneq ($(CONFIG_TARGET_ROOTFS_UBIFS),)
 			$(if $(CONFIG_TARGET_UBIFS_COMPRESSION_NONE),--force-compr=none) \
 			$(if $(CONFIG_TARGET_UBIFS_COMPRESSION_LZO),--force-compr=lzo) \
 			$(if $(CONFIG_TARGET_UBIFS_COMPRESSION_ZLIB),--force-compr=zlib) \
-			--jrn-size=$(CONFIG_TARGET_UBIFS_JOURNAL_SIZE) \
+			$(if $(shell echo $(CONFIG_TARGET_UBIFS_JOURNAL_SIZE)),--jrn-size=$(CONFIG_TARGET_UBIFS_JOURNAL_SIZE)) \
 			--squash-uids \
 			-o $(KDIR)/root.ubifs \
 			-d $(TARGET_DIR)

@@ -81,7 +81,7 @@
  
 --- a/arch/arm/mach-gemini/board-nas4220b.c	2011-09-29 00:47:59.456094790 +0200
 +++ b/arch/arm/mach-gemini/board-nas4220b.c	2011-09-29 00:49:58.000000000 +0200
-@@ -87,15 +87,34 @@
+@@ -87,15 +87,32 @@
  	},
  };
  
@@ -89,16 +89,14 @@
 +{
 +	unsigned val;
 +
-+	val = readl((void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
 +	val &= ~(IDE_IOMUX_MASK | PFLASH_PADS_DISABLE);
 +	val |= IDE_PADS_ENABLE;
-+	writel(val, (void __iomem*)(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
-+		GLOBAL_MISC_CTRL));
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
 +
 +	/* enabling ports for presence detection, master only */
-+	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x18));
-+	writel(0x00000001, (void __iomem*)(IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c));
++	writel(0x00000001, IO_ADDRESS(GEMINI_SATA_BASE) + 0x18);
++	writel(0x00000001, IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c);
 +}
 +
  static void __init ib4220b_init(void)

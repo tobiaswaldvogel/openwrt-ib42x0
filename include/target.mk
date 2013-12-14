@@ -167,6 +167,9 @@ ifeq ($(DUMP),1)
     .SILENT: $(TMP_CONFIG)
     .PRECIOUS: $(TMP_CONFIG)
 
+    ifneq ($(CONFIG_OF),)
+      FEATURES += dt
+    endif
     ifneq ($(CONFIG_GENERIC_GPIO)$(CONFIG_GPIOLIB),)
       FEATURES += gpio
     endif
@@ -228,8 +231,10 @@ ifeq ($(DUMP),1)
     CPU_CFLAGS_fa526 = -march=armv4 -mtune=fa526
     CPU_CFLAGS_mpcore = -march=armv6k -mtune=mpcore
     CPU_CFLAGS_xscale = -march=armv5te -mtune=xscale
-    CPU_CFLAGS_vfp = -mfpu=vfp -mfloat-abi=softfp
-    CPU_CFLAGS_vfpv3 = -mfpu=vfpv3-d16 -mfloat-abi=softfp
+    ifneq ($(CONFIG_SOFT_FLOAT),)
+      CPU_CFLAGS_vfp = -mfpu=vfp
+      CPU_CFLAGS_vfpv3 = -mfpu=vfpv3-d16
+    endif
   endif
   ifeq ($(ARCH),powerpc)
     CPU_CFLAGS_603e:=-mcpu=603e

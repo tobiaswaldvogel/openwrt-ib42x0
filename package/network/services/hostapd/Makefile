@@ -8,16 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hostapd
-PKG_VERSION:=20130807
+PKG_VERSION:=20131120
 PKG_RELEASE:=1
-PKG_REV:=d2ba3d6bd9336ef8fd761a0cc7999824d4c4da41
+PKG_REV:=594516b4c28a94ca686b17f1e463dfd6712b75a7
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=git://w1.fi/srv/git/hostap.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=$(PKG_REV)
 PKG_SOURCE_PROTO:=git
-PKG_MIRROR_MD5SUM:=4e7c1f97edd7514535056fce54ae053a
+# PKG_MIRROR_MD5SUM:=4e7c1f97edd7514535056fce54ae053a
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
 
@@ -208,6 +208,11 @@ define Package/wpa-cli/Description
   WPA Supplicant control utility
 endef
 
+define Package/hostapd-common
+  TITLE:=hostapd/wpa_supplicant common support files
+  SECTION:=net
+  CATEGORY:=Network
+endef
 
 ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(STAMP_CONFIGURED)))
   define Build/Configure/rebuild
@@ -252,6 +257,7 @@ define Build/RunMake
 		$(TARGET_CONFIGURE_OPTS) \
 		$(DRIVER_MAKEOPTS) \
 		LIBS="$(TARGET_LDFLAGS)" \
+		LIBS_c="" \
 		BCHECK= \
 		$(2)
 endef
@@ -308,6 +314,11 @@ define Install/supplicant
 	$(INSTALL_DIR) $(1)/usr/sbin
 endef
 
+define Package/hostapd-common/install
+	$(INSTALL_DIR) $(1)/lib/netifd
+	$(INSTALL_DATA) ./files/netifd.sh $(1)/lib/netifd/hostapd.sh
+endef
+
 define Package/hostapd/install
 	$(call Install/hostapd,$(1))
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/hostapd/hostapd $(1)/usr/sbin/
@@ -354,3 +365,4 @@ $(eval $(call BuildPackage,wpa-supplicant-mini))
 $(eval $(call BuildPackage,wpa-supplicant-p2p))
 $(eval $(call BuildPackage,wpa-cli))
 $(eval $(call BuildPackage,hostapd-utils))
+$(eval $(call BuildPackage,hostapd-common))

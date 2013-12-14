@@ -5,6 +5,38 @@
 # See /LICENSE for more information.
 #
 
+define Profile/DOCKSTAR
+  NAME:=Seagate FreeAgent Dockstar
+  PACKAGES:= \
+	kmod-ata-core kmod-ata-marvell-sata \
+	kmod-rtc-marvell kmod-usb2 kmod-usb-storage \
+	uboot-envtools
+endef
+
+define Profile/DOCKSTAR/Description
+ Package set compatible with Seagate FreeAgent Dockstar board.
+endef
+
+DOCKSTAR_UBIFS_OPTS:="-m 2048 -e 126KiB -c 4096"
+DOCKSTAR_UBI_OPTS:="-m 2048 -p 128KiB -s 512"
+
+$(eval $(call Profile,DOCKSTAR))
+
+define Profile/ICONNECT
+  NAME:=Iomega Iconnect
+  PACKAGES:= \
+	kmod-usb2 kmod-usb-storage
+endef
+
+define Profile/ICONNECT/Description
+ Package set compatible with Iomega Iconnect board.
+endef
+
+ICONNECT_UBIFS_OPTS:="-m 2048 -e 126KiB -c 4096"
+ICONNECT_UBI_OPTS:="-m 2048 -p 128KiB -s 512"
+
+$(eval $(call Profile,ICONNECT))
+
 define Profile/IB62X0
   NAME:=RaidSonic ICY BOX IB-NAS62x0
   PACKAGES:= \
@@ -17,7 +49,7 @@ define Profile/IB62X0/Description
  Package set compatible with RaidSonic ICY BOX IB-NAS62x0 board.
 endef
 
-IB62X0_UBIFS_OPTS:="-m 2048 -e 126KiB -c 4096 -U"
+IB62X0_UBIFS_OPTS:="-m 2048 -e 126KiB -c 4096"
 IB62X0_UBI_OPTS:="-m 2048 -p 128KiB -s 512"
 
 $(eval $(call Profile,IB62X0))

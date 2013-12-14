@@ -391,6 +391,37 @@ static int wlc_wsec_key(wlc_param param, void *null, void *value)
 	return wl_bssiovar_set(interface, "wsec_key", vif, &wsec_key, sizeof(wsec_key));
 }
 
+static int wlc_cap(wlc_param param, void *data, void *value)
+{
+	char *iov = *((char **) data);
+
+	if (param & GET)
+		return wl_iovar_get(interface, iov, value, BUFSIZE);
+
+	return -1;
+}
+
+static int wlc_bssmax(wlc_param param, void *data, void *value)
+{
+	int *val = (int *) value;
+	char *iov = *((char **) data);
+	int ret = -1;
+
+	if (param & GET) {
+		ret = wl_iovar_get(interface, iov, wlbuf, BUFSIZE);
+		if (!ret) {
+			if (strstr(wlbuf, "mbss4"))
+				*val = 4;
+			else if (strstr(wlbuf, "mbss16"))
+				*val = 16;
+			else
+				*val = 1;
+		}
+	}
+
+	return ret;
+}
+
 static inline int cw2ecw(int cw)
 {
 	int i;	
@@ -892,6 +923,13 @@ static const struct wlc_call wlc_calls[] = {
 		.desc = "BSSID"
 	},
 	{
+		.name = "cur_etheraddr",
+		.param = MAC,
+		.handler = wlc_iovar,
+		.data.str = "cur_etheraddr",
+		.desc = "Current MAC Address"
+	},
+	{
 		.name = "default_bssid",
 		.param = MAC,
 		.handler = wlc_iovar,
@@ -917,7 +955,7 @@ static const struct wlc_call wlc_calls[] = {
 		.param = INT,
 		.data.num = (WLC_GET_PHYTYPE << 16),
 		.handler = wlc_ioctl,
-		.desc = "PHY Type"
+		.desc = "PHY Type (read-only)"
 	},
 	{
 		.name = "nmode",
@@ -945,7 +983,21 @@ static const struct wlc_call wlc_calls[] = {
 		.param = INT,
 		.data.num = ((WLC_GET_BAND << 16) | WLC_SET_BAND),
 		.handler = wlc_ioctl,
-		.desc = "Band"
+		.desc = "Band (0=auto, 1=5Ghz, 2=2.4GHz)"
+	},
+	{
+		.name = "cap",
+		.param = STRING|NOARG,
+		.handler = wlc_cap,
+		.data.str = "cap",
+		.desc = "Capabilities"
+	},
+	{
+		.name = "bssmax",
+		.param = INT|NOARG,
+		.handler = wlc_bssmax,
+		.data.str = "cap",
+		.desc = "Number of VIF's supported"
 	},
 };
 #define wlc_calls_size (sizeof(wlc_calls) / sizeof(struct wlc_call))
@@ -1104,14 +1156,14 @@ int main(int argc, char **argv)
 		if (!*s)
 			continue;
 	
-		if ((s2 = strchr(buf, ' ')) != NULL)
+		if ((s2 = strchr(s, ' ')) != NULL)
 			*(s2++) = 0;
 		
 		while (s2 && isspace(*s2))
 			s2++;
 		
-		if ((call = find_cmd(buf)) == NULL) {
-			fprintf(stderr, "Invalid command: %s\n", buf);
+		if ((call = find_cmd(s)) == NULL) {
+			fprintf(stderr, "Invalid command: %s\n", s);
 			ret = -1;
 		} else
 			ret = do_command(call, ((call->param & NOARG) ? NULL : s2));
