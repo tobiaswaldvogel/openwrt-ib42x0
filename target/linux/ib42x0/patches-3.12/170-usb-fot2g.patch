@@ -1,6 +1,6 @@
 --- a/arch/arm/mach-gemini/devices.c	2011-04-23 01:00:16.738137491 +0200
 +++ b/arch/arm/mach-gemini/devices.c	2011-04-23 01:06:55.539299920 +0200
-@@ -278,3 +278,63 @@
+@@ -280,3 +280,63 @@
  	return platform_device_register(&ethernet_device);
  }
  
@@ -66,7 +66,7 @@
 +
 --- a/arch/arm/mach-gemini/common.h	2011-04-23 01:09:31.413161153 +0200
 +++ b/arch/arm/mach-gemini/common.h	2011-04-23 01:09:52.426358514 +0200
-@@ -30,5 +30,6 @@
+@@ -30,6 +30,7 @@
  extern int platform_register_pata(unsigned int i);
  extern int platform_register_watchdog(void);
  extern int platform_register_ethernet(struct gemini_gmac_platform_data *pdata);

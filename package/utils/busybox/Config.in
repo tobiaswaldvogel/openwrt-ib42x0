@@ -1,6 +1,9 @@
-
 if PACKAGE_busybox
 
-source "package/utils/busybox/config/Config.in"
+config BUSYBOX_CONFIG_FEATURE_MOUNT_NFS
+	bool "Enable NFS mount support"
+
+config BUSYBOX_CONFIG_PAM
+	bool "Enable PAM support"
 
 endif

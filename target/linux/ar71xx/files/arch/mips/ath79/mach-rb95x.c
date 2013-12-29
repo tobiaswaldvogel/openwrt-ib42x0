@@ -22,7 +22,6 @@
 #include <linux/mtd/partitions.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
-#include <linux/rle.h>
 #include <linux/routerboot.h>
 #include <linux/gpio.h>
 
@@ -39,17 +38,6 @@
 #include "routerboot.h"
 
 #define RB95X_GPIO_NAND_NCE	14
-
-#define RB_ROUTERBOOT_OFFSET	0x0000
-#define RB_ROUTERBOOT_SIZE	0xb000
-#define RB_HARD_CFG_OFFSET	0xc000
-#define RB_HARD_CFG_SIZE	0x1000
-#define RB_BIOS_OFFSET		0xd000
-#define RB_BIOS_SIZE		0x2000
-#define RB_SOFT_CFG_OFFSET	0xe000
-#define RB_SOFT_CFG_SIZE	0x1000
-
-#define RB_ART_SIZE		0x10000
 
 static struct mtd_partition rb95x_nand_partitions[] = {
 	{
@@ -99,37 +87,16 @@ static struct mdio_board_info rb95x_mdio0_info[] = {
 
 void __init rb95x_wlan_init(void)
 {
-	u8 *hard_cfg = (u8 *) KSEG1ADDR(0x1f000000 + RB_HARD_CFG_OFFSET);
-	u16 tag_len;
-	u8 *tag;
 	char *art_buf;
 	u8 wlan_mac[ETH_ALEN];
-	int err;
 
-	err = routerboot_find_tag(hard_cfg, RB_HARD_CFG_SIZE, RB_ID_WLAN_DATA,
-				  &tag, &tag_len);
-	if (err) {
-		pr_err("no calibration data found\n");
+	art_buf = rb_get_wlan_data();
+	if (art_buf == NULL)
 		return;
-	}
-
-	art_buf = kmalloc(RB_ART_SIZE, GFP_KERNEL);
-	if (art_buf == NULL) {
-		pr_err("no memory for calibration data\n");
-		return;
-	}
-
-	err = rle_decode((char *) tag, tag_len, art_buf, RB_ART_SIZE,
-			 NULL, NULL);
-	if (err) {
-		pr_err("unable to decode calibration data\n");
-		goto free;
-	}
 
 	ath79_init_mac(wlan_mac, ath79_mac_base, 11);
 	ath79_register_wmac(art_buf + 0x1000, wlan_mac);
 
-free:
 	kfree(art_buf);
 }
 
@@ -170,6 +137,8 @@ static int rb95x_nand_scan_fixup(struct mtd_info *mtd)
 
 void __init rb95x_nand_init(void)
 {
+	gpio_request_one(RB95X_GPIO_NAND_NCE, GPIOF_OUT_INIT_HIGH, "NAND nCE");
+
 	ath79_nfc_set_scan_fixup(rb95x_nand_scan_fixup);
 	ath79_nfc_set_parts(rb95x_nand_partitions,
 			    ARRAY_SIZE(rb95x_nand_partitions));
@@ -178,14 +147,14 @@ void __init rb95x_nand_init(void)
 	ath79_register_nfc();
 }
 
-void __init rb95x_gpio_init(void)
+static int __init rb95x_setup(void)
 {
-	gpio_request_one(RB95X_GPIO_NAND_NCE, GPIOF_OUT_INIT_HIGH, "NAND nCE");
-}
+	const struct rb_info *info;
 
-static void __init rb95x_setup(void)
-{
-	rb95x_gpio_init();
+	info = rb_init_info((void *)(KSEG1ADDR(0x1f00000)), 0x10000);
+	if (!info)
+		return -EINVAL;
+
 	rb95x_nand_init();
 
 	ath79_setup_ar934x_eth_cfg(AR934X_ETH_CFG_RGMII_GMAC0 |
@@ -201,11 +170,15 @@ static void __init rb95x_setup(void)
 	ath79_eth0_data.phy_mask = BIT(0);
 
 	ath79_register_eth(0);
+
+	return 0;
 }
 
 static void __init rb951g_setup(void)
 {
-	rb95x_setup();
+	if (rb95x_setup())
+		return;
+
 	rb95x_wlan_init();
 	ath79_register_usb();
 }

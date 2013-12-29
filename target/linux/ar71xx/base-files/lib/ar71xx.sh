@@ -321,6 +321,9 @@ ar71xx_board_detect() {
 	*"My Net N600")
 		name="mynet-n600"
 		;;
+	*"My Net N750")
+		name="mynet-n750"
+		;;
 	*"WD My Net Wi-Fi Range Extender")
 		name="mynet-rext"
 		;;
@@ -471,11 +474,17 @@ ar71xx_board_detect() {
 	*TL-WA850RE)
 		name="tl-wa850re"
 		;;
+	*"TL-WA801ND v2")
+		name="tl-wa801nd-v2"
+		;;
 	*TL-WA901ND)
 		name="tl-wa901nd"
 		;;
 	*"TL-WA901ND v2")
 		name="tl-wa901nd-v2"
+		;;
+	*"TL-WA901ND v3")
+		name="tl-wa901nd-v3"
 		;;
 	*"TL-WDR3500")
 		name="tl-wdr3500"

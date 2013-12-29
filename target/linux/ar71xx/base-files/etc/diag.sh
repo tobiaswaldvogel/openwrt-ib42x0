@@ -80,7 +80,8 @@ get_status_led() {
 	mr600v2)
 		status_led="mr600:blue:power"
 		;;
-	mynet-n600)
+	mynet-n600 | \
+	mynet-n750)
 		status_led="wd:blue:power"
 		;;
 	mynet-rext)
@@ -136,8 +137,10 @@ get_status_led() {
 	tl-mr3220-v2 | \
 	tl-mr3420 | \
 	tl-mr3420-v2 | \
+	tl-wa801nd-v2 | \
 	tl-wa901nd | \
 	tl-wa901nd-v2 | \
+	tl-wa901nd-v3 | \
 	tl-wdr3500 | \
 	tl-wr1041n-v2 | \
 	tl-wr1043nd | \

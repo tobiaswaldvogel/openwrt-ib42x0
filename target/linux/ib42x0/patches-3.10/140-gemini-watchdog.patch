@@ -24,7 +24,7 @@
 +
 --- a/arch/arm/mach-gemini/common.h	2011-04-19 03:05:29.446367900 +0200
 +++ b/arch/arm/mach-gemini/common.h	2011-04-19 03:07:02.191154293 +0200
-@@ -27,5 +27,6 @@
+@@ -27,6 +27,7 @@
  				    unsigned int nr_parts);
  extern int platform_register_pwc(void);
  extern int platform_register_pata(unsigned int i);

@@ -1462,7 +1462,7 @@
 +	struct toe_private *toe = gmac->toe;
 +	void __iomem *ptr_reg = gmac->rxq_rwptr;
 +
-+	static struct sk_buff *skb;
++	static struct sk_buff *skb = NULL;
 +
 +	DMA_RWPTR_T rw;
 +	unsigned short r, w;

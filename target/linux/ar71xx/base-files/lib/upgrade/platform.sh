@@ -177,7 +177,8 @@ platform_check_image() {
 		return 1
 		;;
 
-	mynet-n600)
+	mynet-n600 | \
+	mynet-n750)
 		[ "$magic_long" != "5ea3a417" ] && {
 			echo "Invalid image, bad magic: $magic_long"
 			return 1
@@ -214,8 +215,10 @@ platform_check_image() {
 	tl-wa7510n | \
 	tl-wa750re | \
 	tl-wa850re | \
+	tl-wa801nd-v2 | \
 	tl-wa901nd | \
 	tl-wa901nd-v2 | \
+	tl-wa901nd-v3 | \
 	tl-wdr3500 | \
 	tl-wdr4300 | \
 	tl-wr703n | \

@@ -48,8 +48,6 @@
 #define MTDREFRESH	_IO('M', 50)
 #endif
 
-#include <libubox/md5.h>
-
 #define MAX_ARGS 8
 #define JFFS2_DEFAULT_DIR	"" /* directory name without /, empty means root dir */
 
@@ -61,7 +59,6 @@ int quiet;
 int no_erase;
 int mtdsize = 0;
 int erasesize = 0;
-int jffs2_skip_bytes=0;
 
 int mtd_open(const char *mtd, bool block)
 {
@@ -252,35 +249,16 @@ mtd_erase(const char *mtd)
 }
 
 static int
-<<<<<<< HEAD
 mtd_refresh(const char *mtd, int option)
 {
 	int fd;
 
 	if (quiet < 2)
 		fprintf(stderr, "Refreshing mtd partition %s ... ", mtd);
-=======
-mtd_verify(const char *mtd, char *file)
-{
-	uint32_t f_md5[4], m_md5[4];
-	struct stat s;
-	md5_ctx_t ctx;
-	int ret = 0;
-	int fd;
-
-	if (quiet < 2)
-		fprintf(stderr, "Verifying %s against %s ...\n", mtd, file);
-
-	if (stat(file, &s) || md5sum(file, f_md5)) {
-		fprintf(stderr, "Failed to hash %s\n", file);
-		return -1;
-	}
->>>>>>> openwrt/master
 
 	fd = mtd_check_open(mtd);
 	if(fd < 0) {
 		fprintf(stderr, "Could not open mtd device: %s\n", mtd);
-<<<<<<< HEAD
 		exit(1);
 	}
 
@@ -295,43 +273,6 @@ mtd_verify(const char *mtd, char *file)
 		fprintf(stderr, "\n");
 
 	return 0;
-=======
-		return -1;
-	}
-
-	md5_begin(&ctx);
-	do {
-		char buf[256];
-		int len = (s.st_size > sizeof(buf)) ? (sizeof(buf)) : (s.st_size);
-		int rlen = read(fd, buf, len);
-
-		if (rlen < 0) {
-			if (errno == EINTR)
-				continue;
-			ret = -1;
-			goto out;
-		}
-		if (!rlen)
-			break;
-		md5_hash(buf, rlen, &ctx);
-		s.st_size -= rlen;
-	} while (s.st_size > 0);
-
-	md5_end(m_md5, &ctx);
-
-	fprintf(stderr, "%08x%08x%08x%08x - %s\n", m_md5[0], m_md5[1], m_md5[2], m_md5[3], mtd);
-	fprintf(stderr, "%08x%08x%08x%08x - %s\n", f_md5[0], f_md5[1], f_md5[2], f_md5[3], file);
-
-	ret = memcmp(f_md5, m_md5, sizeof(m_md5));
-	if (!ret)
-		fprintf(stderr, "Success\n");
-	else
-		fprintf(stderr, "Failed\n");
-
-out:
-	close(fd);
-	return ret;
->>>>>>> openwrt/master
 }
 
 static void
@@ -429,8 +370,9 @@ resume:
 		fprintf(stderr, "Could not open mtd device: %s\n", mtd);
 		exit(1);
 	}
+
 	if (part_offset > 0) {
-		fprintf(stderr, "Seeking on mtd device '%s' to: %zu\n", mtd, part_offset);
+		fprintf(stderr, "Seeking on mtd device '%s' to: %u\n", mtd, part_offset);
 		lseek(fd, part_offset, SEEK_SET);
 	}
 
@@ -468,7 +410,7 @@ resume:
 			continue;
 		}
 
-		if (jffs2file && w >= jffs2_skip_bytes) {
+		if (jffs2file) {
 			if (memcmp(buf, JFFS2_EOF, sizeof(JFFS2_EOF) - 1) == 0) {
 				if (!quiet)
 					fprintf(stderr, "\b\b\b   ");
@@ -575,7 +517,6 @@ static void usage(void)
 	"        unlock                  unlock the device\n"
 	"        refresh                 refresh mtd partition\n"
 	"        erase                   erase all data on device\n"
-	"        verify <imagefile>|-    verify <imagefile> (use - for stdin) to device\n"
 	"        write <imagefile>|-     write <imagefile> (use - for stdin) to device\n"
 	"        jffs2write <file>       append <file> to the jffs2 partition on the device\n");
 	if (mtd_fixtrx) {
@@ -596,7 +537,6 @@ static void usage(void)
 	"        -e <device>             erase <device> before executing the command\n"
 	"        -d <name>               directory for jffs2write, defaults to \"tmp\"\n"
 	"        -j <name>               integrate <file> into jffs2 data when writing an image\n"
-	"        -s <number>             skip the first n bytes when appending data to the jffs2 partiton, defaults to \"0\"\n"
 	"        -p                      write beginning at partition offset\n");
 	if (mtd_fixtrx) {
 	    fprintf(stderr,
@@ -642,7 +582,6 @@ int main (int argc, char **argv)
 		CMD_JFFS2WRITE,
 		CMD_FIXTRX,
 		CMD_FIXSEAMA,
-		CMD_VERIFY,
 	} cmd = -1;
 
 	erase[0] = NULL;
@@ -656,7 +595,7 @@ int main (int argc, char **argv)
 #ifdef FIS_SUPPORT
 			"F:"
 #endif
-			"frnqe:d:s:j:p:o:")) != -1)
+			"frnqe:d:j:p:o:")) != -1)
 		switch (ch) {
 			case 'f':
 				force = 1;
@@ -669,14 +608,6 @@ int main (int argc, char **argv)
 				break;
 			case 'j':
 				jffs2file = optarg;
-				break;
-			case 's':
-				errno = 0;
-				jffs2_skip_bytes = strtoul(optarg, 0, 0);
-				if (errno) {
-						fprintf(stderr, "-s: illegal numeric string\n");
-						usage();
-				}
 				break;
 			case 'q':
 				quiet++;
@@ -744,10 +675,6 @@ int main (int argc, char **argv)
 	} else if (((strcmp(argv[0], "fixseama") == 0) && (argc == 2)) && mtd_fixseama) {
 		cmd = CMD_FIXSEAMA;
 		device = argv[1];
-	} else if ((strcmp(argv[0], "verify") == 0) && (argc == 3)) {
-		cmd = CMD_VERIFY;
-		imagefile = argv[1];
-		device = argv[2];
 	} else if ((strcmp(argv[0], "write") == 0) && (argc == 3)) {
 		cmd = CMD_WRITE;
 		device = argv[2];
@@ -801,9 +728,6 @@ int main (int argc, char **argv)
 		case CMD_UNLOCK:
 			if (!unlocked)
 				mtd_unlock(device);
-			break;
-		case CMD_VERIFY:
-			mtd_verify(device, imagefile);
 			break;
 		case CMD_ERASE:
 			if (!unlocked)
