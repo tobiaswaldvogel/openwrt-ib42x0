@@ -289,7 +289,8 @@ define Build/Compile/wpad
 		./files/multicall.c \
 		$(PKG_BUILD_DIR)/hostapd/hostapd_multi.a \
 		$(PKG_BUILD_DIR)/wpa_supplicant/wpa_supplicant_multi.a \
-		`echo $(TARGET_LDFLAGS) | sed -e 's!--gc-sections!-Wl,--gc-sections!g'`
+		$(TARGET_LDFLAGS)
+#		`echo $(TARGET_LDFLAGS) | sed -e 's!--gc-sections!-Wl,--gc-sections!g'`
 endef
 
 define Build/Compile/hostapd

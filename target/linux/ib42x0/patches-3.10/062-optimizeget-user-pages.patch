@@ -82,7 +82,7 @@
  				page_mask = 0;
  			}
  next_page:
-@@ -1892,6 +1932,9 @@
+@@ -1902,6 +1932,9 @@
  			start += page_increm * PAGE_SIZE;
  			nr_pages -= page_increm;
  		} while (nr_pages && start < vma->vm_end);
