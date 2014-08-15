@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hostapd
-PKG_VERSION:=20131120
+PKG_VERSION:=2014-04-04
 PKG_RELEASE:=1
-PKG_REV:=594516b4c28a94ca686b17f1e463dfd6712b75a7
+PKG_REV:=ca4fd18290cc0966cba6d71a079d8c9177e53d1d
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=git://w1.fi/srv/git/hostap.git
@@ -84,6 +84,10 @@ ifneq ($(LOCAL_TYPE),hostapd)
   endif
   DRIVER_MAKEOPTS += \
 	CONFIG_DRIVER_ROBOSWITCH=$(CONFIG_PACKAGE_kmod-switch)
+endif
+
+ifdef CONFIG_USE_EGLIBC
+  TARGET_LDFLAGS += -lrt
 endif
 
 DRV_DEPENDS:=+PACKAGE_kmod-mac80211:libnl-tiny @(!TARGET_avr32||BROKEN)

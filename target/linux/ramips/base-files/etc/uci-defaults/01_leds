@@ -47,6 +47,9 @@ case $board in
 	br6425)
 		set_wifi_led "edimax:orange:wlan"
 		;;
+	br-6475nd)
+		set_wifi_led "edimax:amber:wlan"
+		;;
 	broadway)
 		set_usb_led "red:diskmounted"
 		set_wifi_led "red:wps_active"
@@ -93,6 +96,9 @@ case $board in
 		set_usb_led "fonera20n:orange:usb"
 		set_wifi_led "fonera20n:orange:wifi"
 		;;
+	hlk-rm04)
+		set_wifi_led "rt2800pci-phy0::radio"
+		;;
 	all0239-3g|\
 	hw550-3g)
 		set_usb_led "hw550-3g:green:usb"
@@ -108,6 +114,9 @@ case $board in
 		;;
 	mzk-w300nh2)
 		set_wifi_led "mzkw300nh2:amber:wlan"
+		;;
+	na930)
+		set_usb_led "na930:blue:status"
 		;;
 	nw718)
 		set_usb_led "nw718:amber:usb"

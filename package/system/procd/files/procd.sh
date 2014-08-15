@@ -50,6 +50,7 @@ _procd_wrapper() {
 _procd_ubus_call() {
 	local cmd="$1"
 
+	[ -n "$PROCD_DEBUG" ] && json_dump >&2
 	ubus call service "$cmd" "$(json_dump)"
 	json_cleanup
 }
@@ -240,6 +241,8 @@ _procd_wrapper \
 	procd_close_trigger \
 	procd_open_instance \
 	procd_close_instance \
+	procd_open_validate \
+	procd_close_validate \
 	procd_set_param \
 	procd_append_param \
 	procd_add_validation \

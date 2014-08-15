@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 OpenWrt.org
+# Copyright (C) 2007-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,14 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-PKG_MAJOR_VERSION:=2.21
-PKG_MINOR_VERSION=.2
+<<<<<<< HEAD
+PKG_MAJOR_VERSION:=2.24
+PKG_MINOR_VERSION=.1
 PKG_VERSION:=$(PKG_MAJOR_VERSION)$(PKG_MINOR_VERSION)
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v$(PKG_MAJOR_VERSION)
-PKG_MD5SUM:=54ba880f1d66782c2287ee2c898520e9
+PKG_MD5SUM:=88d46ae23ca599ac5af9cf96b531590f
 
 PKG_LICENSE:=GPLv2 LGPLv2.1 BSD-3c
 PKG_LICENSE_FILES:=COPYING getopt/COPYING libblkid/COPYING libmount/COPYING Documentation/licenses/COPYING.GPLv2 Documentation/licenses/COPYING.LGPLv2.1 libuuid/COPYING Documentation/licenses/COPYING.BSD-3
@@ -36,7 +37,6 @@ endef
 CONFIGURE_ARGS += \
 	--enable-new-mount	\
 	--with-ncurses		\
-	--disable-nls		\
 	--disable-tls		\
 	--disable-makeinstall-chown	\
 	--disable-makeinstall-setuid	\
@@ -63,9 +63,9 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/libuuid/src/uuid.h $(1)/usr/include/uuid
 
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libblkid/src/.libs/libblkid.{a,so.*} $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libmount/src/.libs/libmount.{a,so.*} $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libuuid/src/.libs/libuuid.{a,so.*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/.libs/libblkid.{a,so*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/.libs/libmount.{a,so*} $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/.libs/libuuid.{a,so*} $(1)/usr/lib
 endef
 
 define Package/libblkid
@@ -252,7 +252,7 @@ endef
 define Package/lsblk
 $(call Package/util-linux/Default)
   TITLE:=list block devices
-  DEPENDS:= +libblkid
+  DEPENDS:= +libblkid +libmount
   SUBMENU=disc
 endef
 

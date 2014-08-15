@@ -24,3 +24,7 @@
 *#
 .emacs.desktop*
 TAGS*~
+<<<<<<< HEAD
+=======
+git-src
+>>>>>>> openwrt/master

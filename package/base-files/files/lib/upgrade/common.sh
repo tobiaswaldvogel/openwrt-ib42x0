@@ -48,18 +48,37 @@ supivot() { # <new_root> <old_root>
 }
 
 run_ramfs() { # <command> [...]
+<<<<<<< HEAD
 	install_bin /bin/busybox /bin/ash /bin/sh /bin/mount /bin/umount        \
 		/sbin/pivot_root /usr/bin/wget /sbin/reboot /bin/sync /bin/dd   \
 		/bin/grep /bin/cp /bin/mv /bin/tar /usr/bin/md5sum "/usr/bin/[" \
 		/bin/vi /bin/ls /bin/cat /usr/bin/awk /usr/bin/hexdump          \
 		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc \
 		/bin/mkdir /bin/rm
+=======
+	install_bin /bin/busybox /bin/ash /bin/sh /bin/mount /bin/umount	\
+		/sbin/pivot_root /usr/bin/wget /sbin/reboot /bin/sync /bin/dd	\
+		/bin/grep /bin/cp /bin/mv /bin/tar /usr/bin/md5sum "/usr/bin/["	\
+		/bin/dd /bin/vi /bin/ls /bin/cat /usr/bin/awk /usr/bin/hexdump	\
+		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc \
+		/bin/cut /usr/bin/printf /bin/sync
+>>>>>>> openwrt/master
 
 	install_bin /sbin/mtd
+	install_bin /sbin/ubi
+	install_bin /sbin/mount_root
+	install_bin /sbin/snapshot
+	install_bin /sbin/snapshot_tool
+	install_bin /usr/sbin/ubiupdatevol
+	install_bin /usr/sbin/ubiattach
+	install_bin /usr/sbin/ubidetach
+	install_bin /usr/sbin/ubirsvol
+	install_bin /usr/sbin/ubirmvol
+	install_bin /usr/sbin/ubimkvol
 	for file in $RAMFS_COPY_BIN; do
 		install_bin $file
 	done
-	install_file /etc/resolv.conf /lib/functions.sh /lib/functions.sh /lib/upgrade/*.sh $RAMFS_COPY_DATA
+	install_file /etc/resolv.conf /lib/functions.sh /lib/functions/*.sh /lib/upgrade/*.sh $RAMFS_COPY_DATA
 
 	supivot $RAM_ROOT /mnt || {
 		echo "Failed to switch over to ramfs. Please reboot."

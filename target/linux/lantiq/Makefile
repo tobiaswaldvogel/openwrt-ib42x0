@@ -7,11 +7,11 @@
 include $(TOPDIR)/rules.mk
 
 BOARD:=lantiq
-BOARDNAME:=Lantiq GPON/XWAY/SVIP
-FEATURES:=squashfs
-SUBTARGETS=xway xrx200 ase falcon
+BOARDNAME:=Lantiq
+FEATURES:=squashfs ubifs
+SUBTARGETS=xway xrx200
 
-LINUX_VERSION:=3.10.24
+LINUX_VERSION:=3.10.36
 
 CPU_TYPE:=mips32r2
 

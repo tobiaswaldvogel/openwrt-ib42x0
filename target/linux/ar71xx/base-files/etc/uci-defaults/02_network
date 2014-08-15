@@ -46,7 +46,8 @@ tl-wr1043nd-v2)
 	ucidef_add_switch_vlan "switch0" "2" "5 6"
 	;;
 
-archer-c7)
+archer-c7 |\
+tl-wdr4900-v2)
 	ucidef_set_interfaces_lan_wan "eth1" "eth0"
 	ucidef_add_switch "switch0" "1" "1"
 	ucidef_add_switch_vlan "switch0" "1" "0 2 3 4 5"
@@ -83,6 +84,13 @@ nbg460n_550n_550nh)
 	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" "1" "1"
 	ucidef_add_switch_vlan "switch0" "0" "0 1 2 3 5"
+	;;
+
+nbg6716)
+	ucidef_set_interfaces_lan_wan "eth0.1" "eth1"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0t 1 2 3 4"
+	ucidef_add_switch_vlan "switch0" "2" "5 6"
 	;;
 
 rb-433 |\
@@ -282,6 +290,7 @@ dir-615-c1 |\
 dir-615-e4 |\
 ja76pf |\
 mynet-n600 |\
+oolite |\
 rb-750 |\
 rb-751 |\
 tew-632brp |\
@@ -293,6 +302,7 @@ tl-wdr3500 |\
 tl-wr741nd |\
 tl-wr741nd-v4 |\
 tl-wr841n-v7 |\
+tl-wr841n-v9 |\
 whr-g301n |\
 whr-hp-g300n |\
 whr-hp-gn |\
@@ -310,15 +320,56 @@ wzr-hp-g450h)
 	;;
 
 ew-dorin)
-	ucidef_set_interface_lan "eth0"
+	ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
 	ucidef_add_switch "switch0" "1" "1"
-	ucidef_add_switch_vlan "switch0" "1" "0 1 2 3"
+	ucidef_add_switch_vlan "switch0" "1" "0t 1 2"
+	ucidef_add_switch_vlan "switch0" "2" "0t 3"
 	;;
 
 ew-dorin-router)
 	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" "1" "1"
 	ucidef_add_switch_vlan "switch0" "1" "0 2 3"
+	;;
+
+wndr3700)
+	ucidef_set_interfaces_lan_wan "eth0.1" "eth1"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 5t"
+	# Blinkrate: 0=43ms; 1=84ms; 2=120ms; 3=170ms; 4=340ms; 5=670ms
+	uci set network.@switch[-1].blinkrate='2'
+
+	ucidef_add_switch_port "switch0" "1"
+	# Port 1 controls the GREEN configuration of LEDs for
+	# the switch and the section does not correspond to a real
+	# switch port.
+	#
+	# 0=LED off; 1=Collision/FDX; 2=Link/activity; 3=1000 Mb/s;
+	# 4=100 Mb/s; 5=10 Mb/s; 6=1000 Mb/s+activity; 7=100 Mb/s+activity;
+	# 8=10 Mb/s+activity; 9=10/100 Mb/s+activity; 10: Fiber;
+	# 11: Fault; 12: Link/activity(tx); 13: Link/activity(rx);
+	# 14: Link (master); 15: separate register
+	uci set network.@switch_port[-1].led='6'
+
+	ucidef_add_switch_port "switch0" "2"
+	# Port 2 controls the ORANGE configuration of LEDs for
+	# the switch and the section does not correspond to a real
+	# switch port.
+	#
+	# See the key above for switch port 1 for the meaning of the
+	# 'led' setting below.
+	uci set network.@switch_port[-1].led='9'
+
+	ucidef_add_switch_port "switch0" "5"
+	# Port 5 controls the configuration of the WAN LED and the
+	# section does not correspond to a real switch port.
+	#
+	# To toggle the use of green or orange LEDs for the WAN port,
+	# see the LED setting for wndr3700:green:wan in /etc/config/system.
+	#
+	# See the key above for switch port 1 for the meaning of the
+	# 'led' setting below.
+	uci set network.@switch_port[-1].led='2'
 	;;
 
 *)

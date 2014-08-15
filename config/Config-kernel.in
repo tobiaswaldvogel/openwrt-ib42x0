@@ -1,8 +1,21 @@
-# Copyright (C) 2006-2013 OpenWrt.org
+# Copyright (C) 2006-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
+
+config KERNEL_PRINTK
+	bool "Enable support for printk"
+	default y
+
+config KERNEL_CRASHLOG
+	bool "Crash logging"
+	depends on !(arm || powerpc || sparc)
+	default y
+
+config KERNEL_SWAP
+	bool "Support for paging of anonymous memory (swap)"
+	default y
 
 config KERNEL_DEBUG_FS
 	bool "Compile the kernel with Debug FileSystem enabled"
@@ -130,6 +143,10 @@ config KERNEL_KEXEC
 config USE_RFKILL
 	bool "Enable rfkill support"
 	default RFKILL_SUPPORT
+
+config USE_SPARSE
+	bool "Enable sparse check during kernel build"
+	default n
 
 #
 # CGROUP support symbols
@@ -423,7 +440,7 @@ if KERNEL_LXC_MISC
 
 	config KERNEL_POSIX_MQUEUE
 		bool "POSIX Message Queues"
-		default n
+		default y
 		help
 		  POSIX variant of message queues is a part of IPC. In POSIX message
 		  queues every message has a priority which decides about succession

@@ -7,7 +7,7 @@
 
 define Profile/ARCHERC7
 	NAME:=TP-LINK Archer C7
-	PACKAGES:=kmod-usb-core kmod-usb2 kmod-ledtrig-usbdev
+	PACKAGES:=kmod-usb-core kmod-usb2 kmod-ledtrig-usbdev kmod-ath10k
 endef
 
 define Profile/ARCHERC7/Description
@@ -213,6 +213,17 @@ define Profile/TLWDR4300/Description
 	Package set optimized for the TP-LINK TL-WDR3500/3600/4300/4310/MW4350R.
 endef
 $(eval $(call Profile,TLWDR4300))
+
+
+define Profile/TLWDR4900V2
+	NAME:=TP-LINK TL-WDR4900v2
+	PACKAGES:=kmod-usb-core kmod-usb2 kmod-ledtrig-usbdev
+endef
+
+define Profile/TLWDR4900V2/Description
+	Package set optimized for the TP-LINK TL-WDR4900v2.
+endef
+$(eval $(call Profile,TLWDR4900V2))
 
 
 define Profile/TLWR740

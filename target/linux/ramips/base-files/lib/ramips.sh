@@ -109,6 +109,9 @@ ramips_board_detect() {
 	*"ESR-9753")
 		name="esr-9753"
 		;;
+	*"Edimax BR-6475nD")
+		name="br-6475nd"
+		;;
 	*"F7C027")
 		name="f7c027"
 		;;
@@ -135,6 +138,9 @@ ramips_board_detect() {
 		;;
 	*"MoFi Network MOFI3500-3GN")
 		name="mofi3500-3gn"
+		;;
+	*"HILINK HLK-RM04")
+		name="hlk-rm04"
 		;;
 	*"HAME MPR-A1")
  		name="mpr-a1"
@@ -273,6 +279,12 @@ ramips_board_detect() {
 		;;
 	*"V22SG")
 		name="v22sg"
+		;;
+	*"WRTNODE")
+		name="wrtnode"
+		;;
+	*"Sercomm NA930")
+		name="na930"
 		;;
 	*)
 		name="generic"

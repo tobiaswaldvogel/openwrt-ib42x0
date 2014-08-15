@@ -94,6 +94,9 @@ get_status_led() {
 	nbg460n_550n_550nh)
 		status_led="nbg460n:green:power"
 		;;
+	nbg6716)
+		status_led="nbg6716:white:power"
+		;;
 	om2p | \
 	om2p-hs | \
 	om2p-lc)
@@ -102,17 +105,31 @@ get_status_led() {
 	pb44)
 		status_led="pb44:amber:jump1"
 		;;
+	rb-2011l|\
+	rb-2011uas|\
+	rb-2011uas-2hnd)
+		status_led="rb:green:usr"
+		;;
 	rb-411 | rb-411u | rb-433 | rb-433u | rb-450 | rb-450g | rb-493)
 		status_led="rb4xx:yellow:user"
 		;;
-       rb-750)
-               status_led="rb750:green:act"
-               ;;
+	rb-750)
+		status_led="rb750:green:act"
+		;;
+	rb-911g-2hpnd|\
+	rb-911g-5hpnd|\
+	rb-912uag-2hpnd|\
+	rb-912uag-5hpnd)
+		status_led="rb:green:user"
+		;;
 	routerstation | routerstation-pro)
 		status_led="ubnt:green:rf"
 		;;
 	rw2458n)
 		status_led="rw2458n:green:d3"
+		;;
+	oolite)
+		status_led="oolite:red:system"
 		;;
 	tew-632brp)
 		status_led="tew-632brp:green:status"
@@ -155,6 +172,7 @@ get_status_led() {
 		status_led="tp-link:green:system"
 		;;
 	archer-c7 | \
+	tl-wdr4900-v2 | \
 	tl-mr10u | \
 	tl-mr13u | \
 	tl-wdr4300 | \
@@ -162,6 +180,9 @@ get_status_led() {
 	tl-wr710n | \
 	tl-wr720n-v3)
 		status_led="tp-link:blue:system"
+		;;
+	tl-wr841n-v9)
+		status_led="tp-link:green:qss"
 		;;
 	tl-wr2543n)
 		status_led="tp-link:green:wps"

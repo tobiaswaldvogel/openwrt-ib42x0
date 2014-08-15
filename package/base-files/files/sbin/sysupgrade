@@ -1,5 +1,6 @@
 #!/bin/sh
 . /lib/functions.sh
+. /lib/functions/system.sh
 
 # initialize defaults
 RAMFS_COPY_BIN=""	# extra programs for temporary ramfs root
@@ -210,9 +211,11 @@ run_hooks "" $sysupgrade_pre_upgrade
 ubus call system upgrade
 touch /tmp/sysupgrade
 
-kill_remaining TERM
-sleep 3
-kill_remaining KILL
+if [ ! -f /tmp/failsafe ] ; then
+	kill_remaining TERM
+	sleep 3
+	kill_remaining KILL
+fi
 
 if [ -n "$(rootfs_type)" ]; then
 	v "Switching to ramdisk..."

@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
 TARGET_DTBS := armada-xp-db armada-370-db armada-xp-openblocks-ax3-4 armada-370-mirabox \
-		armada-370-rd
+		armada-370-rd armada-xp-gp
 
 LOADADDR:=0x00008000
 
@@ -30,7 +30,9 @@ endef
 
 define Image/BuildKernel
 	$(foreach dtb,$(TARGET_DTBS),$(call Image/Build/DTB,$(dtb)))
+ ifneq ($(CONFIG_TARGET_ROOTFS_INITRAMFS),)
 	$(call Image/Build/Initramfs)
+ endif
 endef
 
 define Image/Build/squashfs

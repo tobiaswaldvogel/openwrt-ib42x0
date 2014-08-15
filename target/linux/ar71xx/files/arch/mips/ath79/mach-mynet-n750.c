@@ -98,6 +98,19 @@ static struct gpio_keys_button mynet_n750_gpio_keys[] __initdata = {
 	},
 };
 
+static const struct ar8327_led_info mynet_n750_leds_ar8327[] __initconst = {
+	AR8327_LED_INFO(PHY0_0, HW, "wd:green:lan1"),
+	AR8327_LED_INFO(PHY1_0, HW, "wd:green:lan2"),
+	AR8327_LED_INFO(PHY2_0, HW, "wd:green:lan3"),
+	AR8327_LED_INFO(PHY3_0, HW, "wd:green:lan4"),
+	AR8327_LED_INFO(PHY4_0, HW, "wd:green:wan"),
+	AR8327_LED_INFO(PHY0_1, HW, "wd:yellow:lan1"),
+	AR8327_LED_INFO(PHY1_1, HW, "wd:yellow:lan2"),
+	AR8327_LED_INFO(PHY2_1, HW, "wd:yellow:lan3"),
+	AR8327_LED_INFO(PHY3_1, HW, "wd:yellow:lan4"),
+	AR8327_LED_INFO(PHY4_1, HW, "wd:yellow:wan"),
+};
+
 static struct ar8327_pad_cfg mynet_n750_ar8327_pad0_cfg = {
 	.mode = AR8327_PAD_MAC_RGMII,
 	.txclk_delay_en = true,
@@ -124,6 +137,8 @@ static struct ar8327_platform_data mynet_n750_ar8327_data = {
 		.rxpause = 1,
 	},
 	.led_cfg = &mynet_n750_ar8327_led_cfg,
+	.num_leds = ARRAY_SIZE(mynet_n750_leds_ar8327),
+	.leds = mynet_n750_leds_ar8327,
 };
 
 static struct mdio_board_info mynet_n750_mdio0_info[] = {
@@ -178,12 +193,8 @@ static void __init mynet_n750_setup(void)
 	 * Taken from GPL bootloader source:
 	 *   board/ar7240/db12x/alpha_gpio.c
 	 */
-	gpio_request_one(MYNET_N750_GPIO_EXTERNAL_LNA0,
-			 GPIOF_OUT_INIT_LOW | GPIOF_EXPORT_DIR_FIXED,
-			 "External LNA0");
-	gpio_request_one(MYNET_N750_GPIO_EXTERNAL_LNA1,
-			 GPIOF_OUT_INIT_LOW | GPIOF_EXPORT_DIR_FIXED,
-			 "External LNA1");
+	ath79_wmac_set_ext_lna_gpio(0, MYNET_N750_GPIO_EXTERNAL_LNA0);
+	ath79_wmac_set_ext_lna_gpio(1, MYNET_N750_GPIO_EXTERNAL_LNA1);
 
 	mynet_n750_get_mac("wlan24mac=", tmpmac);
 	ath79_register_wmac(art + MYNET_N750_WMAC_CALDATA_OFFSET, tmpmac);
