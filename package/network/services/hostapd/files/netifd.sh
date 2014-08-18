@@ -51,7 +51,8 @@ hostapd_common_add_device_config() {
 	config_add_array basic_rate
 
 	config_add_string country
-	config_add_boolean country_ie
+	config_add_boolean country_ie doth
+	config_add_string require_mode
 
 	hostapd_add_log_config
 }
@@ -63,14 +64,18 @@ hostapd_prepare_device_config() {
 	local base="${config%%.conf}"
 	local base_cfg=
 
-	json_get_vars country country_ie beacon_int
+	json_get_vars country country_ie beacon_int doth require_mode
 
 	hostapd_set_log_options base_cfg
 
 	set_default country_ie 1
+	set_default doth 1
+
 	[ -n "$country" ] && {
 		append base_cfg "country_code=$country" "$N"
+
 		[ "$country_ie" -gt 0 ] && append base_cfg "ieee80211d=1" "$N"
+		[ "$hwmode" = "a" -a "$doth" -gt 0 ] && append base_cfg "ieee80211h=1" "$N"
 	}
 	[ -n "$hwmode" ] && append base_cfg "hw_mode=$hwmode" "$N"
 
@@ -79,6 +84,11 @@ hostapd_prepare_device_config() {
 	for br in $basic_rate_list; do
 		hostapd_add_basic_rate brlist "$br"
 	done
+	case "$require_mode" in
+		g) brlist="60 120 240" ;;
+		n) append base_cfg "require_ht=1" "$N";;
+		ac) append base_cfg "require_vht=1" "$N";;
+	esac
 	[ -n "$brlist" ] && append base_cfg "basic_rates=$brlist" "$N"
 	[ -n "$beacon_int" ] && append base_cfg "beacon_int=$beacon_int" "$N"
 
@@ -115,8 +125,12 @@ hostapd_common_add_bss_config() {
 	config_add_int dae_port
 
 	config_add_string nasid
+	config_add_string ownip
 	config_add_string iapp_interface
 	config_add_string eap_type ca_cert client_cert identity auth priv_key priv_key_pwd
+
+	config_add_int dynamic_vlan vlan_naming
+	config_add_string vlan_tagged_interface
 
 	config_add_string 'key1:wepkey' 'key2:wepkey' 'key3:wepkey' 'key4:wepkey' 'password:wpakey'
 
@@ -147,7 +161,7 @@ hostapd_set_bss_options() {
 		maxassoc max_inactivity disassoc_low_ack isolate auth_cache \
 		wps_pushbutton wps_label ext_registrar wps_pbc_in_m1 \
 		wps_device_type wps_device_name wps_manufacturer wps_pin \
-		macfilter ssid wmm hidden short_preamble
+		macfilter ssid wmm hidden short_preamble rsn_preauth
 
 	set_default isolate 0
 	set_default maxassoc 0
@@ -203,8 +217,9 @@ hostapd_set_bss_options() {
 				auth_server auth_secret auth_port \
 				acct_server acct_secret acct_port \
 				dae_client dae_secret dae_port \
-				nasid rsn_preauth iapp_interface \
-				eap_reauth_period
+				nasid iapp_interface ownip \
+				eap_reauth_period dynamic_vlan \
+				vlan_tagged_interface
 
 			# legacy compatibility
 			[ -n "$auth_server" ] || json_get_var auth_server server
@@ -214,6 +229,8 @@ hostapd_set_bss_options() {
 			set_default auth_port 1812
 			set_default acct_port 1813
 			set_default dae_port 3799
+
+			set_default vlan_naming 1
 
 			append bss_conf "auth_server_addr=$auth_server" "$N"
 			append bss_conf "auth_server_port=$auth_port" "$N"
@@ -234,9 +251,17 @@ hostapd_set_bss_options() {
 			}
 
 			append bss_conf "nas_identifier=$nasid" "$N"
+			[ -n "$ownip" ] && append bss_conf "own_ip_addr=$ownip" "$N"
 			append bss_conf "eapol_key_index_workaround=1" "$N"
 			append bss_conf "ieee8021x=1" "$N"
 			append bss_conf "wpa_key_mgmt=WPA-EAP" "$N"
+
+			[ -n "$dynamic_vlan" ] && {
+				append bss_conf "dynamic_vlan=$dynamic_vlan" "$N"
+				append bss_conf "vlan_naming=$vlan_naming" "$N"
+				[ -n "$vlan_tagged_interface" ] && \
+					append bss_conf "vlan_tagged_interface=$vlan_tagged_interface" "$N"
+			}
 		;;
 		wep)
 			local wep_keyidx=0
@@ -270,7 +295,7 @@ hostapd_set_bss_options() {
 		wps_state=2
 		[ -n "$wps_configured" ] && wps_state=1
 
-		[ "$ext_registrar" -gt 0 -a -n "$bridge" ] && append bss_conf "upnp_iface=$bridge" "$N"
+		[ "$ext_registrar" -gt 0 -a -n "$network_bridge" ] && append bss_conf "upnp_iface=$network_bridge" "$N"
 
 		append bss_conf "eap_server=1" "$N"
 		append bss_conf "ap_pin=$wps_pin" "$N"
@@ -285,16 +310,16 @@ hostapd_set_bss_options() {
 
 	append bss_conf "ssid=$ssid" "$N"
 	[ -n "$network_bridge" ] && append bss_conf "bridge=$network_bridge" "$N"
-	[ -n "$iapp_interface" ] &&  {
+	[ -n "$iapp_interface" ] && {
 		iapp_interface="$(uci_get_state network "$iapp_interface" ifname "$iapp_interface")"
 		[ -n "$iapp_interface" ] && append bss_conf "iapp_interface=$iapp_interface" "$N"
 	}
 
 	if [ "$wpa" -ge "2" ]; then
-		if [ -n "$bridge" -a "$rsn_preauth" = 1 ]; then
+		if [ -n "$network_bridge" -a "$rsn_preauth" = 1 ]; then
 			set_default auth_cache 1
 			append bss_conf "rsn_preauth=1" "$N"
-			append bss_conf "rsn_preauth_interfaces=$bridge" "$N"
+			append bss_conf "rsn_preauth_interfaces=$network_bridge" "$N"
 		else
 			set_default auth_cache 0
 		fi
@@ -365,7 +390,7 @@ hostapd_set_log_options() {
 	set_default log_iapp   1
 	set_default log_mlme   1
 
-	local log_mask=$((       \
+	local log_mask=$(( \
 		($log_80211  << 0) | \
 		($log_8021x  << 1) | \
 		($log_radius << 2) | \

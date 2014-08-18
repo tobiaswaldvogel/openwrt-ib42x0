@@ -36,6 +36,10 @@ define uboot/A20-OLinuXino_MICRO
   TITLE:=U-Boot 2014.01-rc1 for A20 OLinuXino MICRO
 endef
 
+define uboot/bananapi
+  TITLE:=U-Boot 2014.01-rc1 for BananaPi
+endef
+
 define uboot/Cubieboard
   TITLE:=U-Boot 2014.01-rc1 for Cubieboard
 endef
@@ -56,7 +60,11 @@ define uboot/pcDuino
   TITLE:=U-Boot 2014.01-rc1 for pcDuino
 endef  
 
-UBOOTS:=A10-OLinuXino-Lime A13-OLinuXino A20-OLinuXino_MICRO Cubieboard Cubieboard2 Cubietruck Hackberry pcDuino
+define uboot/pcDuino3
+  TITLE:=U-Boot 2014.01-rc1 for pcDuino3
+endef  
+
+UBOOTS:=A10-OLinuXino-Lime A13-OLinuXino A20-OLinuXino_MICRO bananapi Cubieboard Cubieboard2 Cubietruck Hackberry pcDuino pcDuino3
 
 define Package/uboot/template
 define Package/uboot-sunxi-$(1)

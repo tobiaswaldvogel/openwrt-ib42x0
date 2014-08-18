@@ -1,16 +1,24 @@
+#
+# Copyright (C) 2014 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fstools
-PKG_VERSION:=2014-04-07
+PKG_VERSION:=2014-06-22
 
 PKG_RELEASE=$(PKG_SOURCE_VERSION)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git://nbd.name/fstools.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=a1f48fc0444f5c3c44ee6ef1005cd8da65decefd
+PKG_SOURCE_VERSION:=e0430f5c62f367e5a8e02755412977b02c3fc45e
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 CMAKE_INSTALL:=1
+PKG_CHECK_FORMAT_SECURITY:=0
 
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=
@@ -25,14 +33,8 @@ TARGET_LDFLAGS += $(if $(CONFIG_USE_EGLIBC),-lrt)
 define Package/fstools
   SECTION:=base
   CATEGORY:=Base system
-  DEPENDS:=+ubox +USE_EGLIBC:librt
+  DEPENDS:=+ubox +USE_EGLIBC:librt +NAND_SUPPORT:ubi-utils
   TITLE:=OpenWrt filesystem tools
-endef
-
-define Package/ubi-flash
-  SECTION:=base
-  CATEGORY:=Base system
-  TITLE:=OpenWrt ubi flashing tool
 endef
 
 define Package/block-mount
@@ -51,12 +53,6 @@ define Package/fstools/install
 	ln -s /sbin/jffs2reset $(1)/sbin/jffs2mark
 endef
 
-define Package/ubi-flash/install
-	$(INSTALL_DIR) $(1)/sbin $(1)/lib
-
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ubi $(1)/sbin/
-endef
-
 define Package/block-mount/install
 	$(INSTALL_DIR) $(1)/sbin $(1)/lib $(1)/usr/sbin $(1)/etc/hotplug.d/block $(1)/etc/init.d/ $(1)/etc/uci-defaults/
 
@@ -71,6 +67,12 @@ define Package/block-mount/install
 
 endef
 
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libubi-utils.a $(1)/usr/lib/
+endef
+
 $(eval $(call BuildPackage,fstools))
-$(eval $(call BuildPackage,ubi-flash))
 $(eval $(call BuildPackage,block-mount))

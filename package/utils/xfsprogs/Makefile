@@ -19,6 +19,7 @@ PKG_MD5SUM:=
 
 PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
+PKG_CHECK_FORMAT_SECURITY:=0
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk

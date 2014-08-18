@@ -775,6 +775,24 @@ endef
 $(eval $(call KernelPackage,pps))
 
 
+define KernelPackage/pps-gpio
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=PPS client using GPIO
+  DEPENDS:=+kmod-pps
+  KCONFIG:=CONFIG_PPS_CLIENT_GPIO
+  FILES:=$(LINUX_DIR)/drivers/pps/clients/pps-gpio.ko
+  AUTOLOAD:=$(call AutoLoad,18,pps-gpio,1)
+endef
+
+define KernelPacakge/pps-gpio/description
+ Support for a PPS source using GPIO. To be useful you must
+ also register a platform device specifying the GPIO pin and
+ other options, usually in your board setup.
+endef
+
+$(eval $(call KernelPackage,pps-gpio))
+
+
 define KernelPackage/ptp
   SUBMENU:=$(OTHER_MENU)
   TITLE:=PTP clock support
@@ -830,12 +848,14 @@ define KernelPackage/thermal
   HIDDEN:=1
   KCONFIG:= \
 	CONFIG_THERMAL \
+	CONFIG_THERMAL_OF=y \
 	CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y \
 	CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE=n \
 	CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE=n \
 	CONFIG_THERMAL_GOV_FAIR_SHARE=n \
 	CONFIG_THERMAL_GOV_STEP_WISE=y \
 	CONFIG_THERMAL_GOV_USER_SPACE=n \
+	CONFIG_THERMAL_HWMON=y \
 	CONFIG_THERMAL_EMULATION=n
   FILES:=$(LINUX_DIR)/drivers/thermal/thermal_sys.ko
   AUTOLOAD:=$(call AutoProbe,thermal_sys)

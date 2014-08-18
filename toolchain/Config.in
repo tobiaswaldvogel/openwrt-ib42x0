@@ -249,10 +249,11 @@ config INSIGHT
 
 config USE_EGLIBC
 	bool
+	default y if !TOOLCHAINOPTS && !EXTERNAL_TOOLCHAIN && !NATIVE_TOOLCHAIN && octeon
 
 config USE_UCLIBC
 	bool
-	default y if !TOOLCHAINOPTS && !EXTERNAL_TOOLCHAIN && !NATIVE_TOOLCHAIN
+	default y if !TOOLCHAINOPTS && !EXTERNAL_TOOLCHAIN && !NATIVE_TOOLCHAIN && !octeon
 
 config USE_MUSL
 	bool

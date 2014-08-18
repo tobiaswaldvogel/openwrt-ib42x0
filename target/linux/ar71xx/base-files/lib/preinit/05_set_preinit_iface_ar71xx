@@ -13,8 +13,10 @@ set_preinit_iface() {
 	ap135-020 |\
 	ap136-020 |\
 	ap83 |\
+	archer-c5 |\
 	archer-c7 |\
 	dir-505-a1 |\
+	gl-inet |\
 	jwap003 |\
 	pb42 |\
 	pb44 |\
@@ -25,6 +27,7 @@ set_preinit_iface() {
 	rb-450g |\
 	routerstation |\
 	routerstation-pro |\
+	smart-300 |\
 	tl-mr3420-v2 |\
 	tl-wdr4900-v2 |\
 	tl-wr1043nd-v2 |\

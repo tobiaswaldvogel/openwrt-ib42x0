@@ -12,7 +12,7 @@ BOARDNAME:=Marvell Orion
 SUBTARGETS:=generic harddisk
 MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>
 
-LINUX_VERSION:=3.3.8
+LINUX_VERSION:=3.10.49
 
 include $(INCLUDE_DIR)/target.mk
 

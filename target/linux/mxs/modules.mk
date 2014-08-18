@@ -49,22 +49,6 @@ endef
 
 $(eval $(call KernelPackage,usb-chipidea-imx,1))
 
-define KernelPackage/usb-mxs-phy
-    TITLE:=Support for Freescale MXS USB PHY controllers
-    DEPENDS:=+kmod-usb-chipidea-imx
-    KCONFIG:= \
-	CONFIG_USB_MXS_PHY
-    FILES:=$(LINUX_DIR)/drivers/usb/phy/phy-mxs-usb.ko
-    AUTOLOAD:=$(call AutoLoad,50,phy-mxs-usb,1)
-    $(call AddDepends/usb)
-endef
-
-define KernelPackage/usb-mxs-phy/description
-    Kernel support for Freescale MXS USB PHY controllers
-endef
-
-$(eval $(call KernelPackage,usb-mxs-phy,1))
-
 define KernelPackage/sound-soc-mxs
     TITLE:=Freescale i.MX23/i.MX28 built-in SoC sound support
     KCONFIG:= \
@@ -105,9 +89,9 @@ $(eval $(call KernelPackage,iio-mxs-lradc))
 define KernelPackage/crypto-hw-dcp
     TITLE:=i.MX23/28 DCP hardware crypto module
     DEPENDS:=@TARGET_mxs
-    KCONFIG:=CONFIG_CRYPTO_DEV_DCP
-    FILES:=$(LINUX_DIR)/drivers/crypto/dcp.ko
-    AUTOLOAD:=$(call AutoLoad,90,dcp)
+    KCONFIG:=CONFIG_CRYPTO_DEV_MXS_DCP
+    FILES:=$(LINUX_DIR)/drivers/crypto/mxs-dcp.ko
+    AUTOLOAD:=$(call AutoLoad,90,mxs-dcp)
     $(call AddDepends/crypto,+kmod-crypto-authenc +kmod-crypto-des)
 endef
 

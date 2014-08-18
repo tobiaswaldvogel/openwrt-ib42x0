@@ -38,8 +38,12 @@ CONFIGURE_ARGS += \
 	--enable-new-mount	\
 	--with-ncurses		\
 	--disable-tls		\
+<<<<<<< HEAD
 	--disable-makeinstall-chown	\
 	--disable-makeinstall-setuid	\
+=======
+	--disable-sulogin	\
+>>>>>>> openwrt/master
 	--without-udev
 
 TARGET_CFLAGS += $(FPIC)

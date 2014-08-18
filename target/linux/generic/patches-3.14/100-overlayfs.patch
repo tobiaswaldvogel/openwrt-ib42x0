@@ -318,7 +318,7 @@
  extern const struct file_operations pipefifo_fops;
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -413,6 +413,7 @@ int __inode_permission(struct inode *ino
+@@ -414,6 +414,7 @@ int __inode_permission(struct inode *ino
  
  	return security_inode_permission(inode, mask);
  }
@@ -326,7 +326,7 @@
  
  /**
   * sb_permission - Check superblock-level permissions
-@@ -3035,9 +3036,12 @@ finish_open_created:
+@@ -3037,9 +3038,12 @@ finish_open_created:
  	error = may_open(&nd->path, acc_mode, open_flag);
  	if (error)
  		goto out;
@@ -380,7 +380,7 @@
  {
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -834,8 +834,7 @@ struct file *dentry_open(const struct pa
+@@ -822,8 +822,7 @@ struct file *dentry_open(const struct pa
  	f = get_empty_filp();
  	if (!IS_ERR(f)) {
  		f->f_flags = flags;
@@ -390,7 +390,7 @@
  		if (!error) {
  			/* from now on we need fput() to dispose of f */
  			error = open_check_o_direct(f);
-@@ -852,6 +851,26 @@ struct file *dentry_open(const struct pa
+@@ -840,6 +839,26 @@ struct file *dentry_open(const struct pa
  }
  EXPORT_SYMBOL(dentry_open);
  
@@ -3219,7 +3219,7 @@
  file_ra_state_init(struct file_ra_state *ra, struct address_space *mapping);
 --- a/include/linux/mount.h
 +++ b/include/linux/mount.h
-@@ -71,6 +71,9 @@ extern void mnt_pin(struct vfsmount *mnt
+@@ -74,6 +74,9 @@ extern void mnt_pin(struct vfsmount *mnt
  extern void mnt_unpin(struct vfsmount *mnt);
  extern int __mnt_is_readonly(struct vfsmount *mnt);
  

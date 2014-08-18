@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010-2013 OpenWrt.org
+# Copyright (C) 2010-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=u-boot
-PKG_VERSION:=2013.10
+PKG_VERSION:=2014.07
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
@@ -16,7 +16,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:= \
 	http://mirror2.openwrt.org/sources \
 	ftp://ftp.denx.de/pub/u-boot
-PKG_MD5SUM:=a076a044b64371edc52f7e562b13f6b2
+PKG_MD5SUM:=36d4bad687edcafa396fee607e505d4e
 PKG_TARGETS:=bin
 
 PKG_BUILD_PARALLEL:=1
@@ -61,6 +61,10 @@ define uboot/pogo_e02
   TITLE:=U-Boot for Cloud Engines Pogoplug E02
 endef
 
+define uboot/pogo_e02_second_stage
+  TITLE:=second stage U-Boot for Cloud Engines Pogoplug E02
+endef
+
 define uboot/sheevaplug
   TITLE:=U-Boot for SheevaPlug
 endef
@@ -70,7 +74,7 @@ UBOOTS:= \
 	goflexhome \
 	ib62x0 ib62x0_second_stage \
 	iconnect iconnect_second_stage \
-	pogo_e02 \
+	pogo_e02 pogo_e02_second_stage \
 	sheevaplug
 
 define Package/uboot/template

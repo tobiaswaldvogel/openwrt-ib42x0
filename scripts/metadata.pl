@@ -75,7 +75,10 @@ sub parse_target_metadata() {
 	}
 	close FILE;
 	foreach my $target (@target) {
-		next if @{$target->{subtargets}} > 0;
+		if (@{$target->{subtargets}} > 0) {
+			$target->{profiles} = [];
+			next;
+		}
 		@{$target->{profiles}} > 0 or $target->{profiles} = [
 			{
 				id => 'Default',
@@ -180,6 +183,8 @@ sub target_config_features(@) {
 		/nommu/ and $ret .= "\tselect NOMMU\n";
 		/mips16/ and $ret .= "\tselect HAS_MIPS16\n";
 		/rfkill/ and $ret .= "\tselect RFKILL_SUPPORT\n";
+		/low_mem/ and $ret .= "\tselect LOW_MEMORY_FOOTPRINT\n";
+		/nand/ and $ret .= "\tselect NAND_SUPPORT\n";
 	}
 	return $ret;
 }
@@ -499,7 +504,7 @@ sub mconf_depends {
 					next if $depend eq $condition;
 					$depend = "$depend if $condition";
 				} else {
-					$depend = "!($condition) || $depend";
+					$depend = "!($condition) || $depend" unless $dep->{$condition} eq 'select';
 				}
 			}
 		}
@@ -843,6 +848,16 @@ sub gen_package_source() {
 	}
 }
 
+sub gen_package_feeds() {
+	parse_package_metadata($ARGV[0]) or exit 1;
+	foreach my $name (sort {uc($a) cmp uc($b)} keys %package) {
+		my $pkg = $package{$name};
+		if ($pkg->{name} && $pkg->{feed}) {
+			print "Package/$name/feed = $pkg->{feed}\n";
+		}
+	}
+}
+
 sub parse_command() {
 	my $cmd = shift @ARGV;
 	for ($cmd) {
@@ -851,6 +866,7 @@ sub parse_command() {
 		/^package_config$/ and return gen_package_config();
 		/^kconfig/ and return gen_kconfig_overrides();
 		/^package_source$/ and return gen_package_source();
+		/^package_feeds$/ and return gen_package_feeds();
 	}
 	print <<EOF
 Available Commands:
@@ -859,6 +875,7 @@ Available Commands:
 	$0 package_config [file] 	Package metadata in Kconfig format
 	$0 kconfig [file] [config]	Kernel config overrides
 	$0 package_source [file] 	Package source file information
+	$0 package_feeds [file]		Package feed information in makefile format
 
 EOF
 }

@@ -10,7 +10,7 @@ config KERNEL_PRINTK
 
 config KERNEL_CRASHLOG
 	bool "Crash logging"
-	depends on !(arm || powerpc || sparc)
+	depends on !(arm || powerpc || sparc || TARGET_uml)
 	default y
 
 config KERNEL_SWAP
@@ -133,6 +133,20 @@ config KERNEL_PROVE_LOCKING
 config KERNEL_PRINTK_TIME
 	bool "Enable printk timestamps"
 	default y
+
+config KERNEL_SLUB_DEBUG
+	bool
+
+config KERNEL_SLUB_DEBUG_ON
+	bool
+
+config KERNEL_SLABINFO
+	select KERNEL_SLUB_DEBUG
+	select KERNEL_SLUB_DEBUG_ON
+	bool "Enable /proc slab debug info"
+
+config KERNEL_PROC_PAGE_MONITOR
+	bool "Enable /proc page monitoring"
 
 config KERNEL_RELAY
 	bool
@@ -285,12 +299,9 @@ if KERNEL_CGROUPS
 		  the kmem extension can use it to guarantee that no group of processes
 		  will ever exhaust kernel resources alone.
 
-	config KERNEL_PERF_EVENTS
-		bool
-		default y if KERNEL_CGROUP_PERF
-
 	config KERNEL_CGROUP_PERF
 		bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
+		select KERNEL_PERF_EVENTS
 		default n
 		help
 		  This option extends the per-cpu mode to restrict monitoring to

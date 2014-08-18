@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2012 OpenWrt.org
+# Copyright (C) 2006-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hostapd
-PKG_VERSION:=2014-04-04
+PKG_VERSION:=2014-06-03
 PKG_RELEASE:=1
-PKG_REV:=ca4fd18290cc0966cba6d71a079d8c9177e53d1d
+PKG_REV:=84df167554569af8c87f0a8ac1fb508192417d8e
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=git://w1.fi/srv/git/hostap.git
@@ -88,6 +88,7 @@ endif
 
 ifdef CONFIG_USE_EGLIBC
   TARGET_LDFLAGS += -lrt
+  TARGET_LDFLAGS_C += -lrt
 endif
 
 DRV_DEPENDS:=+PACKAGE_kmod-mac80211:libnl-tiny @(!TARGET_avr32||BROKEN)
@@ -224,6 +225,15 @@ define Package/hostapd-common-old
   CATEGORY:=Network
 endef
 
+define Package/eapol-test
+  TITLE:=802.1x authentication test utility
+  SECTION:=net
+  CATEGORY:=Network
+  VARIANT:=supplicant-full
+  DEPENDS:=$(DRV_DEPENDS)
+endef
+
+
 ifneq ($(wildcard $(PKG_BUILD_DIR)/.config_*),$(subst .configured_,.config_,$(STAMP_CONFIGURED)))
   define Build/Configure/rebuild
 	$(FIND) $(PKG_BUILD_DIR) -name \*.o -or -name \*.a | $(XARGS) rm -f
@@ -267,7 +277,7 @@ define Build/RunMake
 		$(TARGET_CONFIGURE_OPTS) \
 		$(DRIVER_MAKEOPTS) \
 		LIBS="$(TARGET_LDFLAGS)" \
-		LIBS_c="" \
+		LIBS_c="$(TARGET_LDFLAGS_C)" \
 		BCHECK= \
 		$(2)
 endef
@@ -309,8 +319,15 @@ define Build/Compile/supplicant
 	)
 endef
 
+define Build/Compile/supplicant-full
+	$(call Build/RunMake,wpa_supplicant, \
+		eapol_test \
+	)
+endef
+
 define Build/Compile
 	$(Build/Compile/$(LOCAL_TYPE))
+	$(Build/Compile/$(BUILD_VARIANT))
 endef
 
 define Install/hostapd
@@ -369,6 +386,13 @@ ifneq ($(LOCAL_TYPE),hostapd)
   endef
 endif
 
+ifeq ($(BUILD_VARIANT),supplicant-full)
+  define Package/eapol-test/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(CP) $(PKG_BUILD_DIR)/wpa_supplicant/eapol_test $(1)/usr/sbin/
+  endef
+endif
+
 $(eval $(call BuildPackage,hostapd))
 $(eval $(call BuildPackage,hostapd-mini))
 $(eval $(call BuildPackage,wpad))
@@ -380,3 +404,4 @@ $(eval $(call BuildPackage,wpa-cli))
 $(eval $(call BuildPackage,hostapd-utils))
 $(eval $(call BuildPackage,hostapd-common))
 $(eval $(call BuildPackage,hostapd-common-old))
+$(eval $(call BuildPackage,eapol-test))

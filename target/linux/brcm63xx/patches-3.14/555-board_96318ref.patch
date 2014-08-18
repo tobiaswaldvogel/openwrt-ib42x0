@@ -1,7 +1,7 @@
 --- a/arch/mips/bcm63xx/boards/board_bcm963xx.c
 +++ b/arch/mips/bcm63xx/boards/board_bcm963xx.c
-@@ -104,6 +104,93 @@ static struct board_info __initdata boar
- #endif
+@@ -87,6 +87,93 @@ static struct board_info __initdata boar
+ #endif /* CONFIG_BCM63XX_CPU_3368 */
  
  /*
 + * known 6318 boards
@@ -88,13 +88,13 @@
 +		},
 +	},
 +};
-+#endif
++#endif /* CONFIG_BCM63XX_CPU_6318 */
 +
 +/*
   * known 6328 boards
   */
  #ifdef CONFIG_BCM63XX_CPU_6328
-@@ -4272,6 +4359,9 @@ static const struct board_info __initcon
+@@ -4034,6 +4121,9 @@ static const struct board_info __initcon
  #ifdef CONFIG_BCM63XX_CPU_3368
  	&board_cvg834g,
  #endif
@@ -103,4 +103,4 @@
 +#endif
  #ifdef CONFIG_BCM63XX_CPU_6328
  	&board_96328avng,
- 	&board_96328A_1241N,
+ 	&board_AR5381u,
