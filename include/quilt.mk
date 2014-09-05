@@ -85,6 +85,7 @@ endef
 define Build/Patch/Default
 	$(if $(QUILT),rm -rf $(PKG_BUILD_DIR)/patches; mkdir -p $(PKG_BUILD_DIR)/patches)
 	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR),)
+	$(call PatchDir,$(PKG_BUILD_DIR),$(TOPDIR)/user/$(PKG_NAME)/patches-$(PKG_VERSION),)
 	$(if $(QUILT),touch $(PKG_BUILD_DIR)/.quilt_used)
 endef
 

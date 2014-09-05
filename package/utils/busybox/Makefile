@@ -17,7 +17,7 @@ PKG_SOURCE_URL:=http://www.busybox.net/downloads \
 		http://distfiles.gentoo.org/distfiles/
 PKG_MD5SUM:=337d1a15ab1cb1d4ed423168b1eb7d7e
 
-PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBRPC:librpc
+PKG_BUILD_DEPENDS:=BUSYBOX_USE_LIBRPC:librpc BUSYBOX_CONFIG_PAM:libpam
 PKG_BUILD_PARALLEL:=1
 PKG_CHECK_FORMAT_SECURITY:=0
 
@@ -101,6 +101,12 @@ ifdef CONFIG_BUSYBOX_USE_LIBRPC
   TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
   export LDFLAGS=$(TARGET_LDFLAGS)
   LDLIBS += rpc
+endif
+
+ifdef CONFIG_BUSYBOX_CONFIG_PAM
+  TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+  export LDFLAGS=$(TARGET_LDFLAGS)
+  LDLIBS += pam pam_misc pthread
 endif
 
 define Build/Compile

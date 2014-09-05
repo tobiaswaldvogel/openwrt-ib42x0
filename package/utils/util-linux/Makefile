@@ -8,7 +8,6 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-<<<<<<< HEAD
 PKG_MAJOR_VERSION:=2.24
 PKG_MINOR_VERSION=.1
 PKG_VERSION:=$(PKG_MAJOR_VERSION)$(PKG_MINOR_VERSION)
@@ -38,12 +37,8 @@ CONFIGURE_ARGS += \
 	--enable-new-mount	\
 	--with-ncurses		\
 	--disable-tls		\
-<<<<<<< HEAD
 	--disable-makeinstall-chown	\
 	--disable-makeinstall-setuid	\
-=======
-	--disable-sulogin	\
->>>>>>> openwrt/master
 	--without-udev
 
 TARGET_CFLAGS += $(FPIC)

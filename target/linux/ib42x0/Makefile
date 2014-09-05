@@ -32,7 +32,7 @@ DEFAULT_PACKAGES += \
   usbutils xfs-tools blkid uuidgen lualdap luaspcdns \
   samba36-server-ads ca-cert-digicert wget
 
-LINUX_VERSION=3.8.13
+LINUX_VERSION=3.14.16
 CONFIG_VERSION_REPO=https://github.com/tobiaswaldvogel/openwrt-packages-bin/raw/master
 BUILT_ON=$(shell date +%Y%m%d)
 CONFIG_VERSION_DIST=OpenWRT (built on $(BUILT_ON))

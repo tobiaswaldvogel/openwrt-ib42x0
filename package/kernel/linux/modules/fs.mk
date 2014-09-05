@@ -280,7 +280,7 @@ define KernelPackage/fs-nfs
 ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.6.0)),1)
   FILES:= \
 	$(LINUX_DIR)/fs/nfs/nfs.ko \
-	$(LINUX_DIR)/fs/nfs/nfsv3.ko
+	$(LINUX_DIR)/fs/nfs/nfsv3.ko \
 else
   FILES:= \
 	$(LINUX_DIR)/fs/nfs/nfs.ko
@@ -318,8 +318,12 @@ define KernelPackage/fs-nfs-common-v4
 	CONFIG_NFS_V4=y\
 	CONFIG_NFSD_V4=y
   DEPENDS:= @BROKEN
-  FILES+=$(LINUX_DIR)/net/sunrpc/auth_gss/auth_rpcgss.ko
-  AUTOLOAD=$(call AutoLoad,30,auth_rpcgss)
+  FILES+= $(LINUX_DIR)/net/sunrpc/auth_gss/auth_rpcgss.ko \
+		$(LINUX_DIR)/net/sunrpc/sunrpc.ko \
+		$(LINUX_DIR)/lib/oid_registry.ko \
+		$(LINUX_DIR)/fs/nfs_common/nfs_acl.ko \
+		$(LINUX_DIR)/fs/lockd/lockd.ko
+  AUTOLOAD=$(call AutoLoad,30,auth_rpcgss, sunrpc, oid_registry, lockd)
 endef
 
 define KernelPackage/fs-nfs-common-v4/description
@@ -332,7 +336,7 @@ $(eval $(call KernelPackage,fs-nfs-common-v4))
 define KernelPackage/fs-nfsd
   SUBMENU:=$(FS_MENU)
   TITLE:=NFS kernel server support
-  DEPENDS:=+kmod-fs-nfs-common +kmod-fs-exportfs
+  DEPENDS:=+kmod-fs-nfs-common-v4 +kmod-fs-exportfs
   KCONFIG:= \
 	CONFIG_NFSD \
 	CONFIG_NFSD_FAULT_INJECTION=n
