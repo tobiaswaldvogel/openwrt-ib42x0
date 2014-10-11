@@ -1,0 +1,21 @@
+--- a/arch/arm/mach-gemini/board-nas4220b.c
++++ b/arch/arm/mach-gemini/board-nas4220b.c
+@@ -97,7 +97,17 @@
+ 	platform_register_rtc();
+ }
+ 
++static void __init ib4220b_fixup(struct tag *tags, char **cmdline,
++                               struct meminfo *mi)
++{
++	mi->nr_banks = 1;
++	mi->bank[0].start   = PHYS_OFFSET;
++	mi->bank[0].highmem = 0;
++	mi->bank[0].size    = (128*1024*1024);
++}
++
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
++	.fixup          = ib4220b_fixup,
+ 	.atag_offset	= 0x100,
+ 	.map_io		= gemini_map_io,
+ 	.init_irq	= gemini_init_irq,
+

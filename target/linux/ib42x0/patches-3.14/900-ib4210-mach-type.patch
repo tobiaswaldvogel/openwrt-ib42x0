@@ -1,0 +1,10 @@
+--- a/arch/arm/tools/mach-types
++++ b/arch/arm/tools/mach-types
+@@ -1010,6 +1010,7 @@
+ #
+ # Additional mach-types supported by OpenWrt
+ #
++nas4210b		MACH_NAS4210B		NAS4210B		8191
+ wg302v1			MACH_WG302V1		WG302V1			889
+ pronghorn		MACH_PRONGHORN		PRONGHORN		928
+ pronghorn_metro		MACH_PRONGHORNMETRO	PRONGHORNMETRO		1040

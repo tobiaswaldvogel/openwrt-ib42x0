@@ -48,26 +48,13 @@ supivot() { # <new_root> <old_root>
 }
 
 run_ramfs() { # <command> [...]
-<<<<<<< HEAD
-	install_bin /bin/busybox /bin/ash /bin/sh /bin/mount /bin/umount        \
-		/sbin/pivot_root /usr/bin/wget /sbin/reboot /bin/sync /bin/dd   \
-		/bin/grep /bin/cp /bin/mv /bin/tar /usr/bin/md5sum "/usr/bin/[" \
-		/bin/vi /bin/ls /bin/cat /usr/bin/awk /usr/bin/hexdump          \
-		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc \
-		/bin/mkdir /bin/rm
-=======
 	install_bin /bin/busybox /bin/ash /bin/sh /bin/mount /bin/umount	\
 		/sbin/pivot_root /usr/bin/wget /sbin/reboot /bin/sync /bin/dd	\
 		/bin/grep /bin/cp /bin/mv /bin/tar /usr/bin/md5sum "/usr/bin/["	\
 		/bin/dd /bin/vi /bin/ls /bin/cat /usr/bin/awk /usr/bin/hexdump	\
 		/bin/sleep /bin/zcat /usr/bin/bzcat /usr/bin/printf /usr/bin/wc \
-<<<<<<< HEAD
-		/bin/cut /usr/bin/printf /bin/sync
->>>>>>> openwrt/master
-=======
 		/bin/cut /usr/bin/printf /bin/sync /bin/mkdir /bin/rmdir	\
 		/bin/rm /usr/bin/basename /bin/kill /bin/chmod
->>>>>>> openwrt/master
 
 	install_bin /sbin/mtd
 	install_bin /sbin/ubi
@@ -131,20 +118,6 @@ kill_remaining() { # [ <signal> ]
 		# Skip kernel threads
 		[ -n "$cmdline" ] || continue
 
-<<<<<<< HEAD
-		case "$name" in
-			# Skip essential services
-			*procd*|*ubusd*|*ash*|*init*|*watchdog*|*ssh*|*dropbear*|*telnet*|*login*|*hostapd*|*wpa_supplicant*|*nas*) : ;;
-
-			# Killable process
-			*)
-				if [ $pid -ne $$ ] && [ $ppid -ne $$ ]; then
-					echo -n "$name "
-					kill -$sig $pid 2>/dev/null
-				fi
-			;;
-		esac
-=======
 		if [ $$ -eq 1 ] || [ $my_ppid -eq 1 ] && [ -n "$my_ppisupgraded" ]; then
 			# Running as init process, kill everything except me
 			if [ $pid -ne $$ ] && [ $pid -ne $my_ppid ]; then
@@ -165,7 +138,6 @@ kill_remaining() { # [ <signal> ]
 				;;
 			esac
 		fi
->>>>>>> openwrt/master
 	done
 	echo ""
 }

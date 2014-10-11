@@ -1,0 +1,10 @@
+--- a/arch/arm/Kconfig	2012-12-18 09:46:31.638307022 +0100
++++ b/arch/arm/Kconfig	2012-12-18 09:45:52.715940832 +0100
+@@ -397,6 +397,7 @@
+ config ARCH_GEMINI
+ 	bool "Cortina Systems Gemini"
+ 	select ARCH_REQUIRE_GPIOLIB
++	select NEED_MACH_GPIO_H
+ 	select CLKSRC_MMIO
+ 	select CPU_FA526
+ 	select GENERIC_CLOCKEVENTS

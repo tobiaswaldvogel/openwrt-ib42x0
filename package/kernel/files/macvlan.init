@@ -1,0 +1,9 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2011 OpenWrt.org
+
+START=11
+
+boot() {
+	ip link add link eth0 eth2 type macvlan
+	ip link add link eth0 eth3 type macvlan
+}

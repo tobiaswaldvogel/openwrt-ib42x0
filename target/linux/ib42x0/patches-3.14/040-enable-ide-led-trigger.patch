@@ -1,0 +1,12 @@
+--- a/drivers/leds/trigger/Kconfig	2010-12-09 09:02:43.000000000 +0100
++++ b/drivers/leds/trigger/Kconfig	2010-12-09 09:03:45.000000000 +0100
+@@ -34,8 +34,7 @@
+ 	  If unsure, say Y.
+ 
+ config LEDS_TRIGGER_IDE_DISK
+-	bool "LED IDE Disk Trigger"
+-	depends on IDE_GD_ATA
++	tristate "LED IDE Disk Trigger"
+ 	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by IDE disk activity.
