@@ -522,6 +522,18 @@ sub mconf_depends {
 	return $res;
 }
 
+sub mconf_conflicts {
+	my $pkgname = shift;
+	my $depends = shift;
+	my $res = "";
+
+	foreach my $depend (@$depends) {
+		next unless $package{$depend};
+		$res .= "\t\tdepends on m || (PACKAGE_$depend != y)\n";
+	}
+	return $res;
+}
+
 sub print_package_config_category($) {
 	my $cat = shift;
 	my %menus;
@@ -583,6 +595,7 @@ sub print_package_config_category($) {
 			}
 			print mconf_depends($pkg->{name}, $pkg->{depends}, 0);
 			print mconf_depends($pkg->{name}, $pkg->{mdepends}, 0);
+			print mconf_conflicts($pkg->{name}, $pkg->{conflicts});
 			print "\t\thelp\n";
 			print $pkg->{description};
 			print "\n";
@@ -684,7 +697,7 @@ sub gen_package_mk() {
 			$pkg->{buildonly} and $config = "";
 			print "package-$config += $pkg->{subdir}$pkg->{src}\n";
 			if ($pkg->{variant}) {
-				if (!defined($done{$pkg->{src}})) {
+				if (!defined($done{$pkg->{src}}) or $pkg->{variant_default}) {
 					print "\$(curdir)/$pkg->{subdir}$pkg->{src}/default-variant := $pkg->{variant}\n";
 				}
 				print "\$(curdir)/$pkg->{subdir}$pkg->{src}/variants += \$(if $config,$pkg->{variant})\n"

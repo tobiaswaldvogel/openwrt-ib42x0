@@ -113,8 +113,10 @@ sub parse_package_metadata($) {
 		};
 		/^Menu-Depends: \s*(.+)\s*$/ and $pkg->{mdepends} = [ split /\s+/, $1 ];
 		/^Depends: \s*(.+)\s*$/ and $pkg->{depends} = [ split /\s+/, $1 ];
+		/^Conflicts: \s*(.+)\s*$/ and $pkg->{conflicts} = [ split /\s+/, $1 ];
 		/^Hidden: \s*(.+)\s*$/ and $pkg->{hidden} = 1;
 		/^Build-Variant: \s*([\w\-]+)\s*/ and $pkg->{variant} = $1;
+		/^Default-Variant: .*/ and $pkg->{variant_default} = 1;
 		/^Build-Only: \s*(.+)\s*$/ and $pkg->{buildonly} = 1;
 		/^Build-Depends: \s*(.+)\s*$/ and $pkg->{builddepends} = [ split /\s+/, $1 ];
 		/^Build-Depends\/(\w+): \s*(.+)\s*$/ and $pkg->{"builddepends/$1"} = [ split /\s+/, $2 ];

@@ -52,6 +52,7 @@ platform_check_image() {
 	hw550-3g | \
 	hg255d | \
 	hlk-rm04 | \
+	ht-tm02 | \
 	ip2202 | \
 	m3 | \
 	m4 | \
@@ -89,6 +90,7 @@ platform_check_image() {
 	wnce2001 | \
 	wli-tx4-ag300n | \
 	whr-g300n |\
+	wt1520 |\
 	ur-326n4g |\
 	ur-336un |\
 	wr512-3gn |\

@@ -157,6 +157,9 @@ ramips_board_detect() {
 	*"HILINK HLK-RM04")
 		name="hlk-rm04"
 		;;
+	*"HOOTOO HT-TM02")
+		name="ht-tm02"
+		;;
 	*"HAME MPR-A1")
  		name="mpr-a1"
  		;;
@@ -177,6 +180,9 @@ ramips_board_detect() {
 		;;
 	*"NexAira BC2")
 		name="bc2"
+		;;
+	*"Nexx WT1520")
+		name="wt1520"
 		;;
 	*"NW718")
 		name="nw718"
