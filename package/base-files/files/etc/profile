@@ -1,5 +1,6 @@
 #!/bin/sh
 [ -f /etc/banner ] && cat /etc/banner
+[ -e /tmp/.failsafe ] && cat /etc/banner.failsafe
 
 export LANG=en_US.UTF-8
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin

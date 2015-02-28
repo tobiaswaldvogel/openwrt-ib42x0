@@ -21,6 +21,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_CHECK_FORMAT_SECURITY:=0
 
 PKG_MAINTAINER:=Jo-Philipp Wich <jow@openwrt.org>
+PKG_LICENSE:=GPL-2.0
 
 PKG_FIXUP:=autoreconf
 
@@ -30,7 +31,6 @@ define Package/xtables-addons
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Firewall
-  DEPENDS:=@!LINUX_3_3
   TITLE:=Extensions not distributed in the main Xtables
   URL:=http://xtables-addons.sourceforge.net/
 endef

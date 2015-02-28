@@ -1,6 +1,6 @@
 --- a/drivers/net/phy/Kconfig
 +++ b/drivers/net/phy/Kconfig
-@@ -270,6 +270,14 @@ endif # RTL8366_SMI
+@@ -273,6 +273,14 @@ endif # RTL8366_SMI
  
  source "drivers/net/phy/b53/Kconfig"
  

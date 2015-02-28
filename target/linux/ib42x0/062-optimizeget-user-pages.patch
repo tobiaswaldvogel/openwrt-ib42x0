@@ -1,0 +1,94 @@
+--- a/mm/memory.c	2013-09-02 02:19:02.761839478 +0200
++++ b/mm/memory.c	2013-09-02 02:40:35.566732820 +0200
+@@ -1643,6 +1643,29 @@
+ 	       stack_guard_page_end(vma, addr+PAGE_SIZE);
+ }
+ 
++#define FLUSH_PAGE_LIMIT 		4		/* Max number of anon pages to be flushed in the traditional way */
++
++static inline void flush_anon_block(int block_anon_pages, struct page **pages, int block_start_idx,
++			int block_last_idx, unsigned long block_start, struct vm_area_struct *vma)
++{
++	int j;
++
++	if (!pages)
++		return;
++
++	if (block_anon_pages <= FLUSH_PAGE_LIMIT){
++		/* flush the cache page by page */
++		for (j=block_start_idx; j<block_last_idx; j++){
++			flush_anon_page(vma, pages[j], block_start);
++			flush_dcache_page(pages[j]);
++			block_start += PAGE_SIZE;
++		}
++	} else {	
++		/* flush the whole caches */
++		__cpuc_flush_user_all(); 
++	}
++}
++
+ /**
+  * __get_user_pages() - pin user pages in memory
+  * @tsk:	task_struct of target task
+@@ -1700,6 +1723,11 @@
+ 	long i;
+ 	unsigned long vm_flags;
+ 	unsigned int page_mask;
++	struct vm_area_struct *vma;
++	struct page *page;
++	int block_start_idx = 0;
++	unsigned long block_start = 0;
++	int block_anon_pages = 0;
+ 
+ 	if (!nr_pages)
+ 		return 0;
+@@ -1730,8 +1758,6 @@
+ 	i = 0;
+ 
+ 	do {
+-		struct vm_area_struct *vma;
+-
+ 		vma = find_extend_vma(mm, start);
+ 		if (!vma && in_gate_area(mm, start)) {
+ 			unsigned long pg = start & PAGE_MASK;
+@@ -1792,8 +1818,10 @@
+ 			continue;
+ 		}
+ 
++		block_start = start;
++		block_start_idx = i;
++		
+ 		do {
+-			struct page *page;
+ 			unsigned int foll_flags = gup_flags;
+ 			unsigned int page_increm;
+ 
+@@ -1873,13 +1901,15 @@
+ 
+ 				cond_resched();
+ 			}
+-			if (IS_ERR(page))
++			if (IS_ERR(page)) {
++				flush_anon_block(block_anon_pages, pages, block_start_idx, i, block_start, vma);
+ 				return i ? i : PTR_ERR(page);
++			}
+ 			if (pages) {
+ 				pages[i] = page;
+ 
+-				flush_anon_page(vma, page, start);
+-				flush_dcache_page(page);
++				if (PageAnon(page))
++					block_anon_pages++;
+ 				page_mask = 0;
+ 			}
+ next_page:
+@@ -1894,6 +1924,9 @@
+ 			start += page_increm * PAGE_SIZE;
+ 			nr_pages -= page_increm;
+ 		} while (nr_pages && start < vma->vm_end);
++
++		flush_anon_block(block_anon_pages, pages, block_start_idx, i, block_start, vma);	
++
+ 	} while (nr_pages);
+ 	return i;
+ }

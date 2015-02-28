@@ -18,6 +18,7 @@ PKG_MD5SUM:=00aec1287da2dfffda17a9b1c0a01868
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
 
 PKG_BUILD_DEPENDS:=binutils
+PKG_LICENSE:=GPL-2.0+
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -30,7 +31,7 @@ define Package/oprofile
   CATEGORY:=Development
   TITLE:=OProfile System Profiler
   URL:=http://oprofile.sourceforge.net
-  DEPENDS:=+libpopt +kmod-oprofile +libstdcpp +objdump
+  DEPENDS:=+libpopt +kmod-oprofile +libstdcpp +objdump @(!TARGET_uml||BROKEN)
 endef
 
 define Package/oprofile/description

@@ -34,7 +34,7 @@ _ucidef_set_interface() {
 
 	json_select_object $name
 	json_add_string ifname "${iface%%.*}"
-	[ "$iface" == "${iface%%.*}" ] || json_add_boolean create_vlan 1
+	[ "$iface" = "${iface%%.*}" ] || json_add_boolean create_vlan 1
 	json_select ..
 }
 
@@ -70,8 +70,8 @@ ucidef_add_switch() {
 	json_select_object switch
 
 	json_select_object $name
-	[ "$enable" -eq 1 ] && json_add_boolean enable 1
-	[ "$reset" -eq 1 ] && json_add_boolean reset 1
+	json_add_boolean enable $enable
+	json_add_boolean reset $reset
 	json_select ..
 
 	json_select ..

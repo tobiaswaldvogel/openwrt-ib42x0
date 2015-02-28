@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2012 OpenWrt.org
+# Copyright (C) 2006-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -9,13 +9,14 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=comgt
 PKG_VERSION:=0.32
-PKG_RELEASE:=23
+PKG_RELEASE:=24
 
 PKG_SOURCE:=$(PKG_NAME).$(PKG_VERSION).tgz
 PKG_SOURCE_URL:=@SF/comgt
 PKG_MD5SUM:=db2452680c3d953631299e331daf49ef
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
+PKG_LICENSE:=GPL-2.0+
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME).$(PKG_VERSION)
 PKG_CHECK_FORMAT_SECURITY:=0
@@ -43,7 +44,7 @@ endef
 define Package/comgt-ncm
 $(call Package/comgt/Default)
   TITLE+=NCM 3G/4G Support
-  DEPENDS:=+comgt +kmod-usb-serial +kmod-usb-serial-option +kmod-usb-net +kmod-usb-net-cdc-ncm +kmod-usb-net-huawei-cdc-ncm
+  DEPENDS:=+comgt
 endef
 
 define Package/comgt/description

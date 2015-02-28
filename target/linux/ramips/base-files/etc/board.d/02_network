@@ -37,6 +37,13 @@ ramips_setup_interfaces()
 	ucidef_set_interface_loopback
 
 	case $board in
+	a5-v11)
+		ucidef_set_interface_lan "eth0.1"
+		ucidef_add_switch "switch0" "1" "1"
+		ucidef_add_switch_vlan "switch0" "1" "0 6t"
+		;;
+
+	3g150b | \
 	3g300m | \
 	w150m | \
 	all0256n | \
@@ -44,6 +51,7 @@ ramips_setup_interfaces()
 	all5003 | \
 	broadway | \
 	dcs-930| \
+	ht-tm02| \
 	ncs601w | \
 	wnce2001)
 		ucidef_add_switch "switch0" "1" "0"
@@ -52,8 +60,16 @@ ramips_setup_interfaces()
 
 	3g-6200nl | \
 	mlw221)
-                ucidef_set_interface_lan "eth0.2"
-                ;;
+		ucidef_set_interface_lan "eth0.2"
+		;;
+	mlwg2)
+		ucidef_set_interface_lan "eth0.1"
+		;;
+
+	m2m)
+		ucidef_add_switch "switch0" "4"
+		ucidef_set_interface_lan "eth0"
+		;;
 
 	wizard8800 | \
 	wl-330n | \
@@ -97,36 +113,49 @@ ramips_setup_interfaces()
 		ucidef_add_switch_vlan "switch0" "2" "4 9t"
 		;;
 
-	ht-tm02)
-		ucidef_set_interface_lan "eth0.1"
-		ucidef_add_switch "switch0" "1" "1"
-		ucidef_add_switch_vlan "switch0" "1" "4 6t"
-		;;
-
 	3g-6200n | \
+	ai-br100 | \
 	dir-610-a1 | \
 	dir-300-b7 | \
 	dir-320-b1 | \
 	dir-615-h1 | \
+	firewrt | \
 	hlk-rm04 | \
+	mt7621 | \
+	mt7628 | \
 	mzk-w300nh2 | \
 	mzk-750dhp | \
-	wt1520)
+	whr-300hp2 | \
+	whr-600d | \
+	wsr-600 | \
+	wsr-1166 | \
+	wt1520 | \
+	xiaomi-miwifi-mini |\
+	y1)
 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
 		ucidef_add_switch "switch0" "1" "1"
 		ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 6t"
 		ucidef_add_switch_vlan "switch0" "2" "4 6t"
 		;;
 
+	whr-1166d)
+		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
+		ucidef_add_switch "switch0" "1" "1"
+		ucidef_add_switch_vlan "switch0" "1" "0 1 2 3 6t"
+		ucidef_add_switch_vlan "switch0" "2" "5 6t"
+		;;
+
 	awm002-evb | \
 	awm003-evb | \
 	argus-atp52b | \
 	dir-645 | \
+	dir-860l-b1 | \
 	f5d8235-v1 | \
 	f5d8235-v2 | \
 	hg255d | \
 	rt-n14u | \
 	wrtnode | \
+	wt3020 | \
 	ur-326n4g | \
 	zbt-wa05)
 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
@@ -147,6 +176,7 @@ ramips_setup_interfaces()
 		ucidef_add_switch_vlan "switch0" "2" "0 5t"
 		;;
 
+	ar670w | \
 	ar725w | \
 	rt-n15 | \
 	wl-351)
@@ -191,7 +221,6 @@ ramips_setup_interfaces()
 		ucidef_add_switch_vlan "switch0" "2" "4 6t"
 		;;
 
-	y1 |\
 	y1s)
 		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
 		ucidef_add_switch "switch0" "1" "1"
@@ -205,6 +234,20 @@ ramips_setup_interfaces()
 		ucidef_set_interface_lan "eth0"
 		;;
 
+	e1700 | \
+	mt7620a_mt7530)
+		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
+		ucidef_add_switch "switch1" "1" "1"
+		ucidef_add_switch_vlan "switch1" "1" "0 1 2 3 6t"
+		ucidef_add_switch_vlan "switch1" "2" "4 6t"
+		;;
+
+	wzr-agl300nh)
+		ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
+		ucidef_add_switch "switch0" "1" "1"
+		ucidef_add_switch_vlan "switch0" "1" "1 2 3 4 5t"
+		ucidef_add_switch_vlan "switch0" "2" "0 5t"
+		;;
 	*)
 		RT3X5X=`cat /proc/cpuinfo | egrep "(RT3.5|RT5350)"`
 		if [ -n "${RT3X5X}" ]; then
@@ -251,6 +294,7 @@ ramips_setup_macs()
 		lan_mac=$(macaddr_add "$lan_mac" -2)
 		;;
 
+	a5-v11 |\
 	bc2 |\
 	broadway |\
 	d105 |\
@@ -260,7 +304,6 @@ ramips_setup_macs()
 	hlk-rm04 | \
 	mpr-a1 | \
 	mpr-a2 | \
-        ht-tm02 | \
 	dir-300-b7 | \
 	dir-320-b1 | \
 	psr-680w |\
@@ -272,14 +315,22 @@ ramips_setup_macs()
 		wan_mac=$(macaddr_add "$lan_mac" 1)
 		;;
 
+	ht-tm02)
+		lan_mac=$(cat /sys/class/net/eth0/address)
+		;;
+
 	cy-swr1100 | \
 	dir-645)
 		lan_mac=$(mtd_get_mac_ascii nvram lanmac)
 		wan_mac=$(mtd_get_mac_ascii nvram wanmac)
 		;;
 
+	e1700)
+		wan_mac=$(mtd_get_mac_ascii config WAN_MAC_ADDR)
+		;;
+
 	wcr-150gn)
-                wan_mac=$(mtd_get_mac_binary factory 40)
+		wan_mac=$(mtd_get_mac_binary factory 40)
 		;;
 
 	rt-n56u)

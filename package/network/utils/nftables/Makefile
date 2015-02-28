@@ -1,4 +1,4 @@
-# Copyright (C) 2014 OpenWrt.org
+# Copyright (C) 2015 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -7,24 +7,24 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nftables
-PKG_VERSION:=0.3+2014-09-30
+PKG_VERSION:=0.4+2015-01-13
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_URL:=git://git.netfilter.org/nftables
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=36c8a131af6217579da582bc320e16171df0f3af
+PKG_SOURCE_VERSION:=9f2c370b6e8949559950f5390a2515929ecfa9e1
 PKG_MAINTAINER:=Steven Barth <steven@midlink.org>
+PKG_LICENSE:=GPL-2.0
 
 PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 
 CONFIGURE_ARGS += \
-        --disable-debug \
-        --without-libgmp \
-        --without-libreadline \
+        --with-mini-gmp \
+        --without-cli \
 
 define Package/nftables
   SECTION:=net

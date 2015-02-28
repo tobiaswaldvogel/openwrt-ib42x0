@@ -97,6 +97,9 @@ tplink_board_detect() {
 	"015300"*)
 		model="EasyLink EL-MINI"
 		;;
+	"120000"*)
+		model="MERCURY MAC1200R"
+		;;
 	"3C0001"*)
 		model="OOLITE"
 		;;
@@ -142,6 +145,9 @@ tplink_board_detect() {
 	"084200"*)
 		model="TP-Link TL-WR842N/ND"
 		;;
+	"084300"*)
+		model="TP-Link TL-WR843N/ND"
+		;;
 	"085000"*)
 		model="TP-Link TL-WA850RE"
 		;;
@@ -173,6 +179,9 @@ tplink_board_detect() {
 		;;
 	"001101"*)
 		model="TP-Link TL-MR11U"
+		;;
+	"001201"*)
+		model="TP-Link TL-MR12U"
 		;;
 	"001301"*)
 		model="TP-Link TL-MR13U"
@@ -229,6 +238,39 @@ tplink_board_detect() {
 	AR71XX_MODEL="$model $hwver"
 }
 
+tplink_pharos_get_model_string() {
+	local part
+	part=$(find_mtd_part 'product-info')
+	[ -z "$part" ] && return 1
+
+	# The returned string will end with \r\n, but we don't remove it here
+	# to simplify matching against it in the sysupgrade image check
+	dd if=$part bs=1 skip=4360 2>/dev/null | head -n 1
+}
+
+tplink_pharos_board_detect() {
+	local model_string="$(tplink_pharos_get_model_string | tr -d '\r')"
+	local oIFS="$IFS"; IFS=":"; set -- $model_string; IFS="$oIFS"
+	local model
+
+	case "$1" in
+	'CPE210(TP-LINK|UN|N300-2)')
+		model='TP-Link CPE210'
+		;;
+	'CPE220(TP-LINK|UN|N300-2)')
+		model='TP-Link CPE220'
+		;;
+	'CPE510(TP-LINK|UN|N300-5)')
+		model='TP-Link CPE510'
+		;;
+	'CPE520(TP-LINK|UN|N300-5)')
+		model='TP-Link CPE520'
+		;;
+	esac
+
+	[ -n "$model" ] && AR71XX_MODEL="$model v$2"
+}
+
 ar71xx_board_detect() {
 	local machine
 	local name
@@ -238,6 +280,9 @@ ar71xx_board_detect() {
 	case "$machine" in
 	*"Oolite V1.0")
 		name="oolite"
+		;;
+	*"AC1750DB")
+		name="f9k1115v2"
 		;;
 	*"AirGateway")
 		name="airgateway"
@@ -302,8 +347,18 @@ ar71xx_board_detect() {
 	*CAP4200AG)
 		name="cap4200ag"
 		;;
+	*"CPE210/220/510/520")
+		name="cpe510"
+		tplink_pharos_board_detect
+		;;
 	*"DB120 reference board")
 		name="db120"
+		;;
+	*"DGL-5500 rev. A1")
+		name="dgl-5500-a1"
+		;;
+	*"DHP-1565 rev. A1")
+		name="dhp-1565-a1"
 		;;
 	*"DIR-505 rev. A1")
 		name="dir-505-a1"
@@ -386,11 +441,20 @@ ar71xx_board_detect() {
 	*LS-SR71)
 		name="ls-sr71"
 		;;
+	*"MAC1200R")
+		name="mc-mac1200r"
+		;;
 	*MR600v2)
 		name="mr600v2"
 		;;
 	*MR600)
 		name="mr600"
+		;;
+	*MR900)
+		name="mr900"
+		;;
+	*MR900v2)
+		name="mr900v2"
 		;;
 	*"My Net N600")
 		name="mynet-n600"
@@ -584,6 +648,9 @@ ar71xx_board_detect() {
 	*"TL-MR3420 v2")
 		name="tl-mr3420-v2"
 		;;
+	*"TL-WA701ND v2")
+		name="tl-wa701nd-v2"
+		;;
 	*TL-WA750RE)
 		name="tl-wa750re"
 		;;
@@ -592,6 +659,9 @@ ar71xx_board_detect() {
 		;;
 	*TL-WA850RE)
 		name="tl-wa850re"
+		;;
+	*TL-WA860RE)
+		name="tl-wa860re"
 		;;
 	*"TL-WA830RE v2")
 		name="tl-wa830re-v2"
@@ -641,6 +711,9 @@ ar71xx_board_detect() {
 	*TL-WR941ND)
 		name="tl-wr941nd"
 		;;
+	*"TL-WR941N/ND v5")
+		name="tl-wr941nd-v5"
+		;;
 	*"TL-WR703N v1")
 		name="tl-wr703n"
 		;;
@@ -655,6 +728,9 @@ ar71xx_board_detect() {
 		;;
 	*"TL-MR11U")
 		name="tl-mr11u"
+		;;
+	*"TL-MR12U")
+		name="tl-mr12u"
 		;;
 	*"TL-MR13U")
 		name="tl-mr13u"
@@ -680,6 +756,9 @@ ar71xx_board_detect() {
 	*"UniFiAP Outdoor")
 		name="unifi-outdoor"
 		;;
+	*"UniFiAP Outdoor+")
+		name="unifi-outdoor-plus"
+		;;
 	*WP543)
 		name="wp543"
 		;;
@@ -692,11 +771,17 @@ ar71xx_board_detect() {
 	*"WNDR3700/WNDR3800/WNDRMAC")
 		wndr3700_board_detect "$machine"
 		;;
+	*"R6100")
+		name="r6100"
+		;;
 	*"WNDR3700v4")
 		name="wndr3700v4"
 		;;
 	*"WNDR4300")
 		name="wndr4300"
+		;;
+	*"WNR2000 V4")
+		name="wnr2000-v4"
 		;;
 	*"WNR2000 V3")
 		name="wnr2000-v3"
@@ -710,11 +795,17 @@ ar71xx_board_detect() {
 	*"WNR612 V2")
 		name="wnr612-v2"
 		;;
+	*"WNR1000 V2")
+		name="wnr1000-v2"
+		;;
 	*WRT160NL)
 		name="wrt160nl"
 		;;
 	*WRT400N)
 		name="wrt400n"
+		;;
+	*"WZR-450HP2")
+		name="wzr-450hp2"
 		;;
 	*"WZR-HP-AG300H/WZR-600DHP")
 		name="wzr-hp-ag300h"
@@ -757,7 +848,8 @@ ar71xx_board_detect() {
 		;;
 	esac
 
-	[ "${machine:0:8}" = 'TP-LINK ' ] && tplink_board_detect "$machine"
+	[ -z "$AR71XX_MODEL" ] && [ "${machine:0:8}" = 'TP-LINK ' ] && \
+		tplink_board_detect "$machine"
 
 	[ -z "$name" ] && name="unknown"
 

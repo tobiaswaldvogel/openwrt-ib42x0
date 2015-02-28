@@ -1,0 +1,25 @@
+--- a/arch/arm/mach-gemini/board-nas4220b.c
++++ b/arch/arm/mach-gemini/board-nas4220b.c
+@@ -20,6 +20,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/mdio-gpio.h>
+ #include <linux/io.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+@@ -97,7 +98,13 @@
+ 	platform_register_rtc();
+ }
+ 
++static void __init ib4220b_fixup(struct tag *tags, char **cmdline)
++{
++	memblock_add(PHYS_OFFSET, SZ_128M);
++}
++
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
++	.fixup          = ib4220b_fixup,
+ 	.atag_offset	= 0x100,
+ 	.map_io		= gemini_map_io,
+ 	.init_irq	= gemini_init_irq,
+

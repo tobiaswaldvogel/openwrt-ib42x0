@@ -10,11 +10,11 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mac80211
 
-PKG_VERSION:=2014-09-26
+PKG_VERSION:=2014-11-04
 PKG_RELEASE:=1
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
 PKG_BACKPORT_VERSION:=
-PKG_MD5SUM:=b66f5fbd10e335fc660182ce6114d41f
+PKG_MD5SUM:=d0b64853fb78cfd1d6cb639327811e2a
 
 PKG_SOURCE:=compat-wireless-$(PKG_VERSION)$(PKG_BACKPORT_VERSION).tar.bz2
 PKG_BUILD_DIR:=$(KERNEL_BUILD_DIR)/compat-wireless-$(PKG_VERSION)
@@ -23,7 +23,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
 
 PKG_DRIVERS = \
-	adm8211 ath5k libertas-usb libertas-sd p54-common p54-pci p54-usb p54-spi \
+	adm8211 ath5k libertas-usb libertas-sdio p54-common p54-pci p54-usb p54-spi \
 	rt2x00-lib rt2x00-pci rt2x00-usb rt2800-lib rt2400-pci rt2500-pci \
 	rt2500-usb rt61-pci rt73-usb rt2800-mmio rt2800-pci rt2800-usb rt2800-soc \
 	rtl8180 rtl8187 zd1211rw mac80211-hwsim carl9170 b43 b43legacy \
@@ -60,7 +60,7 @@ define KernelPackage/mac80211/Default
   SUBMENU:=$(WMENU)
   URL:=http://linuxwireless.org/
   MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
-  DEPENDS:=@(!(TARGET_avr32||TARGET_ps3||TARGET_pxcab)||BROKEN)
+  DEPENDS:=@(!TARGET_avr32||BROKEN)
 endef
 
 define KernelPackage/cfg80211
@@ -328,7 +328,7 @@ endef
 
 define KernelPackage/rt2800-soc
 $(call KernelPackage/rt2x00/Default)
-  DEPENDS += @(TARGET_ramips_rt288x||TARGET_ramips_rt305x||TARGET_ramips_rt3883||TARGET_ramips_mt7620n||TARGET_ramips_mt7620a) +kmod-rt2800-mmio +kmod-rt2800-lib
+  DEPENDS += @(TARGET_ramips_rt288x||TARGET_ramips_rt305x||TARGET_ramips_rt3883||TARGET_ramips_mt7620) +kmod-rt2800-mmio +kmod-rt2800-lib
   TITLE += (RT28xx/RT3xxx SoC)
   FILES := \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/rt2x00/rt2x00soc.ko \
@@ -679,7 +679,7 @@ define KernelPackage/libertas-usb
   AUTOLOAD:=$(call AutoProbe,libertas usb8xxx)
 endef
 
-define KernelPackage/libertas-sd
+define KernelPackage/libertas-sdio
   $(call KernelPackage/mac80211/Default)
   DEPENDS+= +kmod-cfg80211 +kmod-lib80211 +kmod-mmc +@DRIVER_WEXT_SUPPORT @!TARGET_uml
   TITLE:=Marvell 88W8686 Wireless Driver
@@ -1488,6 +1488,29 @@ define KernelPackage/brcmfmac/description
  Kernel module for Broadcom IEEE802.11n USB Wireless cards
 endef
 
+define KernelPackage/brcmfmac/config
+  if PACKAGE_kmod-brcmfmac
+
+	config BRCMFMAC_SDIO
+		bool "Enable SDIO bus interface support"
+		default n
+		help
+		  Enable support for cards attached to an SDIO bus.
+		  Select this option only if you are sure that your
+		  board has a Broadcom wireless chip atacched to
+		  that bus.
+
+	config BRCMFMAC_PCIE
+		bool "Enable PCIE bus interface support"
+		depends on PCI_SUPPORT
+		default y
+		help
+		  Supported PCIe connected chipsets:
+		  BCM4354, BCM4356, BCM43567, BCM43570, BCM43602
+
+  endif
+endef
+
 config_package=$(if $(CONFIG_PACKAGE_kmod-$(1)),m)
 
 config-y:= \
@@ -1498,6 +1521,7 @@ config-y:= \
 	CFG80211_CERTIFICATION_ONUS \
 	MAC80211_RC_MINSTREL \
 	MAC80211_RC_MINSTREL_HT \
+	MAC80211_RC_MINSTREL_VHT \
 	MAC80211_RC_DEFAULT_MINSTREL \
 
 config-$(call config_package,cfg80211) += CFG80211
@@ -1557,7 +1581,9 @@ config-y += B43LEGACY_DMA_MODE
 config-$(call config_package,brcmutil) += BRCMUTIL
 config-$(call config_package,brcmsmac) += BRCMSMAC
 config-$(call config_package,brcmfmac) += BRCMFMAC
+config-$(CONFIG_BRCMFMAC_SDIO) += BRCMFMAC_SDIO
 config-y += BRCMFMAC_USB
+config-$(CONFIG_BRCMFMAC_PCIE) += BRCMFMAC_PCIE
 config-$(CONFIG_PACKAGE_BRCM80211_DEBUG) += BRCMDBG
 
 config-$(call config_package,mac80211-hwsim) += MAC80211_HWSIM
@@ -1605,7 +1631,7 @@ config-$(call config_package,net-hermes-pcmcia) += PCMCIA_HERMES
 config-y += HERMES_PRISM
 
 config-$(call config_package,adm8211) += ADM8211
-config-$(call config_package,libertas-sd) += LIBERTAS LIBERTAS_SDIO
+config-$(call config_package,libertas-sdio) += LIBERTAS LIBERTAS_SDIO
 config-$(call config_package,libertas-usb) += LIBERTAS LIBERTAS_USB
 config-$(call config_package,mwl8k) += MWL8K
 config-$(call config_package,mwifiex-pcie) += MWIFIEX MWIFIEX_PCIE
@@ -1709,6 +1735,7 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/backport-include/* $(1)/usr/include/mac80211-backport/
 	$(CP) $(PKG_BUILD_DIR)/net/mac80211/rate.h $(1)/usr/include/net/mac80211/
 	$(CP) $(PKG_BUILD_DIR)/drivers/net/wireless/ath/*.h $(1)/usr/include/mac80211/ath/
+	rm -f $(1)/usr/include/mac80211-backport/linux/module.h
 endef
 
 define KernelPackage/libertas-usb/install
@@ -1719,7 +1746,7 @@ define KernelPackage/libertas-usb/install
 		$(1)/lib/firmware/libertas/
 endef
 
-define KernelPackage/libertas-sd/install
+define KernelPackage/libertas-sdio/install
 	$(INSTALL_DIR) $(1)/lib/firmware/libertas
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/$(PKG_LINUX_FIRMWARE_SUBDIR)/libertas/sd8385_helper.bin \
@@ -1979,7 +2006,7 @@ $(eval $(call KernelPackage,adm8211))
 $(eval $(call KernelPackage,ath5k))
 $(eval $(call KernelPackage,lib80211))
 $(eval $(call KernelPackage,libertas-usb))
-$(eval $(call KernelPackage,libertas-sd))
+$(eval $(call KernelPackage,libertas-sdio))
 $(eval $(call KernelPackage,cfg80211))
 $(eval $(call KernelPackage,mac80211))
 $(eval $(call KernelPackage,p54-common))

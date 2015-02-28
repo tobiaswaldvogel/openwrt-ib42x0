@@ -25,7 +25,7 @@ define Profile/GOFLEXNET
   NAME:=Seagate GoFlexNet
   PACKAGES:= \
 	kmod-ata-core kmod-ata-marvell-sata \
-	kmod-rtc-marvell kmod-usb2 kmod-usb-storage \
+	kmod-usb2 kmod-usb-storage \
 	uboot-envtools
 endef
 
@@ -69,6 +69,23 @@ ICONNECT_UBIFS_OPTS:="-m 2048 -e 126KiB -c 4096"
 ICONNECT_UBI_OPTS:="-m 2048 -p 128KiB -s 512"
 
 $(eval $(call Profile,ICONNECT))
+
+define Profile/IOMEGA_IX2_200
+  NAME:=Iomega StorCenter ix2-200
+  PACKAGES:= \
+	kmod-ata-core kmod-ata-marvell-sata \
+	kmod-usb2 kmod-usb-storage \
+	uboot-envtools
+endef
+
+define Profile/IOMEGA_IX2_200/Description
+ Package set compatible with Iomega StorCenter ix2-200 board.
+endef
+
+IOMEGA_IX2_200_UBIFS_OPTS:="-m 512 -e 15872 -c 2048"
+IOMEGA_IX2_200_UBI_OPTS:="-m 512 -p 16384 -s 256"
+
+$(eval $(call Profile,IOMEGA_IX2_200))
 
 define Profile/POGOE02
   NAME:=Cloud Engines Pogoplug E02
