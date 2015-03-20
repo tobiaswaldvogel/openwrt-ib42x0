@@ -1,0 +1,110 @@
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -153,6 +153,19 @@ config HW_RANDOM_IXP4XX
+ 
+ 	  If unsure, say Y.
+ 
++config HW_RANDOM_GEMINI
++	tristate "Gemini Random Number Generator support"
++	depends on HW_RANDOM && ARCH_GEMINI
++	default HW_RANDOM
++	---help---
++	  This driver provides kernel-side support for the Random
++	  Number Generator hardware found on the Gemini SoC
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called ixp4xx-rng.
++
++	  If unsure, say Y.
++
+ config HW_RANDOM_OMAP
+ 	tristate "OMAP Random Number Generator support"
+ 	depends on ARCH_OMAP16XX || ARCH_OMAP2PLUS
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_HW_RANDOM_N2RNG) += n2-rng.o
+ n2-rng-y := n2-drv.o n2-asm.o
+ obj-$(CONFIG_HW_RANDOM_VIA) += via-rng.o
+ obj-$(CONFIG_HW_RANDOM_IXP4XX) += ixp4xx-rng.o
++obj-$(CONFIG_HW_RANDOM_GEMINI) += gemini-rng.o
+ obj-$(CONFIG_HW_RANDOM_OMAP) += omap-rng.o
+ obj-$(CONFIG_HW_RANDOM_OMAP3_ROM) += omap3-rom-rng.o
+ obj-$(CONFIG_HW_RANDOM_PASEMI) += pasemi-rng.o
+--- /dev/null
++++ b/drivers/char/hw_random/gemini-rng.c
+@@ -0,0 +1,75 @@
++/*
++ * drivers/char/hw_random/ixp4xx-rng.c
++ *
++ * RNG driver for Intel IXP4xx family of NPUs
++ *
++ * Author: Deepak Saxena <dsaxena@plexity.net>
++ *
++ * Copyright 2005 (c) MontaVista Software, Inc.
++ *
++ * Fixes by Michael Buesch
++ *
++ * This file is licensed under  the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/hw_random.h>
++#include <linux/module.h>
++
++#include <asm/io.h>
++#include <mach/hardware.h>
++
++#define GEMINI_RANDOM_REG	0xAC	
++
++
++static int gemini_rng_data_read(struct hwrng *rng, u32 *buffer)
++{
++	void __iomem * rng_base = (void __iomem *)rng->priv;
++
++	*buffer = __raw_readl(rng_base);
++
++	return 4;
++}
++
++static struct hwrng gemini_rng_ops = {
++	.name		= "gemini",
++	.data_read	= gemini_rng_data_read,
++};
++
++static int __init gemini_rng_init(void)
++{
++	void __iomem * rng_base;
++	int err;
++
++	rng_base = ioremap(GEMINI_SECURITY_BASE, 0x100);
++	if (!rng_base)
++		return -ENOMEM;
++	gemini_rng_ops.priv = (unsigned long)rng_base + GEMINI_RANDOM_REG;
++	err = hwrng_register(&gemini_rng_ops);
++	if (err)
++		iounmap(rng_base);
++
++	return err;
++}
++
++static void __exit gemini_rng_exit(void)
++{
++	void __iomem * rng_base = (void __iomem *)gemini_rng_ops.priv;
++
++	hwrng_unregister(&gemini_rng_ops);
++	iounmap(rng_base);
++}
++
++module_init(gemini_rng_init);
++module_exit(gemini_rng_exit);
++
++MODULE_AUTHOR("Hans Ulli Kroll <ulli.kroll@googlemail.com>");
++MODULE_DESCRIPTION("H/W Random Number Generator (RNG) driver for Gemini");
++MODULE_LICENSE("GPL");

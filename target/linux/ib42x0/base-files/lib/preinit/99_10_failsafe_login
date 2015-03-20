@@ -8,8 +8,14 @@ failsafe_restore_passwd() {
     mount -o noatime -t jffs2 "$(find_mtd_part rootfs_data)" /tmp/overlay
     mtd -qq unlock rootfs_data
 
+    if [ -f /tmp/overlay/upper/etc/passwd ]; then
+        cp /tmp/overlay/upper/etc/passwd /etc/passwd
+    fi
     if [ -f /tmp/overlay/etc/passwd ]; then
         cp /tmp/overlay/etc/passwd /etc/passwd
+    fi
+    if [ -f /tmp/overlay/upper/etc/shadow ]; then
+        cp /tmp/overlay/upper/etc/shadow /etc/shadow
     fi
     if [ -f /tmp/overlay/etc/shadow ]; then
         cp /tmp/overlay/etc/shadow /etc/shadow

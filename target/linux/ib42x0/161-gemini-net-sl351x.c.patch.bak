@@ -1,10 +1,10 @@
 --- a/drivers/net/ethernet/gemini/sl351x.c
-+++ b/drivers/net/ethernet/gemini/sl351x.c	2015-03-01 17:37:22.614003845 +0100
-@@ -0,0 +1,2174 @@
++++ b/drivers/net/ethernet/gemini/sl351x.c
+@@ -0,0 +1,2219 @@
 +/*
 + *  Ethernet device driver for Gemini SoC (SL351x GMAC).
 + *
-+ *  Copyright (C) 2015, Tobias Waldvogel <tobias.waldvogel@gmail.com>
++ *  Copyright (C) 2014, Tobias Waldvogel <tobias.waldvogel@gmail.com>
 + *
 + *  Based on work by Michał Mirosław <mirq-linux@rere.qmqm.pl> and
 + *  Paulius Zaleckas <paulius.zaleckas@gmail.com> and
@@ -245,6 +245,44 @@
 +	spin_unlock_irqrestore(&priv->config_lock, flags);
 +}
 +
++ static const char *phy_speed_to_str(int speed)
++ {
++ 	switch (speed) {
++ 	case SPEED_10:
++ 		return "10Mbps";
++ 	case SPEED_100:
++ 		return "100Mbps";
++ 	case SPEED_1000:
++ 		return "1Gbps";
++ 	case SPEED_2500:
++ 		return "2.5Gbps";
++ 	case SPEED_10000:
++ 		return "10Gbps";
++ 	case SPEED_UNKNOWN:
++ 		return "Unknown";
++ 	default:
++ 		return "Unsupported (update phy.c)";
++ 	}
++ }
++
++/**
++ * Advanced from kernel 3.16
++ * phy_print_status - Convenience function to print out the current phy status
++ * @phydev: the phy_device struct
++ */
++ void __phy_print_status(struct phy_device *phydev)
++ {
++ 	if (phydev->link) {
++ 		netdev_info(phydev->attached_dev,
++ 			    "Link is Up - %s/%s - flow control %s\n",
++ 			    phy_speed_to_str(phydev->speed),
++ 			    DUPLEX_FULL == phydev->duplex ? "Full" : "Half",
++ 			    phydev->pause ? "rx/tx" : "off");
++ 	} else  {
++ 		netdev_info(phydev->attached_dev, "Link is Down\n");
++ 	}
++ }
++ 
 +static void sl351x_update_link_state(struct net_device *dev)
 +{
 +	struct sl351x_private *priv = netdev_priv(dev);
@@ -297,7 +335,7 @@
 +
 +	if (status.bits.link || old_status.bits.link)
 +		if (netif_msg_link(priv))
-+			phy_print_status(phydev);
++			__phy_print_status(phydev);
 +
 +	sl351x_set_txrx(dev, 0);
 +	writel(status.bits32, status_reg);
@@ -1118,46 +1156,39 @@
 +	spin_unlock_irqrestore(&toe->irq_lock, flags);
 +}
 +
-+
-+
-+static int sl351x_napi_poll(struct napi_struct *napi, int budget)
++static unsigned sl351x_rx(struct net_device *dev, unsigned budget)
 +{
-+	struct sl351x_private *priv = netdev_priv(napi->dev);
++	struct sl351x_private *priv = netdev_priv(dev);
 +	struct toe_private *toe = priv->toe;
-+	unsigned freeq_threshold = 1 << (toe->freeq_order - 1);
 +	void __iomem *ptr_reg = priv->rxq_rwptr;
 +	struct sk_buff *skb = NULL;
 +
 +	DMA_RWPTR_T rw;
 +	unsigned short r, w;
 +	unsigned short m = (1 << priv->rxq_order) -1;
-+	GMAC_RXDESC_T *rxd = NULL;
++	GMAC_RXDESC_T *rx = NULL;
 +	struct page* page = NULL;
 +	unsigned page_offs;
 +	unsigned int frame_len, frag_len;
-+	unsigned rx = 0;
-+
++	
 +	GMAC_RXDESC_0_T word0;
 +	GMAC_RXDESC_1_T word1;
 +	dma_addr_t dma;
 +	GMAC_RXDESC_3_T word3;
 +
-+
-+	u64_stats_update_begin(&priv->rx_stats_syncp);
-+
 +	rw.bits32 = readl(ptr_reg);
 +	/* Reset interrupt as all packages until here are taken into account */
-+	writel(DEFAULT_Q0_INT_BIT << napi->dev->dev_id,
++	writel(DEFAULT_Q0_INT_BIT << dev->dev_id,
 +		toe->iomem + GLOBAL_INTERRUPT_STATUS_1_REG);
 +	r = rw.bits.rptr;
 +	w = rw.bits.wptr;
 +	
-+	while (rx < budget && w != r) {
-+		rxd = priv->rxq_ring + r;
-+		word0 = rxd->word0;
-+		word1 = rxd->word1;
-+		dma = rxd->word2.buf_adr;
-+		word3 = rxd->word3;
++	while (budget && w != r) {
++		rx = priv->rxq_ring + r;
++		word0 = rx->word0;
++		word1 = rx->word1;
++		dma = rx->word2.buf_adr;
++		word3 = rx->word3;
 +		
 +		r++;
 +		r &= m;
@@ -1167,7 +1198,7 @@
 +		skb = priv->napi.skb;
 +
 +		if (unlikely(!dma)) {
-+			netif_err(priv, rx_err, napi->dev, "rxq[%u]: HW BUG: zero DMA desc\n", r);
++			netif_err(priv, rx_err, dev, "rxq[%u]: HW BUG: zero DMA desc\n", r);
 +			priv->stats.rx_dropped++;
 +			if (unlikely(skb))
 +				napi_free_frags(&priv->napi);
@@ -1187,8 +1218,8 @@
 +			}
 +
 +			if (word0.bits.derr || word0.bits.perr ||
-+			    rx_status || frame_len < ETH_ZLEN ||
-+			    rx_csum >= RX_CHKSUM_IP_ERR_UNKNOWN) {
++    			    rx_status || frame_len < ETH_ZLEN ||
++    			    rx_csum >= RX_CHKSUM_IP_ERR_UNKNOWN) {
 +				if (frame_len < ETH_ZLEN ||
 +				    RX_ERROR_LENGTH(rx_status))
 +					priv->stats.rx_length_errors++;
@@ -1233,7 +1264,7 @@
 +			frag_len = frame_len - skb->len;
 +
 +		if (frag_len == 0)
-+			netif_err(priv, rx_err, napi->dev, "Received fragment with len = 0");
++			netif_err(priv, rx_err, dev, "Received fragment with len = 0");
 +
 +		skb_fill_page_desc(skb, skb_shinfo(skb)->nr_frags,
 +				   page, page_offs, frag_len);
@@ -1243,15 +1274,26 @@
 +
 +		if (word3.bits32 & EOF_BIT) {
 +			napi_gro_frags(&priv->napi);
-+			rx++;
++			--budget;
 +		}
 +	}
 +
 +	writew(r, ptr_reg);
++	return budget;
++}
 +
-+	u64_stats_update_end(&priv->rx_stats_syncp);
++static int sl351x_napi_poll(struct napi_struct *napi, int budget)
++{
++	struct sl351x_private *priv = netdev_priv(napi->dev);
++	struct toe_private *toe = priv->toe;
++	unsigned rx;
++	unsigned freeq_threshold = 1 << (toe->freeq_order - 1);
 +
-+	if (rx < budget) {
++	u64_stats_update_begin(&priv->rx_stats_syncp);
++	
++	rx = budget - sl351x_rx(napi->dev, budget);
++
++	if (rx == 0) {
 +		napi_gro_flush(napi, false);
 +		__napi_complete(napi);
 +		sl351x_enable_rx_irq(napi->dev, 1);
@@ -1264,6 +1306,7 @@
 +		toe_fill_freeq(toe, 0);
 +	}
 +
++	u64_stats_update_end(&priv->rx_stats_syncp);
 +	return rx;
 +}
 +
@@ -1340,11 +1383,12 @@
 +	orr |= val = sl351x_get_intr_flags(dev, 1);
 +
 +	if (val & (DEFAULT_Q0_INT_BIT << dev->dev_id)) {
++
 +		sl351x_enable_rx_irq(dev, 0);
 +
-+		if (!priv->rx_coalesce_nsecs) {
++		if (!priv->rx_coalesce_nsecs)
 +			napi_schedule(&priv->napi);
-+		} else {
++		else {
 +			ktime_t ktime;
 +			ktime = ktime_set(0, priv->rx_coalesce_nsecs);
 +			hrtimer_start(&priv->rx_coalesce_timer, ktime, HRTIMER_MODE_REL);
@@ -1578,6 +1622,7 @@
 +	} while (u64_stats_fetch_retry(&priv->tx_stats_syncp, start));
 +
 +	storage->rx_dropped += storage->rx_missed_errors;
++
 +	return storage;
 +}
 +

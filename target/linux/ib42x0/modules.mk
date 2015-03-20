@@ -19,3 +19,18 @@ define KernelPackage/rtc-gemini/description
 endef
 
 $(eval $(call KernelPackage,rtc-gemini))
+
+define KernelPackage/gemini-pwc
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Gemini Power Device
+  DEPENDS:=@TARGET_ib42x0
+  KCONFIG:=CONFIG_GEMINI_POWER_CTRL
+  FILES:=$(LINUX_DIR)/drivers/misc/gemini-pwc.ko
+  AUTOLOAD:=$(call AutoLoad,05,gemini-pwc)
+endef
+
+define KernelPackage/gemini-pwc/description
+ Gemini Power Device
+endef
+
+$(eval $(call KernelPackage,gemini-pwc))

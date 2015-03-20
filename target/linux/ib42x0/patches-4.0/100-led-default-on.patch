@@ -1,0 +1,19 @@
+--- a/arch/arm/mach-gemini/board-nas4220b.c	2012-02-05 20:44:11.294060034 +0100
++++ b/arch/arm/mach-gemini/board-nas4220b.c	2012-02-05 20:46:28.943083884 +0100
+@@ -34,13 +34,13 @@
+ 
+ static struct gpio_led ib4220b_leds[] = {
+ 	{
+-		.name			= "nas4220b:orange:hdd",
++		.name			= "nas42x0b:orange:hdd",
+ 		.default_trigger	= "none",
+ 		.gpio			= 60,
+ 	},
+ 	{
+-		.name			= "nas4220b:green:os",
+-		.default_trigger	= "heartbeat",
++		.name			= "nas42x0b:green:os",
++		.default_trigger	= "default-on",
+ 		.gpio			= 62,
+ 	},
+ };
