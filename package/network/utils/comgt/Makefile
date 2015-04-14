@@ -44,7 +44,7 @@ endef
 define Package/comgt-ncm
 $(call Package/comgt/Default)
   TITLE+=NCM 3G/4G Support
-  DEPENDS:=+comgt
+  DEPENDS:=+comgt +wwan
 endef
 
 define Package/comgt/description
@@ -64,7 +64,7 @@ endef
 define Package/comgt/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/comgt $(1)/usr/bin/
-	ln -s comgt $(1)/usr/bin/gcom
+	$(LN) comgt $(1)/usr/bin/gcom
 	$(INSTALL_DIR) $(1)/etc/chatscripts
 	$(INSTALL_DATA) ./files/3g.chat $(1)/etc/chatscripts/3g.chat
 	$(INSTALL_DATA) ./files/evdo.chat $(1)/etc/chatscripts/evdo.chat
@@ -81,8 +81,6 @@ define Package/comgt/install
 	$(INSTALL_DIR) $(1)/lib/netifd/proto
 	$(INSTALL_BIN) ./files/3g.sh $(1)/lib/netifd/proto/3g.sh
 	$(INSTALL_BIN) ./files/directip.sh $(1)/lib/netifd/proto/directip.sh
-	$(INSTALL_DIR) $(1)/lib/network/wwan/
-	$(INSTALL_DATA) ./files/data/* $(1)/lib/network/wwan/
 endef
 
 define Package/comgt-directip/install

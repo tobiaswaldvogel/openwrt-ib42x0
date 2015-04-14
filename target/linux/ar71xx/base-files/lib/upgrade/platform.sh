@@ -180,10 +180,11 @@ platform_check_image() {
 	ap136-020 | \
 	ap135-020 | \
 	ap96 | \
+	bxu2000n-2-a1 | \
 	db120 | \
 	f9k1115v2 |\
 	hornet-ub | \
-	bxu2000n-2-a1 | \
+	wpj558 | \
 	zcn-1523h-2 | \
 	zcn-1523h-5)
 		[ "$magic_long" != "68737173" -a "$magic_long" != "19852003" ] && {
@@ -287,7 +288,8 @@ platform_check_image() {
 	om2p-hs | \
 	om2p-hsv2 | \
 	om2p-lc | \
-	om5p)
+	om5p | \
+	om5p-an)
 		platform_check_image_openmesh "$magic_long" "$1" && return 0
 		return 1
 		;;
@@ -487,7 +489,8 @@ platform_do_upgrade() {
 	om2p-hs | \
 	om2p-hsv2 | \
 	om2p-lc | \
-	om5p)
+	om5p | \
+	om5p-an)
 		platform_do_upgrade_openmesh "$ARGV"
 		;;
 	unifi-outdoor-plus | \

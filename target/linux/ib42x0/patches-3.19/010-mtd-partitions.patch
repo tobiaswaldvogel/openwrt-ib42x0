@@ -25,7 +25,7 @@
  	}
 --- a/include/linux/mtd/mtd.h
 +++ b/include/linux/mtd/mtd.h
-@@ -400,6 +400,7 @@ extern int mtd_device_parse_register(str
+@@ -378,6 +378,7 @@ extern int mtd_device_parse_register(str
  extern int mtd_device_unregister(struct mtd_info *master);
  extern struct mtd_info *get_mtd_device(struct mtd_info *mtd, int num);
  extern int __get_mtd_device(struct mtd_info *mtd);
@@ -33,17 +33,9 @@
  extern void __put_mtd_device(struct mtd_info *mtd);
  extern struct mtd_info *get_mtd_device_nm(const char *name);
  extern void put_mtd_device(struct mtd_info *mtd);
---- a/drivers/mtd/mtdpart.c	2013-09-02 04:12:30.283438915 +0200
-+++ b/drivers/mtd/mtdpart.c	2013-09-02 04:10:21.046986158 +0200
-@@ -880,6 +880,7 @@
- 	arch_split_mtd_part(master, part->mtd.name, part->offset,
- 			    part->mtd.size);
- }
-+
- /*
-  * This function, given a master MTD object and a partition table, creates
-  * and registers slave MTD objects which are bound to the master according to
-@@ -889,7 +890,7 @@
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -636,7 +636,7 @@
   * for reasons of data integrity.
   */
  
@@ -52,7 +44,7 @@
  		       const struct mtd_partition *parts,
  		       int nbparts)
  {
-@@ -917,6 +918,200 @@
+@@ -663,6 +663,200 @@
  	return 0;
  }
  

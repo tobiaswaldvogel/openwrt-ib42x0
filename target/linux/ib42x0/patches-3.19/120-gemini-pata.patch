@@ -130,7 +130,7 @@
  		.length		= SZ_512K,
 --- a/drivers/ata/Kconfig
 +++ b/drivers/ata/Kconfig
-@@ -536,6 +536,16 @@ config PATA_EFAR
+@@ -520,6 +520,16 @@ config PATA_EFAR
  
  	  If unsure, say N.
  

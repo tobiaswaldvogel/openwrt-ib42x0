@@ -30,6 +30,11 @@ define sep
 
 endef
 
+define newline
+
+
+endef
+
 _SINGLE=export MAKEFLAGS=$(space);
 CFLAGS:=
 ARCH:=$(subst i486,i386,$(subst i586,i386,$(subst i686,i386,$(call qstrip,$(CONFIG_ARCH)))))
@@ -202,6 +207,8 @@ else
   TARGET_RANLIB:=$(TARGET_CROSS)ranlib
   TARGET_NM:=$(TARGET_CROSS)nm
 endif
+
+BUILD_KEY=$(TOPDIR)/key-build
 
 TARGET_CC:=$(TARGET_CROSS)gcc
 TARGET_CXX:=$(TARGET_CROSS)g++

@@ -17,6 +17,7 @@
 /files
 /package/feeds
 /package/openwrt-packages
+key-build*
 *.orig
 *.rej
 *~
@@ -24,7 +25,4 @@
 *#
 .emacs.desktop*
 TAGS*~
-<<<<<<< HEAD
-=======
 git-src
->>>>>>> openwrt/master

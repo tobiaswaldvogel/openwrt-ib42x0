@@ -207,7 +207,7 @@
  	end_unlink_async(ehci);
 --- a/drivers/usb/host/ehci.h
 +++ b/drivers/usb/host/ehci.h
-@@ -656,7 +656,12 @@ static inline unsigned int
+@@ -655,7 +655,12 @@ static inline unsigned int
  ehci_port_speed(struct ehci_hcd *ehci, unsigned int portsc)
  {
  	if (ehci_is_TDI(ehci)) {

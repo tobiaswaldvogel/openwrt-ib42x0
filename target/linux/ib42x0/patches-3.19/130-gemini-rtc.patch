@@ -1,6 +1,6 @@
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
-@@ -1207,6 +1207,15 @@ config RTC_DRV_BFIN
+@@ -1189,6 +1189,15 @@ config RTC_DRV_BFIN
  	  This driver can also be built as a module. If so, the module
  	  will be called rtc-bfin.
  

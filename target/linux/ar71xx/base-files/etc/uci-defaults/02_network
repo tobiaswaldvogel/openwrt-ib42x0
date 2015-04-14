@@ -312,6 +312,7 @@ mr900 |\
 mr900v2 |\
 rb-411 |\
 rb-911g-2hpnd |\
+rb-911g-5hpacd |\
 rb-911g-5hpnd |\
 rb-912uag-2hpnd |\
 rb-912uag-5hpnd |\
@@ -357,6 +358,13 @@ tl-wr710n |\
 tl-wr720n-v3|\
 wpe72)
 	ucidef_set_interfaces_lan_wan "eth1" "eth0"
+	;;
+
+wpj558)
+	ucidef_set_interfaces_lan_wan "eth0.1" "eth0.2"
+	ucidef_add_switch "switch0" "1" "1"
+	ucidef_add_switch_vlan "switch0" "1" "5 6t"
+	ucidef_add_switch_vlan "switch0" "2" "1 6t"
 	;;
 
 ap121 |\

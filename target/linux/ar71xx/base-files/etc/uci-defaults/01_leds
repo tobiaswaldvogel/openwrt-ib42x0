@@ -164,7 +164,8 @@ hiwifi-hc6361)
 	ucidef_set_led_wlan "wlan" "WLAN" "hiwifi:blue:wlan-2p4" "phy0tpt"
 	;;
 
-hornet-ub)
+hornet-ub | \
+hornet-ub-x2)
 	ucidef_set_led_netdev "lan" "LAN" "alfa:blue:lan" "eth0"
 	ucidef_set_led_netdev "wan" "WAN" "alfa:blue:wan" "eth1"
 	ucidef_set_led_wlan "wlan" "WLAN" "alfa:blue:wlan" "phy0tpt"
@@ -233,7 +234,8 @@ om2p-lc)
 	ucidef_set_led_netdev "port2" "port2" "om2p:blue:lan" "eth1"
 	;;
 
-om5p)
+om5p | \
+om5p-an)
 	ucidef_set_led_netdev "port1" "port1" "om5p:blue:wan" "eth0"
 	ucidef_set_led_netdev "port2" "port2" "om5p:blue:lan" "eth1"
 	;;
@@ -358,13 +360,19 @@ tl-wdr4300)
 	ucidef_set_led_wlan "wlan2g" "WLAN2G" "tp-link:blue:wlan2g" "phy0tpt"
 	;;
 
-archer-c5|\
-archer-c7|\
 tl-wdr4900-v2)
 	ucidef_set_led_usbdev "usb1" "USB1" "tp-link:green:usb1" "1-1"
 	ucidef_set_led_usbdev "usb2" "USB2" "tp-link:green:usb2" "2-1"
 	ucidef_set_led_wlan "wlan2g" "WLAN2G" "tp-link:blue:wlan2g" "phy0tpt"
 	ucidef_set_led_wlan "wlan5g" "WLAN5G" "tp-link:blue:wlan5g" "phy1tpt"
+	;;
+
+archer-c5|\
+archer-c7)
+	ucidef_set_led_usbdev "usb1" "USB1" "tp-link:green:usb1" "1-1"
+	ucidef_set_led_usbdev "usb2" "USB2" "tp-link:green:usb2" "2-1"
+	ucidef_set_led_wlan "wlan2g" "WLAN2G" "tp-link:blue:wlan2g" "phy1tpt"
+	ucidef_set_led_wlan "wlan5g" "WLAN5G" "tp-link:blue:wlan5g" "phy0tpt"
 	;;
 
 tl-wr741nd)
