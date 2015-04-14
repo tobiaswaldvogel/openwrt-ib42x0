@@ -1,0 +1,7 @@
+--- a/arch/arm/tools/mach-types
++++ b/arch/arm/tools/mach-types
+@@ -1033,3 +1033,4 @@
+ bcm2708			MACH_BCM2708		BCM2708			3138
+ wn802t			MACH_WN802T		WN802T			3306
+ nsa310			MACH_NSA310		NSA310			4022
++nas4210b		MACH_NAS4210B		NAS4210B		8191

@@ -1,0 +1,247 @@
+--- a/include/uapi/mtd/mtd-abi.h
++++ b/include/uapi/mtd/mtd-abi.h
+@@ -203,6 +203,7 @@ struct otp_info {
+  * without OOB, e.g., NOR flash.
+  */
+ #define MEMWRITE		_IOWR('M', 24, struct mtd_write_req)
++#define MTDREFRESH		_IO('M', 50)
+ 
+ /*
+  * Obsolete legacy interface. Keep it in order not to break userspace
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -1008,6 +1008,12 @@ static int mtdchar_ioctl(struct file *fi
+ 		break;
+ 	}
+ 
++	case MTDREFRESH:
++	{
++		ret = mtd_device_refresh(mtd, arg);
++		break;
++	}
++
+ 	default:
+ 		ret = -ENOTTY;
+ 	}
+--- a/include/linux/mtd/mtd.h
++++ b/include/linux/mtd/mtd.h
+@@ -400,6 +400,7 @@ extern int mtd_device_parse_register(str
+ extern int mtd_device_unregister(struct mtd_info *master);
+ extern struct mtd_info *get_mtd_device(struct mtd_info *mtd, int num);
+ extern int __get_mtd_device(struct mtd_info *mtd);
++extern int mtd_device_refresh(struct mtd_info *master, int mode);
+ extern void __put_mtd_device(struct mtd_info *mtd);
+ extern struct mtd_info *get_mtd_device_nm(const char *name);
+ extern void put_mtd_device(struct mtd_info *mtd);
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -889,7 +889,7 @@
+  * for reasons of data integrity.
+  */
+ 
+-int add_mtd_partitions(struct mtd_info *master,
++int _add_mtd_partitions(struct mtd_info *master,
+ 		       const struct mtd_partition *parts,
+ 		       int nbparts)
+ {
+@@ -917,6 +917,200 @@
+ 	return 0;
+ }
+ 
++struct fis_image_hdr {
++	unsigned char name[16];
++	uint32_t flash_base;
++	uint32_t mem_base;
++	uint32_t size;
++	uint32_t entry_point;
++	uint32_t data_length;
++} __attribute__((packed));
++
++struct fis_image_crc {
++	uint32_t desc;
++	uint32_t file;
++} __attribute__((packed));
++
++struct fis_image_desc {
++	struct fis_image_hdr hdr;
++	char _pad[256 - sizeof(struct fis_image_hdr) - sizeof(struct fis_image_crc)];
++	struct fis_image_crc crc;
++} __attribute__((packed));
++
++struct squashfs_super_block {
++	__le32 s_magic;
++	__le32 pad0[9];
++	__le64 bytes_used;
++};
++
++static int fis_get_info(const char* name, int *offset, int *size)
++{
++	struct mtd_info *master;
++	struct mtd_part *slave;
++	struct fis_image_desc fis;
++	int ret, len, pos;
++	
++	mutex_lock(&mtd_partitions_mutex);
++	list_for_each_entry(slave, &mtd_partitions, list)
++		if (!strcmp(slave->mtd.name, "FIS directory"))
++			break;
++	mutex_unlock(&mtd_partitions_mutex);
++
++	if (&slave->list == &mtd_partitions)
++		return -EINVAL;
++
++	master = slave->master;
++	pos = 0;
++
++	while (pos < slave->mtd.size) {
++		ret = mtd_read(master, slave->offset + pos, sizeof(fis), &len, (void *) &fis);
++		if (ret || (len != sizeof(fis))) {
++			printk(KERN_ALERT "fist_get_info: error occured while reading "
++				"from \"%s\"\n", master->name);
++			return -EINVAL;
++
++		}
++
++		if (fis.hdr.name[0] == 0x00 || fis.hdr.name[0] == 0xff)
++			return -EINVAL;
++			
++                if (!strcmp((char*)fis.hdr.name, name)) {
++			if (offset)
++				*offset = fis.hdr.flash_base;
++			if (size)
++				*size   = fis.hdr.data_length;
++			return 0;
++		}
++		pos += len;
++        }
++
++	return -EINVAL;
++}
++
++int mtd_device_refresh(struct mtd_info *mtd, int mode)
++{
++	struct mtd_part *part;
++	int size, v_off, b_off;
++
++	if (mtd->_read != part_read || strcmp(mtd->name, "rootfs"))
++		return -EINVAL;
++
++	fis_get_info("VCTL", &v_off, 0);
++
++	if (mode == 0)
++		fis_get_info("Ramdisk", &b_off, 0);
++	else {
++		fis_get_info("Kern", &b_off, &size);
++		b_off += size;
++		b_off +=  (mtd->erasesize - 1);
++		b_off &= ~(mtd->erasesize - 1);
++	}
++
++	size = v_off - b_off;
++	part = PART(mtd);
++	part->offset += part->mtd.size;
++	part->offset -= size;
++	part->mtd.size = size;
++
++	printk(KERN_INFO "mtd: partition %s updated. ofs=%llX, len=%llX \n",
++			part->mtd.name, part->offset, part->mtd.size);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mtd_device_refresh);
++
++int adjust_kernel_part(struct mtd_info *master,
++		       struct mtd_partition *parts,
++		       int k,
++		       int nbparts)
++{
++	struct squashfs_super_block sb;
++	uint64_t offset;
++	int ret, len;
++
++	if (k+1 >= nbparts)
++		return -EINVAL;
++
++	parts[k].size = parts[k+1].offset - parts[k].offset;
++	offset = parts[k+1].offset;
++	while (offset > parts[k].offset) {
++		ret = mtd_read(master, offset, sizeof(sb), &len, (void *) &sb);
++		if (ret || (len != sizeof(sb))) {
++			printk(KERN_ALERT "mtd: error occured while reading "
++				"from \"%s\"\n", master->name);
++			return -EINVAL;
++		}
++
++		if (SQUASHFS_MAGIC == le32_to_cpu(sb.s_magic))
++			break;
++
++		offset -= master->erasesize;
++	}
++
++	parts[k+1].size += parts[k+1].offset - offset;
++	parts[k+1].offset = offset;
++	return 0;
++}
++
++int merge_rootfs(struct mtd_info *master,
++		       struct mtd_partition *parts,
++		       int i,
++		       int *nbparts)
++{
++	static const char* ROOTFS_NAME = "rootfs";
++	struct squashfs_super_block sb;
++	int ret, len;
++
++	if (i + 1 >= *nbparts || strcmp(parts[i+1].name, "Application"))
++		return -EINVAL;
++
++	ret = mtd_read(master, parts[i].offset, sizeof(sb), &len, (void *) &sb);
++	if (ret || (len != sizeof(sb))) {
++		printk(KERN_ALERT "mtd: error occured while reading "
++			"from \"%s\"\n", master->name);
++		return -EINVAL;
++	}
++
++	if (SQUASHFS_MAGIC != le32_to_cpu(sb.s_magic)) {
++		printk(KERN_INFO "mtd: no SQUASHFS found, "
++			"not merging \"Ramdisk\" and \"Application\""
++			" to \"rootfs\"\n");
++		return -EINVAL;
++	}
++
++	parts[i].name = (char*)ROOTFS_NAME;
++	parts[i].size = parts[i+2].offset - parts[i].offset;
++	printk(KERN_INFO "mtd: merging \"Ramdisk\" and \"Application\""
++		" to \"rootfs, ofs=0x%llX, len=0x%llX \n",
++		parts[i].offset, parts[i].size);
++
++	if (i + 2 < *nbparts)
++		memmove(parts+i+1, parts+i+2, sizeof(*parts)*(*nbparts-i-2));
++	--(*nbparts);
++	return 0;
++}
++
++int add_mtd_partitions(struct mtd_info *master,
++		       const struct mtd_partition *parts,
++		       int nbparts)
++{
++	int i;
++	struct mtd_partition *parts_loc;
++
++	parts_loc = kzalloc(sizeof(*parts) * nbparts, GFP_KERNEL);
++	if (!parts_loc)
++		return _add_mtd_partitions(master, parts, nbparts);
++
++	memcpy(parts_loc, parts, sizeof(*parts) * nbparts);
++	for (i = 0; i < nbparts; i++) {
++		if (!strcmp(parts_loc[i].name, "Kern"))
++			adjust_kernel_part(master, parts_loc, i, nbparts);
++
++		if (!strcmp(parts_loc[i].name, "Ramdisk"))
++			merge_rootfs(master, parts_loc, i, &nbparts);
++	}
++	return _add_mtd_partitions(master, parts_loc, nbparts);
++}
++
+ static DEFINE_SPINLOCK(part_parser_lock);
+ static LIST_HEAD(part_parsers);
+ 

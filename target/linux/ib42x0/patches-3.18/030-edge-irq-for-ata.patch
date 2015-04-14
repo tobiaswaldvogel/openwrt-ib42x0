@@ -1,0 +1,12 @@
+--- a/arch/arm/mach-gemini/irq.c	2013-02-19 13:38:13.263948000 +0100
++++ b/arch/arm/mach-gemini/irq.c	2013-02-19 18:24:02.912997292 +0100
+@@ -89,6 +89,9 @@
+ 			irq_set_handler(i, handle_edge_irq);
+ 			mode |= 1 << i;
+ 			level |= 1 << i;
++ 		} else if (i >= IRQ_IDE0 && i <= IRQ_IDE1) {
++ 			irq_set_handler(i, handle_edge_irq);
++ 			mode |= 1 << i;
+ 		} else {			
+ 			irq_set_handler(i, handle_level_irq);
+ 		}

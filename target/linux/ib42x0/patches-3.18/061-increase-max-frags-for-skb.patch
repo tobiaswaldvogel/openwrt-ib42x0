@@ -1,0 +1,19 @@
+--- a/include/linux/skbuff.h	2013-01-18 19:59:57.130244026 +0100
++++ b/include/linux/skbuff.h	2013-01-18 20:01:46.729852976 +0100
+@@ -183,11 +183,11 @@
+  * Since GRO uses frags we allocate at least 16 regardless of page
+  * size.
+  */
+-#if (65536/PAGE_SIZE + 1) < 16
+-#define MAX_SKB_FRAGS 16UL
+-#else
+-#define MAX_SKB_FRAGS (65536/PAGE_SIZE + 1)
+-#endif
++
++/* In order to make bether use of GRO we set the number
++ * of frags to allow 64K with standard MTU Eth packets
++ */
++#define MAX_SKB_FRAGS (65536/1500 + 2)
+ 
+ typedef struct skb_frag_struct skb_frag_t;
+ 

@@ -1,0 +1,194 @@
+--- a/arch/arm/mach-gemini/board-nas4210b.c
++++ b/arch/arm/mach-gemini/board-nas4210b.c
+@@ -0,0 +1,191 @@
++/*
++ *  Support for Raidsonic NAS-4210-B
++ *
++ *  Copyright (C) 2009 Janos Laube <janos.dev@gmail.com>
++ *
++ * based on rut1xx.c
++ *  Copyright (C) 2008 Paulius Zaleckas <paulius.zaleckas@teltonika.lt>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/leds.h>
++#include <linux/input.h>
++#include <linux/gpio_keys.h>
++#include <linux/mdio-gpio.h>
++#include <linux/io.h>
++#include <linux/memblock.h>
++
++#include <asm/setup.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/time.h>
++
++#include <mach/hardware.h>
++#include <mach/global_reg.h>
++#include <linux/platform_data/sl351x.h>
++
++#include "common.h"
++
++static struct mdio_gpio_platform_data ib4210b_mdio = {
++	.mdc		= 22,
++	.mdio		= 21,
++	.phy_mask	= ~(1 << 1),
++};
++
++static struct platform_device ib4210b_phy_device = {
++	.name	= "mdio-gpio",
++	.id	= 0,
++	.dev	= { .platform_data = &ib4210b_mdio, },
++};
++
++static struct sl351x_platform_data ib4210b_sl351x_data = {
++	.bus_id[0]	= "gpio-0:01",
++	.interface[0]	= PHY_INTERFACE_MODE_RGMII,
++};
++
++static struct gpio_led ib4210b_leds[] = {
++	{
++		.name			= "nas42x0b:orange:hdd",
++		.default_trigger	= "none",
++		.gpio			= 60,
++	},
++	{
++		.name			= "nas42x0b:green:os",
++		.default_trigger	= "default-on",
++		.gpio			= 62,
++	},
++};
++
++static struct gpio_led_platform_data ib4210b_leds_data = {
++	.num_leds	= ARRAY_SIZE(ib4210b_leds),
++	.leds		= ib4210b_leds,
++};
++
++static struct platform_device ib4210b_led_device = {
++	.name	= "leds-gpio",
++	.id	= -1,
++	.dev	= {
++		.platform_data = &ib4210b_leds_data,
++	},
++};
++
++static struct gpio_keys_button ib4210b_keys[] = {
++	{
++		.code		= KEY_SETUP,
++		.gpio		= 61,
++		.active_low	= 1,
++		.desc		= "Backup Button",
++		.type		= EV_KEY,
++	},
++	{
++		.code		= KEY_RESTART,
++		.gpio		= 63,
++		.active_low	= 1,
++		.desc		= "Softreset Button",
++		.type		= EV_KEY,
++	},
++};
++
++static struct gpio_keys_platform_data ib4210b_keys_data = {
++	.buttons	= ib4210b_keys,
++	.nbuttons	= ARRAY_SIZE(ib4210b_keys),
++};
++
++static struct platform_device ib4210b_key_device = {
++	.name	= "gpio-keys",
++	.id	= -1,
++	.dev	= {
++		.platform_data = &ib4210b_keys_data,
++	},
++};
++
++static void __init sata_ib4210b_init(void)
++{
++	unsigned val;
++
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	val &= ~(IDE_IOMUX_MASK | PFLASH_PADS_DISABLE);
++	val |= IDE_PADS_ENABLE;
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++
++	/* enabling ports for presence detection, master only */
++	writel(0x00000001, IO_ADDRESS(GEMINI_SATA_BASE) + 0x18);
++	writel(0x00000001, IO_ADDRESS(GEMINI_SATA_BASE) + 0x1c);
++}
++
++static void __init gmac_ib4210b_init(void)
++{
++	unsigned int val;
++
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_IO_DRIVING_CTRL);
++	val |= (0x3 << GMAC0_PADS_SHIFT) | (0x3 << GMAC1_PADS_SHIFT);
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_IO_DRIVING_CTRL);
++
++	val = (0x0 << GMAC0_RXDV_SKEW_SHIFT) | (0xf << GMAC0_RXC_SKEW_SHIFT) |
++		(0x7 << GMAC0_TXEN_SKEW_SHIFT) | (0xb << GMAC0_TXC_SKEW_SHIFT) |
++		(0x0 << GMAC1_RXDV_SKEW_SHIFT) | (0xf << GMAC1_RXC_SKEW_SHIFT) |
++		(0x7 << GMAC1_TXEN_SKEW_SHIFT) | (0xa << GMAC1_TXC_SKEW_SHIFT);
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_GMAC_CTRL_SKEW_CTRL);
++
++	writel(0x77777777,
++	       IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_GMAC0_DATA_SKEW_CTRL);
++	writel(0x77777777,
++	       IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_GMAC1_DATA_SKEW_CTRL);
++
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_ARBITRATION1_CTRL);
++	val &= ~BURST_LENGTH_MASK;
++	val |= (0x20 << BURST_LENGTH_SHIFT) | GMAC0_HIGH_PRIO | GMAC1_HIGH_PRIO;
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_ARBITRATION1_CTRL);
++}
++
++static void __init usb_ib4210b_init(void)
++{
++	unsigned int val;
++
++	val = readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++	val &= ~(USB0_PLUG_MINIB | USB1_PLUG_MINIB);
++	val |= USB0_VBUS_ON | USB1_VBUS_ON;
++	writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++}
++
++static void __init ib4210b_init(void)
++{
++	gemini_gpio_init();
++	sata_ib4210b_init();
++	gmac_ib4210b_init();
++	usb_ib4210b_init();
++	platform_register_uart();
++	platform_register_pflash(SZ_16M, NULL, 0);
++	platform_device_register(&ib4210b_led_device);
++	platform_device_register(&ib4210b_key_device);
++	platform_register_rtc();
++	platform_register_pwc();
++	platform_register_pata(0);
++	platform_register_watchdog();
++	platform_device_register (&ib4210b_phy_device);
++	platform_register_ethernet (&ib4210b_sl351x_data);
++	platform_register_usb(0);
++	platform_register_usb(1);
++}
++
++static void __init ib4210b_fixup(struct tag *tags, char **cmdline)
++{
++	memblock_add(PHYS_OFFSET, SZ_64M);
++}
++
++MACHINE_START(NAS4210B, "Raidsonic NAS IB-4210-B")
++	.fixup          = ib4210b_fixup,
++	.atag_offset	= 0x100,
++	.map_io		= gemini_map_io,
++	.init_irq	= gemini_init_irq,
++	.init_time	= gemini_timer_init,
++	.init_machine	= ib4210b_init,
++	.restart	= gemini_restart,
++MACHINE_END
