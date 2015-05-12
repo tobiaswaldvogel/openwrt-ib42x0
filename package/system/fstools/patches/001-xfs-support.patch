@@ -7,7 +7,7 @@
 +		libblkid-tiny/xfs.c
  		libblkid-tiny/swap.c
  		libblkid-tiny/ubifs.c
- 		libblkid-tiny/squashfs.c)
+ 		libblkid-tiny/squashfs.c
 --- a/libblkid-tiny/libblkid-tiny.c
 +++ b/libblkid-tiny/libblkid-tiny.c
 @@ -154,6 +154,7 @@

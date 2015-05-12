@@ -121,7 +121,7 @@ endef
 
 define Image/BuildKernel/MkFIT
 	$(TOPDIR)/scripts/mkits.sh \
-		-D $(1) -o $(KDIR)/fit-$(1).its -k $(2) -d $(3) -C $(4) -a $(5) -e $(6) \
+		-D $(1) -o $(KDIR)/fit-$(1).its -k $(2) $(if $(3),-d $(3)) -C $(4) -a $(5) -e $(6) \
 		-A $(ARCH) -v $(LINUX_VERSION)
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $(KDIR)/fit-$(1).its $(KDIR)/fit-$(1)$(7).itb
 endef
@@ -231,21 +231,21 @@ define Image/mkfs/targz
 	$(TAR) -czpf $(BIN_DIR)/$(IMG_PREFIX)$(if $(PROFILE),-$(PROFILE))-rootfs.tar.gz --numeric-owner --owner=0 --group=0 -C $(TARGET_DIR)/ .
 endef
 
-E2SIZE=$(shell echo $$(($(CONFIG_TARGET_ROOTFS_PARTSIZE)*1024*1024/$(CONFIG_TARGET_EXT4_BLOCKSIZE))))
+E2SIZE=$(shell echo $$(($(CONFIG_TARGET_ROOTFS_PARTSIZE)*1024*1024)))
 
 define Image/mkfs/ext4
-# generate an ext2 fs
-	$(STAGING_DIR_HOST)/bin/genext2fs -U -B $(CONFIG_TARGET_EXT4_BLOCKSIZE) -b $(E2SIZE) -N $(CONFIG_TARGET_EXT4_MAXINODE) -d $(TARGET_DIR)/ $(KDIR)/root.ext4 -m $(CONFIG_TARGET_EXT4_RESERVED_PCT) $(MKFS_DEVTABLE_OPT)
-# convert it to ext4
-	$(STAGING_DIR_HOST)/bin/tune2fs $(if $(CONFIG_TARGET_EXT4_JOURNAL),-j) -O extents,uninit_bg,dir_index $(KDIR)/root.ext4
-# fix it up
-	$(STAGING_DIR_HOST)/bin/e2fsck -fy $(KDIR)/root.ext4
+	$(STAGING_DIR_HOST)/bin/make_ext4fs \
+		-l $(E2SIZE) -b $(CONFIG_TARGET_EXT4_BLOCKSIZE) \
+		-i $(CONFIG_TARGET_EXT4_MAXINODE) \
+		-m $(CONFIG_TARGET_EXT4_RESERVED_PCT) \
+		$(if $(CONFIG_TARGET_EXT4_JOURNAL),,-J) \
+		$(KDIR)/root.ext4 $(TARGET_DIR)/
 endef
 
 define Image/mkfs/prepare/default
 	# Use symbolic permissions to avoid clobbering SUID/SGID/sticky bits
-	- $(FIND) $(TARGET_DIR) -type f -not -perm +0100 -not -name 'ssh_host*' -not -name 'shadow' -print0 | $(XARGS) -0 chmod u+rw,g+r,o+r
-	- $(FIND) $(TARGET_DIR) -type f -perm +0100 -print0 | $(XARGS) -0 chmod u+rwx,g+rx,o+rx
+	- $(FIND) $(TARGET_DIR) -type f -not -perm /0100 -not -name 'ssh_host*' -not -name 'shadow' -print0 | $(XARGS) -0 chmod u+rw,g+r,o+r
+	- $(FIND) $(TARGET_DIR) -type f -perm /0100 -print0 | $(XARGS) -0 chmod u+rwx,g+rx,o+rx
 	- $(FIND) $(TARGET_DIR) -type d -print0 | $(XARGS) -0 chmod u+rwx,g+rx,o+rx
 	$(INSTALL_DIR) $(TARGET_DIR)/tmp $(TARGET_DIR)/overlay
 	chmod 1777 $(TARGET_DIR)/tmp
@@ -258,8 +258,7 @@ endef
 
 define Image/Checksum
 	( cd ${BIN_DIR} ; \
-		$(FIND) -maxdepth 1 -type f \! -name 'md5sums'  -printf "%P\n" | sort | xargs \
-		md5sum --binary > md5sums \
+		$(FIND) -maxdepth 1 -type f \! -name 'md5sums'  -printf "%P\n" | sort | xargs $1 > $2 \
 	)
 endef
 
@@ -360,11 +359,14 @@ endef
 
 define Device/Check
   _TARGET = $$(if $$(filter $(PROFILE),$$(PROFILES)),install,install-disabled)
+  _COMPILE_TARGET = $$(if $(if $(IB),,$(CONFIG_IB)$$(filter $(PROFILE),$$(PROFILES))),compile,compile-disabled)
 endef
 
+ifndef IB
 define Device/Build/initramfs
   $$(_TARGET): $(BIN_DIR)/$$(KERNEL_INITRAMFS_IMAGE)
 
+  $(KDIR)/$$(KERNEL_NAME)-initramfs: image_prepare
   $(BIN_DIR)/$$(KERNEL_INITRAMFS_IMAGE): $(KDIR)/$$(KERNEL_INITRAMFS_IMAGE)
 	cp $$^ $$@
 
@@ -372,6 +374,7 @@ define Device/Build/initramfs
 	@rm -f $$@
 	$$(call concat_cmd,$$(KERNEL_INITRAMFS))
 endef
+endif
 
 define Device/Build/check_size
 	@[ $$(($(subst k,* 1024,$(subst m, * 1024k,$(1))))) -gt "$$(stat -c%s $@)" ] || { \
@@ -380,7 +383,16 @@ define Device/Build/check_size
 	}
 endef
 
+define Device/Build/compile
+  $$(_COMPILE_TARGET): $(KDIR)/$(1)
+  $(eval $(call Device/Export,$(KDIR)/$(1)))
+  $(KDIR)/$(1):
+	$$(call concat_cmd,$(COMPILE/$(1)))
+
+endef
+
 define Device/Build/kernel
+  _KERNEL_IMAGES += $(KDIR)/$$(KERNEL_NAME)
   $(KDIR)/$$(KERNEL_NAME): image_prepare
   $$(_TARGET): $$(if $$(KERNEL_INSTALL),$(BIN_DIR)/$$(KERNEL_IMAGE))
   $(BIN_DIR)/$$(KERNEL_IMAGE): $(KDIR)/$$(KERNEL_IMAGE)
@@ -410,6 +422,9 @@ endef
 define Device/Build
   $(if $(CONFIG_TARGET_ROOTFS_INITRAMFS),$(call Device/Build/initramfs,$(1)))
   $(call Device/Build/kernel,$(1))
+
+  $$(eval $$(foreach compile,$$(COMPILE), \
+    $$(call Device/Build/compile,$$(compile),$(1))))
 
   $$(eval $$(foreach image,$$(IMAGES), \
     $$(foreach fs,$$(filter $(TARGET_FILESYSTEMS),$$(FILESYSTEMS)), \
@@ -456,11 +471,15 @@ define BuildImage
   $(foreach device,$(TARGET_DEVICES),$(call Device,$(device)))
   $(foreach fs,$(TARGET_FILESYSTEMS) $(fs-subtypes-y),$(call BuildImage/mkfs,$(fs)))
 
+  $$(sort $$(_KERNEL_IMAGES)):
+	@touch $$@
+
   install: kernel_prepare
 	$(foreach fs,$(TARGET_FILESYSTEMS),
 		$(call Image/Build,$(fs))
 	)
 	$(call Image/mkfs/ubifs)
-	$(call Image/Checksum)
+	$(call Image/Checksum,md5sum --binary,md5sums)
+	$(call Image/Checksum,openssl dgst -sha256,sha256sums)
 
 endef
